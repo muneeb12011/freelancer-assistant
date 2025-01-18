@@ -1,0 +1,177 @@
+/* General app layout */
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  font-family: 'Roboto', sans-serif; /* Modern and clean font */
+  background-color: #f8f9fa; /* Softer background for less contrast */
+  color: #212529; /* Standard dark text color */
+  transition: background-color 0.3s ease; /* Smooth background color transition */
+}
+
+/* Header (Navbar) styling */
+.app-header {
+  background-color: #343a40; /* Dark Bootstrap color */
+  color: white;
+  padding: 15px 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Lighter shadow for modern look */
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  border-bottom: 1px solid #6c757d; /* Subtle divider between header and content */
+}
+
+.app-header a {
+  color: white;
+  text-decoration: none;
+  margin: 0 20px;
+  font-weight: 500;
+  font-size: 1rem;
+  transition: color 0.3s ease;
+}
+
+.app-header a:hover {
+  color: #ffc107; /* Bootstrap warning color for hover */
+}
+
+/* Body layout with Sidebar and Content */
+.app-body {
+  display: flex;
+  flex-grow: 1;
+  flex-wrap: nowrap;
+}
+
+/* Sidebar styling */
+.app-sidebar {
+  width: 250px;
+  background-color: #495057; /* Dark gray sidebar */
+  color: white;
+  padding: 20px;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+  position: fixed;
+  height: 100vh;
+  overflow-y: auto;
+  transition: width 0.3s ease; /* Smooth width transition */
+}
+
+.app-sidebar .sidebar-header {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 20px;
+  color: #ffc107; /* Accent color */
+  text-align: center;
+}
+
+.app-sidebar a {
+  display: flex;
+  align-items: center;
+  color: #adb5bd; /* Muted link color */
+  text-decoration: none;
+  padding: 12px 18px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-size: 1rem;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.app-sidebar a i {
+  margin-right: 15px; /* Spacing for icons */
+  font-size: 1.25rem;
+}
+
+.app-sidebar a:hover,
+.app-sidebar a.active {
+  background-color: #6c757d; /* Highlighted background */
+  color: white;
+}
+
+/* Content area */
+.app-content {
+  flex-grow: 1;
+  padding: 30px;
+  margin-left: 250px; /* Account for sidebar width */
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); /* Card-like design with larger shadow */
+  overflow-y: auto;
+  transition: margin-left 0.3s ease; /* Smooth transition for collapsing sidebar */
+}
+
+/* Footer styling */
+.app-footer {
+  background-color: #343a40; /* Footer matches header */
+  color: white;
+  text-align: center;
+  padding: 15px 0;
+  font-size: 0.95rem;
+  border-top: 1px solid #6c757d;
+}
+
+/* Collapsed Sidebar */
+.app-sidebar.collapsed {
+  width: 80px; /* Reduced width in collapsed mode */
+}
+
+.app-sidebar.collapsed a span {
+  display: none; /* Hide text for collapsed mode */
+}
+
+.app-sidebar.collapsed a i {
+  margin-right: 0; /* Center icons */
+}
+
+.app-content.collapsed {
+  margin-left: 80px; /* Adjust content area width when sidebar is collapsed */
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .app-sidebar {
+    width: 100%;
+    position: static; /* Static position for smaller screens */
+    height: auto;
+    box-shadow: none;
+  }
+
+  .app-body {
+    flex-direction: column; /* Stack sidebar and content */
+  }
+
+  .app-content {
+    margin-left: 0; /* Remove sidebar offset */
+  }
+
+  .app-header {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 15px;
+  }
+
+  .app-header a {
+    margin: 10px 0;
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-sidebar {
+    width: 100%;
+    position: static; /* Remove fixed positioning for mobile */
+    height: auto;
+  }
+
+  .app-body {
+    flex-direction: column; /* Stack sidebar and content */
+  }
+
+  .app-content {
+    margin-left: 0; /* Remove sidebar offset */
+  }
+
+  .app-footer {
+    font-size: 0.85rem;
+  }
+}

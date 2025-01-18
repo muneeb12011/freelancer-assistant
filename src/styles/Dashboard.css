@@ -1,0 +1,168 @@
+/* src/styles/Dashboard.css */
+
+:root {
+  --primary-color: #0056b3; /* Refined blue for a premium look */
+  --secondary-color: #757575; /* Neutral gray for secondary text */
+  --background-light: #f4f4f4; /* Softer light background */
+  --background-dark: #1a1a1a; /* Darker background for contrast */
+  --text-light: #ffffff; /* Light text for dark themes */
+  --text-dark: #212121; /* Dark text for light themes */
+  --accent-color: #e57373; /* Subtle accent color for highlights */
+}
+
+.dashboard {
+  padding: 20px;
+  font-family: 'Roboto', sans-serif;
+  background-color: var(--background-light);
+  color: var(--text-dark);
+  transition: all 0.3s ease;
+}
+
+/* Header Section */
+.dashboard-header {
+  text-align: center;
+  margin-bottom: 30px;
+  animation: fadeIn 1s ease;
+}
+
+.dashboard-header h2 {
+  font-size: 2.5rem;
+  color: var(--primary-color);
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.dashboard-header p {
+  font-size: 1.1rem;
+  color: var(--secondary-color);
+}
+
+/* Stats Section */
+.dashboard-stats {
+  display: flex;
+  justify-content: space-between;
+  gap: 0; /* Removed gap for seamless alignment */
+  margin-bottom: 20px;
+  flex-wrap: nowrap;
+}
+
+.stat-card {
+  background: linear-gradient(135deg, #e0e0e0, #f8f8f8);
+  color: var(--text-dark);
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.08);
+  width: 24%; /* Ensures all four stats fit in one row */
+  text-align: center;
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.15);
+}
+
+.stat-card h3 {
+  font-size: 2rem;
+  font-weight: 500;
+  margin-bottom: 5px;
+  color: var(--primary-color);
+}
+
+.stat-card p {
+  font-size: 1rem;
+  color: var(--secondary-color);
+}
+
+/* Charts Section */
+.chart-section {
+  margin-bottom: 40px;
+}
+
+.chart-container {
+  background: var(--background-light);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.3s ease;
+}
+
+.chart-container:hover {
+  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.15);
+}
+
+.chart-section h3 {
+  font-size: 1.5rem;
+  margin-bottom: 20px;
+  color: var(--text-dark);
+}
+
+/* Recent Activity Section */
+.recent-activity {
+  background: var(--background-light);
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.3s ease;
+}
+
+.recent-activity:hover {
+  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.15);
+}
+
+.recent-activity h3 {
+  font-size: 1.5rem;
+  margin-bottom: 20px;
+}
+
+.recent-activity ul {
+  list-style: none;
+  padding: 0;
+}
+
+.recent-activity li {
+  font-size: 1rem;
+  color: var(--text-dark);
+  margin-bottom: 10px;
+  border-left: 4px solid var(--accent-color);
+  padding-left: 10px;
+  transition: background 0.3s;
+}
+
+.recent-activity li:hover {
+  background: rgba(229, 115, 115, 0.1);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Button Styles for Additional Features */
+.additional-features {
+  display: flex;
+  justify-content: center;
+  margin-top: 30px;
+}
+
+.additional-features button {
+  padding: 10px 20px;
+  font-size: 1rem;
+  font-weight: 600;
+  background-color: var(--primary-color);
+  color: var(--text-light);
+  border-radius: 8px;
+  border: none;
+  transition: background-color 0.3s;
+}
+
+.additional-features button:hover {
+  background-color: #003d82; /* Darker shade for hover effect */
+}

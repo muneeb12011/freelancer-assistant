@@ -1,0 +1,266 @@
+/* src/styles/Profile.css */
+.profile {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+  font-family: 'Roboto', sans-serif;
+  background: linear-gradient(to bottom right, #f0f4f8, #dce5f1);
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  color: #333;
+}
+
+.profile-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.profile-picture {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 5px solid #0056b3;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease;
+}
+
+.profile-picture:hover {
+  transform: scale(1.1);
+}
+
+.profile-name {
+  font-size: 2.2rem;
+  margin-top: 15px;
+  color: #002855;
+  font-weight: 800;
+}
+
+.profile-role {
+  font-size: 1.4rem;
+  color: #004085;
+  font-weight: 600;
+}
+
+.profile-location {
+  font-size: 1.1rem;
+  color: #555;
+  margin-top: 5px;
+}
+
+.verified-badge {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 6px 12px;
+  background-color: #28a745;
+  color: white;
+  border-radius: 25px;
+  font-size: 1rem;
+  font-weight: 700;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+}
+
+.profile-bio {
+  margin-top: 30px;
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.profile-bio:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+}
+
+.profile-bio h3 {
+  font-size: 1.8rem;
+  color: #002855;
+  margin-bottom: 15px;
+}
+
+.profile-bio p {
+  font-size: 1.2rem;
+  color: #444;
+  line-height: 1.8;
+}
+
+.profile-skills {
+  margin-top: 30px;
+}
+
+.profile-skills h3 {
+  font-size: 1.8rem;
+  color: #002855;
+  margin-bottom: 15px;
+}
+
+.profile-skills ul {
+  list-style: none;
+  padding: 0;
+}
+
+.profile-skills ul li {
+  font-size: 1.1rem;
+  padding: 10px 18px;
+  margin: 5px 0;
+  background: #0056b3;
+  color: white;
+  border-radius: 25px;
+  display: inline-block;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.profile-skills ul li:hover {
+  background: #003d80;
+}
+
+.profile-skills input {
+  margin-top: 10px;
+  padding: 12px;
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.profile-projects {
+  margin-top: 30px;
+}
+
+.profile-projects h3 {
+  font-size: 1.8rem;
+  color: #002855;
+  margin-bottom: 15px;
+}
+
+.profile-projects .profile-project {
+  background: #ffffff;
+  padding: 20px;
+  margin-bottom: 12px;
+  border-radius: 10px;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.profile-projects .profile-project:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+}
+
+.profile-projects .profile-project strong {
+  font-size: 1.3rem;
+  color: #333;
+}
+
+.profile-projects textarea,
+.profile-projects input {
+  margin-top: 10px;
+  padding: 12px;
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+
+.profile-projects button {
+  margin-top: 10px;
+  background-color: #0056b3;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.profile-projects button:hover {
+  background-color: #003d80;
+}
+
+.profile-subscription {
+  margin-top: 30px;
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+}
+
+.profile-subscription h3 {
+  font-size: 1.8rem;
+  color: #002855;
+  margin-bottom: 15px;
+}
+
+.profile-subscription p {
+  font-size: 1.2rem;
+  color: #333;
+}
+
+.profile-social {
+  margin-top: 30px;
+}
+
+.profile-social h3 {
+  font-size: 1.8rem;
+  color: #002855;
+  margin-bottom: 15px;
+}
+
+.profile-social ul {
+  list-style: none;
+  padding: 0;
+}
+
+.profile-social ul li {
+  margin-bottom: 12px;
+}
+
+.profile-social ul li a {
+  text-decoration: none;
+  color: #0056b3;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.profile-social ul li a:hover {
+  color: #003d80;
+}
+
+.profile-actions {
+  margin-top: 30px;
+  text-align: center;
+}
+
+.profile-actions .btn {
+  margin: 10px;
+  padding: 12px 25px;
+  background-color: #0056b3;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.profile-actions .btn:hover {
+  background-color: #003d80;
+}
+
+.loading-screen {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-size: 1.8rem;
+  color: #0056b3;
+  font-weight: 600;
+}

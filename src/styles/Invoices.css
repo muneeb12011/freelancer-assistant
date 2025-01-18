@@ -1,0 +1,214 @@
+/* General Invoices Section Styling */
+.invoices {
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    font-family: Arial, sans-serif;
+}
+
+/* Header Section */
+.invoices-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.invoices-header h2 {
+    font-size: 1.8rem;
+    color: #495057;
+    font-weight: 600;
+}
+
+.invoices-header .btn {
+    padding: 10px 16px;
+    border-radius: 5px;
+    color: #fff;
+    background-color: #6c757d;
+    font-weight: 500;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    cursor: pointer;
+    border: none;
+}
+
+.invoices-header .btn:hover {
+    background-color: #5a6268;
+    transform: translateY(-2px);
+}
+
+/* Invoice Table */
+.invoices-table {
+    margin-top: 20px;
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    font-size: 0.9rem;
+}
+
+th, td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid #dee2e6;
+    color: #495057;
+    word-break: break-word;
+}
+
+th {
+    background-color: #f1f3f5;
+    font-weight: 600;
+    color: #343a40;
+}
+
+td {
+    background-color: #fff;
+    font-weight: 400;
+}
+
+td .invoice-status {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+/* Invoice Status Colors */
+.invoice-status.paid {
+    background-color: #28a745;
+    color: #fff;
+}
+
+.invoice-status.pending {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.invoice-status.unpaid {
+    background-color: #dc3545;
+    color: #fff;
+}
+
+/* Action Buttons */
+td button {
+    padding: 8px 12px;
+    margin-right: 8px;
+    font-size: 0.875rem;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+td .btn-secondary {
+    background-color: #6c757d;
+    color: #fff;
+}
+
+td .btn-secondary:hover {
+    background-color: #5a6268;
+    transform: translateY(-2px);
+}
+
+td .btn-warning {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+td .btn-warning:hover {
+    background-color: #e0a800;
+    transform: translateY(-2px);
+}
+
+td .btn-danger {
+    background-color: #dc3545;
+    color: #fff;
+}
+
+td .btn-danger:hover {
+    background-color: #c82333;
+    transform: translateY(-2px);
+}
+
+/* Create/Edit Invoice Form */
+.invoice-form {
+    margin-top: 20px;
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.invoice-form h3 {
+    margin-bottom: 20px;
+    font-size: 1.4rem;
+    color: #495057;
+}
+
+.invoice-form .form-group {
+    margin-bottom: 16px;
+}
+
+.invoice-form label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 0.875rem;
+    color: #495057;
+    font-weight: 500;
+}
+
+.invoice-form input, 
+.invoice-form select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    color: #495057;
+    background-color: #f8f9fa;
+    transition: border-color 0.3s ease;
+}
+
+.invoice-form input:focus, 
+.invoice-form select:focus {
+    border-color: #007bff;
+    outline: none;
+}
+
+.invoice-form .btn-primary {
+    width: 100%;
+    padding: 10px 16px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.invoice-form .btn-primary:hover {
+    background-color: #0056b3;
+    transform: translateY(-2px);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    th, td {
+        font-size: 0.8rem;
+    }
+
+    .invoices-header h2 {
+        font-size: 1.5rem;
+    }
+
+    .invoices-header .btn {
+        font-size: 0.875rem;
+        padding: 6px 12px;
+    }
+}

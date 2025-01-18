@@ -1,25 +1,41 @@
-import logo from './logo.svg';
-import './App.css';
+// src/App.js
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import Sidebar from './components/Sidebar';
+import Dashboard from './pages/Dashboard';
+import Tasks from './pages/Tasks';
+import Clients from './pages/Clients';
+import Profile from './pages/Profile';
+import Invoices from './pages/Invoices';
+import './styles/App.css';  // Global styles
 
-function App() {
+const App = () => {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Router>
+      <div className="app">
+        {/* Navbar Component */}
+        <Navbar />
+
+        <div className="app-body">
+          {/* Sidebar Component */}
+          <Sidebar />
+
+          <div className="app-content">
+            {/* Routes for Pages */}
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/tasks" element={<Tasks />} />
+              <Route path="/clients" element={<Clients />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/invoices" element={<Invoices />} />
+            </Routes>
+          </div>
+        </div>
+      </div>
+    </Router>
   );
-}
+};
 
 export default App;

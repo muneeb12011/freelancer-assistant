@@ -1,0 +1,47 @@
+/* src/styles/Footer.css */
+.footer {
+    background-color: #343a40; /* Dark background */
+    color: #ffffff; /* White text */
+    padding: 20px;
+    text-align: center;
+    font-size: 0.9rem;
+    position: relative;
+    bottom: 0;
+    width: 100%;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+  }
+  
+  .footer-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .footer-text {
+    margin-bottom: 10px;
+  }
+  
+  .footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+  }
+  
+  .footer-link {
+    color: #ffc107; /* Bootstrap's warning color */
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s ease;
+  }
+  
+  .footer-link:hover {
+    color: #ffca2c; /* A lighter shade of yellow for hover effect */
+  }
+  
+  @media (max-width: 768px) {
+    .footer-links {
+      flex-direction: column;
+      gap: 10px;
+    }
+  }
+  
