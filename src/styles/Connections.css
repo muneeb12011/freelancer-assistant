@@ -1,0 +1,414 @@
+/* ConnectionsPage.css */
+/* Scoped styling for the Connections page with a centered layout and light black theme */
+
+.connections-page {
+  background-color: #121212; /* Light black/dark background */
+  color: #e0e0e0;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+/* Container for all content to keep it centered */
+.connections-page .content-wrapper {
+  width: 100%;
+  max-width: 1200px;
+}
+
+/* Header Bar */
+.connections-page .header-bar {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-bottom: 1px solid #333;
+  margin-bottom: 30px;
+}
+
+.connections-page .header-bar h1 {
+  font-size: 2.5rem;
+  margin: 0;
+}
+
+/* Quick Action Bar */
+.connections-page .quick-action-bar {
+  margin-top: 15px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.connections-page .quick-action-bar button {
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+.connections-page .quick-action-bar button:hover {
+  background-color: #0088cc;
+  transform: translateY(-2px);
+}
+
+/* Status Update */
+.connections-page .status-update {
+  width: 100%;
+  max-width: 600px;
+  margin: 20px 0;
+  display: flex;
+}
+
+.connections-page .status-update input[type="text"] {
+  flex: 1;
+  padding: 12px;
+  border: 1px solid #333;
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+  border-radius: 4px 0 0 4px;
+}
+
+.connections-page .status-update button {
+  padding: 12px 20px;
+  border: none;
+  background-color: #0088cc;
+  color: #fff;
+  border-radius: 0 4px 4px 0;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.connections-page .status-update button:hover {
+  background-color: #006f99;
+}
+
+/* Notification Bell & Panel */
+.connections-page .notification-bell {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #e0e0e0;
+  position: relative;
+}
+
+.connections-page .notif-count {
+  background-color: #f44336;
+  border-radius: 50%;
+  padding: 3px 8px;
+  font-size: 0.75rem;
+  position: absolute;
+  top: -5px;
+  right: -10px;
+}
+
+.connections-page .notifications-panel {
+  width: 100%;
+  max-width: 600px;
+  background-color: #1e1e1e;
+  padding: 20px;
+  border: 1px solid #333;
+  border-radius: 4px;
+  margin: 20px 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+
+/* Activity Summary */
+.connections-page .activity-summary {
+  width: 100%;
+  max-width: 600px;
+  background-color: #1e1e1e;
+  padding: 20px;
+  border: 1px solid #333;
+  border-radius: 4px;
+  margin: 20px 0;
+}
+
+.connections-page .activity-summary h3 {
+  margin: 0 0 10px;
+  font-size: 1.6rem;
+}
+
+/* Section Styles */
+.connections-page section {
+  width: 100%;
+  max-width: 1200px;
+  margin: 30px 0;
+  padding: 25px;
+  background-color: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 6px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+
+.connections-page section h2 {
+  margin: 0 0 15px;
+  font-size: 1.8rem;
+  border-bottom: 1px solid #333;
+  padding-bottom: 8px;
+}
+
+/* Form Elements */
+.connections-page input[type="text"],
+.connections-page input[type="file"],
+.connections-page select {
+  padding: 12px;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background-color: #121212;
+  color: #e0e0e0;
+}
+
+/* Button Classes */
+.connections-page button {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+.connections-page .btn-blue {
+  background-color: #0088cc;
+  color: #fff;
+}
+
+.connections-page .btn-blue:hover {
+  background-color: #006f99;
+  transform: translateY(-2px);
+}
+
+.connections-page .btn-green {
+  background-color: #4caf50;
+  color: #fff;
+}
+
+.connections-page .btn-green:hover {
+  background-color: #388e3c;
+  transform: translateY(-2px);
+}
+
+.connections-page .btn-red {
+  background-color: #f44336;
+  color: #fff;
+}
+
+.connections-page .btn-red:hover {
+  background-color: #d32f2f;
+  transform: translateY(-2px);
+}
+
+.connections-page .btn-purple {
+  background-color: #9c27b0;
+  color: #fff;
+}
+
+.connections-page .btn-purple:hover {
+  background-color: #7b1fa2;
+  transform: translateY(-2px);
+}
+
+/* Loading Indicator */
+.connections-page .loading-indicator {
+  font-size: 0.9rem;
+  color: #0088cc;
+}
+
+/* Lists */
+.connections-page ul {
+  list-style: none;
+  padding: 0;
+}
+
+.connections-page li {
+  margin: 10px 0;
+  padding: 12px;
+  border-bottom: 1px solid #333;
+}
+
+/* Online Indicator */
+.connections-page .online-indicator {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  background-color: #4caf50;
+  border-radius: 50%;
+  margin-left: 5px;
+}
+
+/* Chat Section */
+.connections-page .chat-section {
+  width: 100%;
+  max-width: 1200px;
+  position: relative;
+}
+
+.connections-page .chat-container {
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 25px;
+  background-color: #121212;
+  max-height: 400px;
+  overflow-y: auto;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.7);
+  margin-bottom: 20px;
+}
+
+.connections-page .chat-history {
+  margin-bottom: 15px;
+}
+
+.connections-page .chat-message {
+  padding: 12px;
+  margin: 6px 0;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+}
+
+.connections-page .user-message {
+  background-color: #0088cc;
+  color: #fff;
+}
+
+.connections-page .ai-message {
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+}
+
+.connections-page .typing-indicator {
+  font-style: italic;
+  font-size: 0.9rem;
+}
+
+/* Chat Input & Search */
+.connections-page .chat-input,
+.connections-page .chat-search {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.connections-page .chat-input input[type="text"],
+.connections-page .chat-search input[type="text"] {
+  flex: 1;
+  padding: 12px;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background-color: #121212;
+  color: #e0e0e0;
+}
+
+/* Chat File Upload */
+.connections-page .chat-file-upload {
+  margin-top: 10px;
+}
+
+/* Modal */
+.connections-page .modal {
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(18,18,18,0.95);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.connections-page .modal-content {
+  background-color: #1e1e1e;
+  padding: 30px;
+  border: 1px solid #333;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 600px;
+  position: relative;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+}
+
+.connections-page .modal-content img {
+  max-width: 100%;
+  border-radius: 4px;
+  margin-top: 15px;
+}
+
+.connections-page .close {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  font-size: 2rem;
+  cursor: pointer;
+}
+
+/* Portfolio Cards */
+.connections-page .portfolio-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+  margin-top: 15px;
+}
+
+.connections-page .portfolio-card {
+  background-color: #121212;
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 20px;
+  width: calc(33.333% - 20px);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.connections-page .portfolio-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.7);
+}
+
+.connections-page .portfolio-card img {
+  max-width: 100%;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+/* Group Chat Modal */
+.connections-page .group-chat-modal .modal-content {
+  width: 90%;
+  max-width: 500px;
+}
+
+.connections-page .group-chat-list {
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 15px;
+}
+
+.connections-page .group-chat-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .connections-page .portfolio-card {
+    width: calc(50% - 20px);
+  }
+}
+
+@media (max-width: 480px) {
+  .connections-page .portfolio-card {
+    width: 100%;
+  }
+  .connections-page .quick-action-bar button {
+    width: 100%;
+    text-align: center;
+  }
+}

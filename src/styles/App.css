@@ -1,177 +1,253 @@
-/* General app layout */
+/* ===================================================
+   APP.CSS – Ultra-Polished Transparent Dark Theme
+   =================================================== */
+
+/* ---------- CSS VARIABLES ---------- */
+:root {
+  --bg-dark: #1e1e1e;
+  --text-light: #e5e5e5;
+  --accent: #ffc107;
+  --header-gradient: linear-gradient(90deg, rgba(44, 62, 80, 0.95), rgba(76, 161, 175, 0.95));
+  --sidebar-bg-gradient: linear-gradient(135deg, rgba(41, 41, 41, 0.75), rgba(41, 41, 41, 0.5));
+  --content-bg: #242424;
+  --footer-bg: #2c3e50;
+  --border-color: #444;
+  --shadow-strong: 0 4px 12px rgba(0, 0, 0, 0.6);
+  --shadow-light: 0 2px 5px rgba(0, 0, 0, 0.15);
+  --blur-small: 4px;
+  --transition: 0.3s ease;
+}
+
+/* ---------- GLOBAL RESET & BASE ---------- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Roboto', sans-serif;
+  background-color: var(--bg-dark);
+  color: var(--text-light);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- APP CONTAINER ---------- */
 .app {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  font-family: 'Roboto', sans-serif; /* Modern and clean font */
-  background-color: #f8f9fa; /* Softer background for less contrast */
-  color: #212529; /* Standard dark text color */
-  transition: background-color 0.3s ease; /* Smooth background color transition */
+  background-color: var(--bg-dark);
+  color: var(--text-light);
 }
 
-/* Header (Navbar) styling */
+/* ---------- HEADER (NAVBAR) ---------- */
 .app-header {
-  background-color: #343a40; /* Dark Bootstrap color */
-  color: white;
-  padding: 15px 30px;
+  background: var(--header-gradient);
+  color: var(--text-light);
+  padding: 20px 40px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Lighter shadow for modern look */
   position: sticky;
   top: 0;
   z-index: 1000;
-  border-bottom: 1px solid #6c757d; /* Subtle divider between header and content */
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: var(--shadow-strong);
+  backdrop-filter: blur(var(--blur-small));
+  transition: background var(--transition), padding var(--transition);
 }
 
 .app-header a {
-  color: white;
+  color: var(--text-light);
   text-decoration: none;
   margin: 0 20px;
-  font-weight: 500;
+  font-weight: 600;
   font-size: 1rem;
-  transition: color 0.3s ease;
+  transition: color var(--transition);
 }
 
 .app-header a:hover {
-  color: #ffc107; /* Bootstrap warning color for hover */
+  color: #ffd700;
 }
 
-/* Body layout with Sidebar and Content */
-.app-body {
-  display: flex;
-  flex-grow: 1;
-  flex-wrap: nowrap;
-}
-
-/* Sidebar styling */
+/* ---------- SIDEBAR ---------- */
 .app-sidebar {
-  width: 250px;
-  background-color: #495057; /* Dark gray sidebar */
-  color: white;
-  padding: 20px;
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
-  position: fixed;
+  width: 260px;
+  background: var(--sidebar-bg-gradient);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--text-light);
+  padding: 30px 20px;
   height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  border-right: 2px solid var(--border-color);
+  box-shadow: 2px 4px 15px rgba(0, 0, 0, 0.7);
   overflow-y: auto;
-  transition: width 0.3s ease; /* Smooth width transition */
+  transition: transform var(--transition);
 }
 
-.app-sidebar .sidebar-header {
-  font-size: 1.5rem;
-  font-weight: bold;
-  margin-bottom: 20px;
-  color: #ffc107; /* Accent color */
-  text-align: center;
+.app-sidebar:hover {
+  transform: translateX(5px);
 }
 
 .app-sidebar a {
   display: flex;
   align-items: center;
-  color: #adb5bd; /* Muted link color */
+  color: #b0bec5;
   text-decoration: none;
-  padding: 12px 18px;
+  padding: 14px 22px;
   border-radius: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   font-size: 1rem;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: background var(--transition), color var(--transition);
 }
 
 .app-sidebar a i {
-  margin-right: 15px; /* Spacing for icons */
   font-size: 1.25rem;
+  margin-right: 12px;
 }
 
 .app-sidebar a:hover,
 .app-sidebar a.active {
-  background-color: #6c757d; /* Highlighted background */
-  color: white;
+  background: linear-gradient(90deg, #6a11cb, #2575fc);
+  color: #ffffff;
 }
 
-/* Content area */
+.app-sidebar .sidebar-header {
+  font-size: 1.75rem;
+  font-weight: bold;
+  margin-bottom: 25px;
+  color: #ffd700;
+  text-align: center;
+}
+
+/* ---------- CONTENT AREA ---------- */
 .app-content {
   flex-grow: 1;
-  padding: 30px;
-  margin-left: 250px; /* Account for sidebar width */
-  background-color: white;
-  border-radius: 10px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); /* Card-like design with larger shadow */
+  padding: 40px;
+  margin-left: 280px;
+  background-color: var(--content-bg);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
   overflow-y: auto;
-  transition: margin-left 0.3s ease; /* Smooth transition for collapsing sidebar */
+  height: calc(100vh - 80px);
+  transition: margin var(--transition), padding var(--transition);
 }
 
-/* Footer styling */
+/* ---------- FOOTER ---------- */
 .app-footer {
-  background-color: #343a40; /* Footer matches header */
-  color: white;
+  background-color: var(--footer-bg);
+  color: #ffffff;
   text-align: center;
-  padding: 15px 0;
+  padding: 20px 0;
   font-size: 0.95rem;
-  border-top: 1px solid #6c757d;
+  border-top: 1px solid var(--border-color);
 }
 
-/* Collapsed Sidebar */
-.app-sidebar.collapsed {
-  width: 80px; /* Reduced width in collapsed mode */
-}
+/* ---------- RESPONSIVE DESIGN ---------- */
 
-.app-sidebar.collapsed a span {
-  display: none; /* Hide text for collapsed mode */
-}
-
-.app-sidebar.collapsed a i {
-  margin-right: 0; /* Center icons */
-}
-
-.app-content.collapsed {
-  margin-left: 80px; /* Adjust content area width when sidebar is collapsed */
-}
-
-/* Responsive adjustments */
+/* Large Tablets & Small Laptops */
 @media (max-width: 1024px) {
   .app-sidebar {
     width: 100%;
-    position: static; /* Static position for smaller screens */
+    position: static;
     height: auto;
     box-shadow: none;
+    padding: 20px;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
   }
-
-  .app-body {
-    flex-direction: column; /* Stack sidebar and content */
-  }
-
+  
   .app-content {
-    margin-left: 0; /* Remove sidebar offset */
+    margin-left: 0;
+    padding: 30px;
+    height: auto;
   }
-
+  
   .app-header {
     flex-direction: column;
-    align-items: flex-start;
-    padding: 15px;
+    padding: 15px 20px;
+    text-align: center;
   }
-
+  
   .app-header a {
-    margin: 10px 0;
-    font-size: 1.2rem;
+    margin: 10px;
   }
 }
 
+/* Mobile Devices */
 @media (max-width: 768px) {
+  .app-header {
+    padding: 15px 10px;
+  }
+  
   .app-sidebar {
-    width: 100%;
-    position: static; /* Remove fixed positioning for mobile */
+    display: none; /* Consider adding a hamburger menu for mobile */
+  }
+  
+  .app-content {
+    margin-left: 0;
+    padding: 20px;
     height: auto;
   }
-
-  .app-body {
-    flex-direction: column; /* Stack sidebar and content */
-  }
-
-  .app-content {
-    margin-left: 0; /* Remove sidebar offset */
-  }
-
+  
   .app-footer {
-    font-size: 0.85rem;
+    padding: 15px 0;
+    font-size: 0.9rem;
   }
+  
+  /* Touch-friendly adjustments */
+  .app-header a,
+  .btn {
+    font-size: 1rem;
+    padding: 10px 15px;
+  }
+}
+
+/* ---------- ADDITIONAL ENHANCEMENTS ---------- */
+
+/* Reusable Button Classes */
+.btn {
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color var(--transition), transform var(--transition);
+}
+
+.btn-primary {
+  background: linear-gradient(45deg, #3f51b5, #303f9f);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(45deg, #303f9f, #283593);
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background: linear-gradient(45deg, #f50057, #c51162);
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: linear-gradient(45deg, #c51162, #880e4f);
+  transform: translateY(-2px);
+}
+
+/* Table Styles */
+.table-header {
+  background-color: var(--footer-bg);
+  color: #ffffff;
+  text-align: center;
+  padding: 12px;
+}
+
+.table-row:hover {
+  background-color: #3a3e3a;
+  transition: background var(--transition);
 }

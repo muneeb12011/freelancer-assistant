@@ -1,0 +1,420 @@
+/* ===========================================================
+   SETTINGS.CSS – Ultra-Polished Premium Dark Theme for Settings Page
+   =========================================================== */
+
+/* ---------- CSS VARIABLES ---------- */
+:root {
+  /* Background Colors */
+  --bg-primary: #121212;
+  --bg-secondary: #1e1e1e;
+  --bg-tertiary: rgba(37, 37, 37, 0.85); /* Glass-like effect */
+  --bg-quaternary: rgba(44, 44, 44, 0.85);
+  --border-color: #3a3a3a;
+  
+  /* Text Colors */
+  --text-primary: #e0e0e0;
+  --text-secondary: #b0b0b0;
+  --accent: #ffcc00;
+  --text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  
+  /* Button Gradients */
+  --btn-blue: linear-gradient(45deg, #2563eb, #1d4ed8);
+  --btn-blue-hover: linear-gradient(45deg, #1d4ed8, #153e75);
+  --btn-green: linear-gradient(45deg, #10b981, #059669);
+  --btn-green-hover: linear-gradient(45deg, #059669, #047857);
+  --btn-red: linear-gradient(45deg, #ef4444, #dc2626);
+  --btn-red-hover: linear-gradient(45deg, #dc2626, #b91c1c);
+  --btn-purple: linear-gradient(45deg, #8b5cf6, #7c3aed);
+  --btn-purple-hover: linear-gradient(45deg, #7c3aed, #6d28d9);
+  
+  /* Font & Transition */
+  --font-family: 'Roboto', sans-serif;
+  --transition-speed: 0.3s;
+}
+
+/* ---------- RESET & BASE ---------- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  font-family: var(--font-family);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-shadow: var(--text-shadow);
+}
+
+/* ---------- MAIN CONTAINER ---------- */
+.settings-page.container {
+  max-width: 1200px;
+  margin: 3rem auto;
+  padding: 2.5rem 3rem;
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- HEADER SECTION ---------- */
+.settings-page header {
+  background: linear-gradient(135deg, var(--btn-blue), var(--btn-purple));
+  border-radius: 12px;
+  padding: 2.5rem;
+  margin-bottom: 2rem;
+  text-align: center;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(4px);
+  animation: slideDown 0.5s ease;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.settings-page header h1 {
+  font-size: 3.5rem;
+  letter-spacing: 2px;
+  color: var(--text-primary);
+  text-shadow: 0 3px 5px rgba(0, 0, 0, 0.7);
+  margin-bottom: 0.5rem;
+}
+
+.settings-page header p {
+  font-size: 1.25rem;
+  color: var(--text-secondary);
+}
+
+/* ---------- HEADINGS ---------- */
+.settings-page h1 {
+  font-size: 3rem;
+  text-align: center;
+  margin-bottom: 2rem;
+  font-weight: 700;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.settings-page h2 {
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--border-color);
+  text-align: center;
+  font-weight: 600;
+  text-shadow: 0 2px 3px rgba(0, 0, 0, 0.5);
+}
+
+.settings-page h3 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  font-weight: 500;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* ---------- TAB NAVIGATION ---------- */
+.settings-tabs {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.tab-button {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  padding: 0.85rem 1.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background var(--transition-speed) ease, transform var(--transition-speed) ease;
+  font-size: 1.1rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.tab-button:hover,
+.tab-button.active {
+  background: var(--btn-blue);
+  transform: translateY(-2px);
+}
+
+/* ---------- SETTINGS SECTIONS ---------- */
+.settings-section {
+  background: var(--bg-tertiary);
+  padding: 2rem;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  margin-bottom: 2rem;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.7);
+  transition: transform var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
+  backdrop-filter: blur(2px);
+}
+
+.settings-section:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.8);
+}
+
+/* ---------- FORM ELEMENTS ---------- */
+.settings-section label {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.settings-section input[type="text"],
+.settings-section input[type="email"],
+.settings-section input[type="password"],
+.settings-section select,
+.settings-section textarea {
+  width: 100%;
+  padding: 1rem 1.25rem;
+  margin-top: 0.65rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-quaternary);
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  transition: border var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+.settings-section input:focus,
+.settings-section select:focus,
+.settings-section textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 8px rgba(255, 204, 0, 0.7);
+  outline: none;
+}
+
+/* ---------- CUSTOM CHECKBOXES ---------- */
+.settings-section input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-quaternary);
+  margin-right: 0.75rem;
+  vertical-align: middle;
+  cursor: pointer;
+  transition: background-color var(--transition-speed) ease, border-color var(--transition-speed) ease;
+  position: relative;
+}
+
+.settings-section input[type="checkbox"]:checked {
+  background: var(--btn-green);
+  border-color: var(--btn-green);
+}
+
+.settings-section input[type="checkbox"]:checked::after {
+  content: "✔";
+  color: #fff;
+  position: absolute;
+  top: 1px;
+  left: 4px;
+  font-size: 16px;
+}
+
+/* ---------- BUTTONS ---------- */
+button {
+  padding: 0.85rem 1.75rem;
+  font-size: 1.1rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background var(--transition-speed) ease, box-shadow var(--transition-speed) ease, transform var(--transition-speed) ease;
+  font-weight: 600;
+  margin: 0.35rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.full-width {
+  width: 100%;
+}
+
+.btn-blue {
+  background: var(--btn-blue);
+  color: #fff;
+  box-shadow: 0 3px 7px rgba(37, 99, 235, 0.5);
+}
+
+.btn-blue:hover {
+  background: var(--btn-blue-hover);
+}
+
+.btn-green {
+  background: var(--btn-green);
+  color: #fff;
+  box-shadow: 0 3px 7px rgba(16, 185, 129, 0.5);
+}
+
+.btn-green:hover {
+  background: var(--btn-green-hover);
+}
+
+.btn-red {
+  background: var(--btn-red);
+  color: #fff;
+  box-shadow: 0 3px 7px rgba(239, 68, 68, 0.5);
+}
+
+.btn-red:hover {
+  background: var(--btn-red-hover);
+}
+
+.btn-purple {
+  background: var(--btn-purple);
+  color: #fff;
+  box-shadow: 0 3px 7px rgba(139, 92, 246, 0.5);
+}
+
+.btn-purple:hover {
+  background: var(--btn-purple-hover);
+}
+
+/* ---------- ADVANCED BUTTONS & IMPORT/EXPORT ---------- */
+.advanced-buttons,
+.advanced-utilities,
+.import-settings {
+  margin-top: 1.5rem;
+}
+
+.import-settings input[type="file"] {
+  margin-bottom: 0.75rem;
+}
+
+/* ---------- PRIVACY POLICY ---------- */
+.privacy-policy {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  background: var(--bg-quaternary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 1rem;
+  line-height: 1.7;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.3);
+}
+
+.privacy-policy h3 {
+  margin-bottom: 0.75rem;
+  font-size: 1.2rem;
+}
+
+/* ---------- MODAL STYLES ---------- */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-content {
+  background: var(--bg-secondary);
+  padding: 2.5rem;
+  border-radius: 12px;
+  max-width: 500px;
+  width: 90%;
+  color: var(--text-primary);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.7);
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* ---------- SHARE SECTION ---------- */
+.share-section {
+  margin-top: 2.5rem;
+  text-align: center;
+}
+
+.share-btn {
+  background: var(--btn-purple);
+  color: #fff;
+  padding: 0.85rem 1.75rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
+  box-shadow: 0 3px 7px rgba(139, 92, 246, 0.5);
+}
+
+.share-btn:hover {
+  background: var(--btn-purple-hover);
+}
+
+/* ---------- DEBUG / UTILITY ---------- */
+.debug-section {
+  margin-top: 2.5rem;
+  border-top: 1px solid var(--bg-tertiary);
+  padding-top: 1.25rem;
+  font-size: 1rem;
+  color: var(--text-secondary);
+}
+
+/* ---------- RESPONSIVE DESIGN ---------- */
+@media (max-width: 768px) {
+  .settings-page.container {
+    padding: 1.25rem;
+  }
+  
+  h1 {
+    font-size: 2.5rem;
+  }
+  
+  h2 {
+    font-size: 1.75rem;
+  }
+  
+  .tab-button {
+    padding: 0.65rem 1.25rem;
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  h1 {
+    font-size: 2rem;
+  }
+  
+  h2 {
+    font-size: 1.5rem;
+  }
+  
+  button {
+    font-size: 0.9rem;
+    padding: 0.65rem 1rem;
+  }
+}

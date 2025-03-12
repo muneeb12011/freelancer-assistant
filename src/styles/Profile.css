@@ -1,266 +1,481 @@
-/* src/styles/Profile.css */
-.profile {
-  padding: 20px;
-  max-width: 800px;
-  margin: 0 auto;
-  font-family: 'Roboto', sans-serif;
-  background: linear-gradient(to bottom right, #f0f4f8, #dce5f1);
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-  color: #333;
+/* 
+  Fully Customized Profile.css – Polished Edition
+  Bold, Modern, and Polished Styling
+  ----------------------------------
+  NOTE:
+  1. Ensure this CSS loads AFTER any default MUI styles.
+  2. Dialog styling remains unchanged.
+*/
+
+/* Optional: Use a modern font like 'Poppins' */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+
+/* ==========================================
+   Theme Color Variables
+   Dark Theme (Default)
+========================================== */
+:root {
+  --primary-bg: #1e1e1e;
+  --secondary-bg: #292929;
+  --card-bg: rgba(255, 255, 255, 0.07); /* Glassy card background */
+  --dialog-bg: rgba(0, 0, 0, 0.85);
+  --accent-color: #ffcc00;
+  --text-color: #f5f5f5;
+  --subtext-color: #bbb;
+  --input-bg: rgba(255, 255, 255, 0.1);
+  --input-border: #444;
+  --heading-font: 'Poppins', sans-serif;
+  --body-font: 'Poppins', sans-serif;
 }
 
+/* ==========================================
+   Light Theme Overrides
+   (Add "light-theme" class to <body> or <html>)
+========================================== */
+.light-theme {
+  --primary-bg: #ffffff;
+  --secondary-bg: #f0f0f0;
+  --card-bg: rgba(0, 0, 0, 0.06);
+  --dialog-bg: rgba(255, 255, 255, 0.9);
+  --accent-color: #1976d2;
+  --text-color: #333;
+  --subtext-color: #666;
+  --input-bg: rgba(0, 0, 0, 0.04);
+  --input-border: #ccc;
+}
+
+/* ==========================================
+   Global Page Styling
+========================================== */
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--body-font);
+  background: var(--primary-bg);
+  color: var(--text-color);
+  overflow-x: hidden;
+}
+
+/* ==========================================
+   Profile Page Container
+========================================== */
+.profile-page {
+  position: relative;
+  max-width: 1000px;
+  margin: 50px auto;
+  padding: 40px 30px;
+  border-radius: 15px;
+  background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.03) 0%,
+      rgba(255, 255, 255, 0.06) 100%
+    );
+  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  transition: all 0.4s ease-in-out;
+}
+
+/* ==========================================
+   Profile Header
+========================================== */
 .profile-header {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  text-align: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  padding-bottom: 20px;
+  margin-bottom: 30px;
 }
 
 .profile-picture {
-  width: 150px;
-  height: 150px;
+  width: 130px;
+  height: 130px;
   border-radius: 50%;
+  border: 4px solid var(--accent-color);
   object-fit: cover;
-  border: 5px solid #0056b3;
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
-  transition: transform 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.profile-picture:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(255, 204, 0, 0.5);
 }
 
-.profile-picture:hover {
-  transform: scale(1.1);
+.profile-info {
+  flex: 1;
+  margin-left: 30px;
 }
 
 .profile-name {
   font-size: 2.2rem;
-  margin-top: 15px;
-  color: #002855;
-  font-weight: 800;
+  font-weight: 700;
+  background: linear-gradient(45deg, var(--accent-color), #ff6f91);
+  -webkit-background-clip : text;
+  -webkit-text-fill-color: transparent;
+  margin: 0;
+  letter-spacing: 1px;
 }
 
 .profile-role {
-  font-size: 1.4rem;
-  color: #004085;
-  font-weight: 600;
-}
-
-.profile-location {
-  font-size: 1.1rem;
-  color: #555;
+  font-size: 1rem;
+  color: var(--subtext-color);
   margin-top: 5px;
 }
 
-.verified-badge {
-  display: inline-block;
-  margin-top: 10px;
-  padding: 6px 12px;
-  background-color: #28a745;
-  color: white;
-  border-radius: 25px;
-  font-size: 1rem;
-  font-weight: 700;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
-}
-
-.profile-bio {
-  margin-top: 30px;
-  background: #ffffff;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-}
-
-.profile-bio:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
-}
-
-.profile-bio h3 {
-  font-size: 1.8rem;
-  color: #002855;
-  margin-bottom: 15px;
-}
-
-.profile-bio p {
-  font-size: 1.2rem;
-  color: #444;
-  line-height: 1.8;
-}
-
-.profile-skills {
-  margin-top: 30px;
-}
-
-.profile-skills h3 {
-  font-size: 1.8rem;
-  color: #002855;
-  margin-bottom: 15px;
-}
-
-.profile-skills ul {
-  list-style: none;
-  padding: 0;
-}
-
-.profile-skills ul li {
-  font-size: 1.1rem;
-  padding: 10px 18px;
-  margin: 5px 0;
-  background: #0056b3;
-  color: white;
-  border-radius: 25px;
-  display: inline-block;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-}
-
-.profile-skills ul li:hover {
-  background: #003d80;
-}
-
-.profile-skills input {
-  margin-top: 10px;
-  padding: 12px;
-  width: 100%;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
-}
-
-.profile-projects {
-  margin-top: 30px;
-}
-
-.profile-projects h3 {
-  font-size: 1.8rem;
-  color: #002855;
-  margin-bottom: 15px;
-}
-
-.profile-projects .profile-project {
-  background: #ffffff;
-  padding: 20px;
-  margin-bottom: 12px;
-  border-radius: 10px;
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-}
-
-.profile-projects .profile-project:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
-}
-
-.profile-projects .profile-project strong {
-  font-size: 1.3rem;
-  color: #333;
-}
-
-.profile-projects textarea,
-.profile-projects input {
-  margin-top: 10px;
-  padding: 12px;
-  width: 100%;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-}
-
-.profile-projects button {
-  margin-top: 10px;
-  background-color: #0056b3;
-  color: white;
-  border: none;
+/* ==========================================
+   Edit Button
+========================================== */
+.edit-button {
+  background: var(--accent-color);
+  color: var(--primary-bg);
   padding: 12px 20px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-.profile-projects button:hover {
-  background-color: #003d80;
-}
-
-.profile-subscription {
-  margin-top: 30px;
-  background: #ffffff;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
-}
-
-.profile-subscription h3 {
-  font-size: 1.8rem;
-  color: #002855;
-  margin-bottom: 15px;
-}
-
-.profile-subscription p {
-  font-size: 1.2rem;
-  color: #333;
-}
-
-.profile-social {
-  margin-top: 30px;
-}
-
-.profile-social h3 {
-  font-size: 1.8rem;
-  color: #002855;
-  margin-bottom: 15px;
-}
-
-.profile-social ul {
-  list-style: none;
-  padding: 0;
-}
-
-.profile-social ul li {
-  margin-bottom: 12px;
-}
-
-.profile-social ul li a {
-  text-decoration: none;
-  color: #0056b3;
-  font-size: 1.2rem;
-  font-weight: 600;
-}
-
-.profile-social ul li a:hover {
-  color: #003d80;
-}
-
-.profile-actions {
-  margin-top: 30px;
-  text-align: center;
-}
-
-.profile-actions .btn {
-  margin: 10px;
-  padding: 12px 25px;
-  background-color: #0056b3;
-  color: white;
+  border-radius: 25px;
   border: none;
-  border-radius: 10px;
-  font-size: 1.1rem;
-  font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  font-weight: 600;
+  box-shadow: 0 0 10px rgba(255, 204, 0, 0.3);
+  transition: background 0.3s ease, box-shadow 0.3s ease, transform 0.2s;
+}
+.edit-button:hover {
+  background: #e6b800;
+  box-shadow: 0 0 15px rgba(230, 184, 0, 0.5);
+  transform: translateY(-2px);
 }
 
-.profile-actions .btn:hover {
-  background-color: #003d80;
+/* ==========================================
+   Sections Base
+========================================== */
+.profile-section {
+  position: relative;
+  margin-top: 40px;
+  padding: 30px;
+  background: var(--card-bg);
+  backdrop-filter: blur(10px);
+  border-radius: 15px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.profile-section:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
 }
 
-.loading-screen {
+.section-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--accent-color);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 20px;
+  position: relative;
+}
+.section-title::after {
+  content: "";
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  width: 50px;
+  height: 3px;
+  background-color: var(--accent-color);
+}
+
+/* ==========================================
+   About Me Section
+========================================== */
+.profile-section.about-me {
+  border-left: 5px solid var(--accent-color);
+}
+.profile-section.about-me .profile-text {
+  font-size: 1rem;
+  color: #ddd;
+  line-height: 1.7;
+}
+
+/* ==========================================
+   Skills Section
+========================================== */
+.profile-section.skills {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.05),
+    rgba(255, 255, 255, 0.01)
+  );
+  border-left: 5px solid var(--accent-color);
+}
+.profile-section.skills .skill-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-top: 10px;
+}
+.profile-section.skills .skill-tag {
+  display: inline-block;
+  background: linear-gradient(45deg, var(--accent-color), #ffdd57);
+  color: #000;
+  padding: 10px 16px;
+  border-radius: 30px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  border: 2px solid #fff;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+}
+.profile-section.skills .skill-tag:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 4px 10px rgba(255, 204, 0, 0.4);
+  background: linear-gradient(45deg, #ffdd57, var(--accent-color));
+}
+
+/* ==========================================
+   Projects Section
+========================================== */
+.profile-section.projects {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.07),
+    rgba(255, 255, 255, 0.02)
+  );
+  border-left: 5px solid var(--accent-color);
+}
+.profile-section.projects .project-card {
+  position: relative;
+  margin-bottom: 20px;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid #444;
+  border-radius: 12px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  overflow: hidden;
+}
+.profile-section.projects .project-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 5px;
+  height: 100%;
+  background: var(--accent-color);
+  opacity: 0.7;
+  border-radius: 0 5px 5px 0;
+  transition: opacity 0.3s ease;
+}
+.profile-section.projects .project-card:hover {
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+}
+.profile-section.projects .project-card:hover::before {
+  opacity: 1;
+}
+.profile-section.projects .project-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+  padding-left: 15px;
+  border-left: 3px solid var(--accent-color);
+  color: #fff;
+}
+.profile-section.projects .project-description {
+  color: #ddd;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+/* ==========================================
+   Social Links
+========================================== */
+.social-links {
+  display: flex;
+  gap: 16px;
+  margin-top: 15px;
+}
+.social-link {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  text-decoration: none;
+  color: var(--accent-color);
+  font-size: 1.1rem;
+  transition: color 0.3s ease, transform 0.3s ease;
+}
+.social-link:hover {
+  color: #e6b800;
+  transform: scale(1.1);
+}
+
+/* ==========================================
+   GLOBAL MUI Overrides (Non-dialog elements)
+========================================== */
+.MuiCard-root {
+  background: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(6px);
+  color: var(--text-color) !important;
+  border: 1px solid var(--input-border);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  margin-bottom: 20px;
+}
+.MuiCardContent-root,
+.MuiCardActions-root {
+  background: transparent !important;
+  color: inherit !important;
+}
+
+/* ==========================================
+   (DO NOT MODIFY) Dialog & Paper Styling – Remains Unchanged
+========================================== */
+.MuiDialog-paper,
+.MuiPaper-root {
+  background: var(--dialog-bg) !important;
+  color: var(--text-color) !important;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8) !important;
+  padding: 25px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.MuiDialogTitle-root {
+  background: transparent !important;
+  color: var(--accent-color) !important;
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 15px;
+  text-align: center;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+.MuiDialogContent-root {
+  background: transparent !important;
+  color: var(--text-color) !important;
+  font-size: 16px;
+  line-height: 1.6;
+  padding: 20px 30px;
+}
+.MuiDialogActions-root {
+  background: transparent !important;
+  padding: 15px 30px;
   display: flex;
   justify-content: center;
-  align-items: center;
-  height: 100vh;
-  font-size: 1.8rem;
-  color: #0056b3;
+  gap: 15px;
+  border-top: 2px solid rgba(255, 255, 255, 0.1);
+}
+.MuiDialogActions-root button {
+  background: var(--accent-color);
+  color: var(--primary-bg);
+  padding: 10px 20px;
+  border-radius: 8px;
   font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: background 0.3s ease, box-shadow 0.3s ease, transform 0.2s;
+  box-shadow: 0 0 6px rgba(255, 204, 0, 0.3);
+}
+.MuiDialogActions-root button:hover {
+  background: #e6b800;
+  box-shadow: 0 0 10px rgba(230, 184, 0, 0.5);
+  transform: translateY(-2px);
+}
+
+/* ==========================================
+   Input Fields & MUI TextField Overrides
+========================================== */
+.input-field,
+.MuiInputBase-root {
+  width: 100%;
+  background: var(--input-bg);
+  color: #fff !important;
+  border: 1px solid var(--input-border);
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 15px;
+  margin: 8px 0;
+  transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+}
+
+.MuiFormLabel-root,
+.MuiInputLabel-root,
+.MuiFormLabel-root.Mui-focused,
+.MuiInputLabel-root.Mui-focused {
+  color: #fff !important;
+}
+.MuiInputBase-input,
+.MuiOutlinedInput-input,
+.MuiFilledInput-input {
+  color: #fff !important;
+}
+.MuiInputBase-input::placeholder,
+.MuiOutlinedInput-input::placeholder,
+.MuiFilledInput-input::placeholder {
+  color: #fff !important;
+  opacity: 1 !important;
+}
+
+.input-field:hover,
+.MuiInputBase-root:hover {
+  border-color: var(--accent-color);
+}
+.input-field:focus,
+.MuiInputBase-root:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 5px rgba(255, 204, 0, 0.5);
+}
+
+/* ==========================================
+   Image Preview (Edit Picture)
+========================================== */
+.image-preview-container {
+  width: 300px;
+  height: 300px;
+  overflow: hidden;
+  border: 1px solid var(--input-border);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  transition: transform 0.3s ease;
+}
+.image-preview-container:hover {
+  transform: scale(1.01);
+}
+.profile-page img {
+  border-radius: 50%;
+}
+
+/* ==========================================
+   Responsive Adjustments
+========================================== */
+@media (max-width: 768px) {
+  .profile-page {
+    margin: 20px auto;
+    padding: 20px;
+  }
+  .profile-header {
+    flex-direction: column;
+    text-align: center;
+  }
+  .profile-picture {
+    margin-bottom: 15px;
+  }
+  .profile-info {
+    margin-left: 0;
+  }
+  .profile-name {
+    font-size: 1.8rem;
+  }
+  .profile-role {
+    font-size: 0.9rem;
+  }
+  .profile-section {
+    margin-top: 20px;
+    padding: 20px;
+  }
+  .section-title {
+    font-size: 1.4rem;
+    margin-bottom: 10px;
+  }
+  .MuiDialogContent-root {
+    padding: 15px;
+  }
+  .MuiDialogActions-root {
+    padding: 15px;
+  }
 }

@@ -1,214 +1,371 @@
-/* General Invoices Section Styling */
-.invoices {
-    padding: 20px;
-    background-color: #f8f9fa;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    font-family: Arial, sans-serif;
+/* ---------------------------
+   Global Variables & Resets
+------------------------------ */
+:root {
+  --primary-color: #007bff;           /* Blue for accents */
+  --secondary-color: #6c757d;         /* Gray */
+  --success-color: #28a745;           /* Green for Paid */
+  --warning-color: #ffc107;           /* Yellow for Pending / Due Soon */
+  --danger-color: #dc3545;            /* Red for Unpaid / Overdue */
+  --info-color: #17a2b8;              /* Cyan-ish for info buttons */
+  --dark-bg: #1e1e1e;                 /* Main background: light black */
+  --panel-bg: #2a2a2a;                /* Panels background */
+  --input-border: #444;
+  --input-padding: 0.5rem 0.75rem;
+  --btn-padding: 0.6rem 1.2rem;
+  --transition-speed: 0.3s;
+  --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* Header Section */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--dark-bg);
+  color: #f1f1f1;
+  line-height: 1.6;
+}
+
+/* ---------------------------
+   Main Container
+------------------------------ */
+.invoices {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 1rem;
+  background-color: var(--dark-bg);
+  color: #f1f1f1;
+  transition: background-color var(--transition-speed) ease, color var(--transition-speed) ease;
+}
+
+/* ---------------------------
+   Header & Search
+------------------------------ */
 .invoices-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid var(--primary-color);
 }
 
 .invoices-header h2 {
-    font-size: 1.8rem;
-    color: #495057;
-    font-weight: 600;
+  font-size: 2.2rem;
+  color: var(--primary-color);
+  margin-bottom: 0.5rem;
 }
 
-.invoices-header .btn {
-    padding: 10px 16px;
-    border-radius: 5px;
-    color: #fff;
-    background-color: #6c757d;
-    font-weight: 500;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-    cursor: pointer;
-    border: none;
+.header-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-top: 0.5rem;
 }
 
-.invoices-header .btn:hover {
-    background-color: #5a6268;
-    transform: translateY(-2px);
+.search-input {
+  padding: var(--input-padding);
+  font-size: 1rem;
+  border: 1px solid var(--input-border);
+  border-radius: 4px;
+  background-color: var(--panel-bg);
+  color: #f1f1f1;
+  transition: border-color var(--transition-speed) ease;
 }
 
-/* Invoice Table */
-.invoices-table {
-    margin-top: 20px;
-    overflow-x: auto;
+.search-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
 }
 
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 20px;
-    font-size: 0.9rem;
+/* ---------------------------
+   Summary Section
+------------------------------ */
+.invoices-summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  gap: 1rem;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(145deg, var(--panel-bg), #333);
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6);
 }
 
-th, td {
-    padding: 12px 16px;
-    text-align: left;
-    border-bottom: 1px solid #dee2e6;
-    color: #495057;
-    word-break: break-word;
+.summary-item {
+  flex: 1 1 200px;
+  text-align: center;
 }
 
-th {
-    background-color: #f1f3f5;
-    font-weight: 600;
-    color: #343a40;
+.summary-item h4 {
+  margin-bottom: 0.5rem;
+  font-size: 1.2rem;
+  color: var(--secondary-color);
 }
 
-td {
-    background-color: #fff;
-    font-weight: 400;
+/* ---------------------------
+   Live Invoice Preview
+------------------------------ */
+.invoice-preview {
+  background-color: var(--panel-bg);
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 3px 7px rgba(0, 0, 0, 0.6);
 }
 
-td .invoice-status {
-    display: inline-block;
-    padding: 6px 12px;
-    border-radius: 4px;
-    font-weight: 500;
+.invoice-preview h3 {
+  margin-bottom: 0.75rem;
+  color: var(--primary-color);
+  font-size: 1.8rem;
 }
 
-/* Invoice Status Colors */
-.invoice-status.paid {
-    background-color: #28a745;
-    color: #fff;
+.invoice-preview p {
+  margin: 0.3rem 0;
+  font-size: 1rem;
 }
 
-.invoice-status.pending {
-    background-color: #ffc107;
-    color: #212529;
-}
-
-.invoice-status.unpaid {
-    background-color: #dc3545;
-    color: #fff;
-}
-
-/* Action Buttons */
-td button {
-    padding: 8px 12px;
-    margin-right: 8px;
-    font-size: 0.875rem;
-    border-radius: 5px;
-    border: none;
-    cursor: pointer;
-    font-weight: 500;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-}
-
-td .btn-secondary {
-    background-color: #6c757d;
-    color: #fff;
-}
-
-td .btn-secondary:hover {
-    background-color: #5a6268;
-    transform: translateY(-2px);
-}
-
-td .btn-warning {
-    background-color: #ffc107;
-    color: #212529;
-}
-
-td .btn-warning:hover {
-    background-color: #e0a800;
-    transform: translateY(-2px);
-}
-
-td .btn-danger {
-    background-color: #dc3545;
-    color: #fff;
-}
-
-td .btn-danger:hover {
-    background-color: #c82333;
-    transform: translateY(-2px);
-}
-
-/* Create/Edit Invoice Form */
+/* ---------------------------
+   Invoice Form
+------------------------------ */
 .invoice-form {
-    margin-top: 20px;
-    background-color: #ffffff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  background-color: var(--panel-bg);
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 3px 7px rgba(0, 0, 0, 0.6);
 }
 
 .invoice-form h3 {
-    margin-bottom: 20px;
-    font-size: 1.4rem;
-    color: #495057;
+  margin-bottom: 1rem;
+  color: var(--primary-color);
+  font-size: 1.8rem;
 }
 
-.invoice-form .form-group {
-    margin-bottom: 16px;
+/* Using Grid layout for form fields */
+.invoice-form form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
 }
 
-.invoice-form label {
-    display: block;
-    margin-bottom: 8px;
-    font-size: 0.875rem;
-    color: #495057;
-    font-weight: 500;
+.form-group {
+  display: flex;
+  flex-direction: column;
 }
 
-.invoice-form input, 
-.invoice-form select {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    font-size: 0.9rem;
-    color: #495057;
-    background-color: #f8f9fa;
-    transition: border-color 0.3s ease;
+.form-group label {
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  font-size: 0.95rem;
 }
 
-.invoice-form input:focus, 
-.invoice-form select:focus {
-    border-color: #007bff;
-    outline: none;
+.form-group input,
+.form-group select {
+  padding: var(--input-padding);
+  font-size: 1rem;
+  border: 1px solid var(--input-border);
+  border-radius: 4px;
+  background-color: var(--dark-bg);
+  color: #f1f1f1;
+  transition: border-color var(--transition-speed) ease;
 }
 
-.invoice-form .btn-primary {
-    width: 100%;
-    padding: 10px 16px;
-    background-color: #007bff;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    font-size: 1rem;
-    cursor: pointer;
-    font-weight: 600;
-    transition: background-color 0.3s ease, transform 0.2s ease;
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--primary-color);
 }
 
-.invoice-form .btn-primary:hover {
-    background-color: #0056b3;
-    transform: translateY(-2px);
+/* Form submit button */
+.invoice-form button {
+  grid-column: 1 / -1;
+  padding: var(--btn-padding);
+  border: none;
+  border-radius: 4px;
+  background-color: var(--primary-color);
+  color: var(--white);
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition: background-color var(--transition-speed) ease;
 }
 
-/* Responsive Design */
+.invoice-form button:hover {
+  background-color: #0069d9;
+}
+
+/* ---------------------------
+   Detailed Invoice View
+------------------------------ */
+.view-invoice {
+  background-color: var(--panel-bg);
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.65);
+}
+
+.view-invoice h3 {
+  margin-bottom: 1rem;
+  color: var(--primary-color);
+  font-size: 1.8rem;
+}
+
+.view-invoice p {
+  margin: 0.5rem 0;
+  font-size: 1rem;
+}
+
+/* View buttons */
+.view-invoice button {
+  margin-right: 0.5rem;
+  padding: var(--btn-padding);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background-color var(--transition-speed) ease;
+}
+
+/* ---------------------------
+   Button Styles
+------------------------------ */
+.btn {
+  display: inline-block;
+  padding: var(--btn-padding);
+  border-radius: 4px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color var(--transition-speed) ease;
+  border: none;
+}
+
+.btn-info {
+  background-color: var(--info-color);
+  color: var(--white);
+}
+
+.btn-info:hover {
+  background-color: #138496;
+}
+
+.btn-success {
+  background-color: var(--success-color);
+  color: var(--white);
+}
+
+.btn-success:hover {
+  background-color: #218838;
+}
+
+.btn-warning {
+  background-color: var(--warning-color);
+  color: #333;
+}
+
+.btn-warning:hover {
+  background-color: #e0a800;
+}
+
+.btn-danger {
+  background-color: var(--danger-color);
+  color: var(--white);
+}
+
+.btn-danger:hover {
+  background-color: #c82333;
+}
+
+.btn-secondary {
+  background-color: var(--secondary-color);
+  color: var(--white);
+}
+
+.btn-secondary:hover {
+  background-color: #5a6268;
+}
+
+/* ---------------------------
+   Invoices Table
+------------------------------ */
+.invoices-table {
+  background-color: var(--panel-bg);
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 3px 7px rgba(0, 0, 0, 0.6);
+  overflow-x: auto;
+  margin-bottom: 2rem;
+}
+
+.invoices-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.invoices-table th,
+.invoices-table td {
+  padding: 0.75rem;
+  text-align: left;
+  font-size: 0.95rem;
+  border-bottom: 1px solid #444;
+}
+
+.invoices-table th {
+  cursor: pointer;
+  background-color: #3a3a3a;
+}
+
+.invoices-table tr:hover {
+  background-color: #464646;
+}
+
+/* ---------------------------
+   Invoice Status & Due Date
+------------------------------ */
+.invoice-status {
+  font-weight: bold;
+}
+
+.invoice-status.paid {
+  color: var(--success-color);
+}
+
+.invoice-status.pending {
+  color: var(--warning-color);
+}
+
+.invoice-status.unpaid {
+  color: var(--danger-color);
+}
+
+.overdue {
+  color: var(--danger-color);
+  font-weight: bold;
+}
+
+.due-soon {
+  color: var(--warning-color);
+  font-weight: bold;
+}
+
+/* ---------------------------
+   Responsive Styles
+------------------------------ */
 @media (max-width: 768px) {
-    th, td {
-        font-size: 0.8rem;
-    }
-
-    .invoices-header h2 {
-        font-size: 1.5rem;
-    }
-
-    .invoices-header .btn {
-        font-size: 0.875rem;
-        padding: 6px 12px;
-    }
+  .header-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .invoices-summary {
+    flex-direction: column;
+    gap: 1rem;
+  }
 }

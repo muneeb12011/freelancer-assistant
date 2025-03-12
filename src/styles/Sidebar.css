@@ -1,24 +1,28 @@
 /* Sidebar container */
+/* Sidebar container */
 .sidebar {
-  width: 250px;
+  width: 250px; /* Default width */
   background-color: #343a40; /* Bootstrap dark color */
-  height: 100vh;
-  padding: 20px 10px;
+  height: 50vh; 
+  padding: 20px 10px; 
   color: white;
   display: flex;
   flex-direction: column;
   position: fixed;
-  top: 0;
-  left: 0;
+  top: 7.5%;
+  left: 5;
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.15); /* Subtle shadow for depth */
   transition: width 0.3s ease;
-  overflow: hidden;
+  overflow-y: auto; /* Enable vertical scrolling */
   z-index: 1000;
+  border-radius: 5px;
 }
+
 
 /* Collapsed sidebar */
 .sidebar.collapsed {
-  width: 80px;
+  width: 100px;
+  border-radius: 5px;
 }
 
 /* Sidebar header (e.g., logo or title) */
@@ -145,7 +149,7 @@
   }
 
   .sidebar:hover {
-    width: 250px;
+    width: 250px; /* Expand on hover */
   }
 
   .sidebar-item {

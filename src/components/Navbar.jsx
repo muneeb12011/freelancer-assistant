@@ -1,4 +1,3 @@
-// src/components/Navbar.js
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import "../styles/Navbar.css";
@@ -6,9 +5,9 @@ import "../styles/Navbar.css";
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // Toggle the mobile menu
+  // Toggle mobile menu open/close
   const handleMenuToggle = () => {
-    setMenuOpen(!menuOpen);
+    setMenuOpen((prev) => !prev);
   };
 
   return (
@@ -19,12 +18,16 @@ const Navbar = () => {
           Freelancer's Assistant
         </Link>
 
-        {/* Hamburger menu for mobile */}
-        <div className="navbar-toggle" onClick={handleMenuToggle}>
+        {/* Hamburger Icon for Mobile */}
+        <button 
+          className="navbar-toggle" 
+          onClick={handleMenuToggle} 
+          aria-label={menuOpen ? "Close menu" : "Open menu"}
+        >
           <i className={`fas ${menuOpen ? "fa-times" : "fa-bars"}`}></i>
-        </div>
+        </button>
 
-        {/* Navbar menu */}
+        {/* Navigation Menu */}
         <ul className={`navbar-menu ${menuOpen ? "active" : ""}`}>
           <li>
             <Link to="/dashboard" className="navbar-item">
@@ -46,10 +49,14 @@ const Navbar = () => {
               Invoices
             </Link>
           </li>
-
-          {/* Dropdown Menu */}
+          <li>
+            <Link to="/connections" className="navbar-item">
+              Connections
+            </Link>
+          </li>
+          {/* Dropdown Menu for More Options */}
           <li className="navbar-item dropdown">
-            More
+            <span className="dropdown-label">More</span>
             <ul className="dropdown-menu">
               <li>
                 <Link to="/settings" className="dropdown-item">
