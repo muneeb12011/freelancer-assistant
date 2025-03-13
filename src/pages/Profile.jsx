@@ -11,15 +11,128 @@ import {
   Snackbar,
   Card,
   CardContent,
-  CardActions
+  CardActions,
+  useMediaQuery
 } from '@mui/material';
 import '../styles/Profile.css';
 
 const countryCodes = [
-  { name: 'United States', dial_code: '+1' },
-  { name: 'United Kingdom', dial_code: '+44' },
+  { name: 'Afghanistan', dial_code: '+93' },
+  { name: 'Albania', dial_code: '+355' },
+  { name: 'Algeria', dial_code: '+213' },
+  { name: 'Andorra', dial_code: '+376' },
+  { name: 'Angola', dial_code: '+244' },
+  { name: 'Argentina', dial_code: '+54' },
+  { name: 'Armenia', dial_code: '+374' },
+  { name: 'Australia', dial_code: '+61' },
+  { name: 'Austria', dial_code: '+43' },
+  { name: 'Azerbaijan', dial_code: '+994' },
+  { name: 'Bahrain', dial_code: '+973' },
+  { name: 'Bangladesh', dial_code: '+880' },
+  { name: 'Belarus', dial_code: '+375' },
+  { name: 'Belgium', dial_code: '+32' },
+  { name: 'Belize', dial_code: '+501' },
+  { name: 'Benin', dial_code: '+229' },
+  { name: 'Bhutan', dial_code: '+975' },
+  { name: 'Bolivia', dial_code: '+591' },
+  { name: 'Bosnia and Herzegovina', dial_code: '+387' },
+  { name: 'Botswana', dial_code: '+267' },
+  { name: 'Brazil', dial_code: '+55' },
+  { name: 'Brunei', dial_code: '+673' },
+  { name: 'Bulgaria', dial_code: '+359' },
+  { name: 'Burkina Faso', dial_code: '+226' },
+  { name: 'Burundi', dial_code: '+257' },
+  { name: 'Cambodia', dial_code: '+855' },
+  { name: 'Cameroon', dial_code: '+237' },
   { name: 'Canada', dial_code: '+1' },
-  // ...
+  { name: 'Chile', dial_code: '+56' },
+  { name: 'China', dial_code: '+86' },
+  { name: 'Colombia', dial_code: '+57' },
+  { name: 'Costa Rica', dial_code: '+506' },
+  { name: 'Croatia', dial_code: '+385' },
+  { name: 'Cuba', dial_code: '+53' },
+  { name: 'Cyprus', dial_code: '+357' },
+  { name: 'Czech Republic', dial_code: '+420' },
+  { name: 'Denmark', dial_code: '+45' },
+  { name: 'Djibouti', dial_code: '+253' },
+  { name: 'Dominican Republic', dial_code: '+1' },
+  { name: 'Ecuador', dial_code: '+593' },
+  { name: 'Egypt', dial_code: '+20' },
+  { name: 'El Salvador', dial_code: '+503' },
+  { name: 'Estonia', dial_code: '+372' },
+  { name: 'Ethiopia', dial_code: '+251' },
+  { name: 'Finland', dial_code: '+358' },
+  { name: 'France', dial_code: '+33' },
+  { name: 'Gabon', dial_code: '+241' },
+  { name: 'Georgia', dial_code: '+995' },
+  { name: 'Germany', dial_code: '+49' },
+  { name: 'Ghana', dial_code: '+233' },
+  { name: 'Greece', dial_code: '+30' },
+  { name: 'Guatemala', dial_code: '+502' },
+  { name: 'Honduras', dial_code: '+504' },
+  { name: 'Hong Kong', dial_code: '+852' },
+  { name: 'Hungary', dial_code: '+36' },
+  { name: 'Iceland', dial_code: '+354' },
+  { name: 'India', dial_code: '+91' },
+  { name: 'Indonesia', dial_code: '+62' },
+  { name: 'Iran', dial_code: '+98' },
+  { name: 'Iraq', dial_code: '+964' },
+  { name: 'Ireland', dial_code: '+353' },
+  { name: 'Israel', dial_code: '+972' },
+  { name: 'Italy', dial_code: '+39' },
+  { name: 'Jamaica', dial_code: '+1' },
+  { name: 'Japan', dial_code: '+81' },
+  { name: 'Jordan', dial_code: '+962' },
+  { name: 'Kazakhstan', dial_code: '+7' },
+  { name: 'Kenya', dial_code: '+254' },
+  { name: 'Kuwait', dial_code: '+965' },
+  { name: 'Latvia', dial_code: '+371' },
+  { name: 'Lebanon', dial_code: '+961' },
+  { name: 'Libya', dial_code: '+218' },
+  { name: 'Lithuania', dial_code: '+370' },
+  { name: 'Luxembourg', dial_code: '+352' },
+  { name: 'Malaysia', dial_code: '+60' },
+  { name: 'Malta', dial_code: '+356' },
+  { name: 'Mexico', dial_code: '+52' },
+  { name: 'Monaco', dial_code: '+377' },
+  { name: 'Morocco', dial_code: '+212' },
+  { name: 'Netherlands', dial_code: '+31' },
+  { name: 'New Zealand', dial_code: '+64' },
+  { name: 'Nigeria', dial_code: '+234' },
+  { name: 'Norway', dial_code: '+47' },
+  { name: 'Oman', dial_code: '+968' },
+  { name: 'Pakistan', dial_code: '+92' },
+  { name: 'Panama', dial_code: '+507' },
+  { name: 'Peru', dial_code: '+51' },
+  { name: 'Philippines', dial_code: '+63' },
+  { name: 'Poland', dial_code: '+48' },
+  { name: 'Portugal', dial_code: '+351' },
+  { name: 'Qatar', dial_code: '+974' },
+  { name: 'Romania', dial_code: '+40' },
+  { name: 'Russia', dial_code: '+7' },
+  { name: 'Saudi Arabia', dial_code: '+966' },
+  { name: 'Serbia', dial_code: '+381' },
+  { name: 'Singapore', dial_code: '+65' },
+  { name: 'South Africa', dial_code: '+27' },
+  { name: 'South Korea', dial_code: '+82' },
+  { name: 'Spain', dial_code: '+34' },
+  { name: 'Sri Lanka', dial_code: '+94' },
+  { name: 'Sweden', dial_code: '+46' },
+  { name: 'Switzerland', dial_code: '+41' },
+  { name: 'Thailand', dial_code: '+66' },
+  { name: 'Tunisia', dial_code: '+216' },
+  { name: 'Turkey', dial_code: '+90' },
+  { name: 'Ukraine', dial_code: '+380' },
+  { name: 'United Arab Emirates', dial_code: '+971' },
+  { name: 'United Kingdom', dial_code: '+44' },
+  { name: 'United States', dial_code: '+1' },
+  { name: 'Uruguay', dial_code: '+598' },
+  { name: 'Uzbekistan', dial_code: '+998' },
+  { name: 'Venezuela', dial_code: '+58' },
+  { name: 'Vietnam', dial_code: '+84' },
+  { name: 'Yemen', dial_code: '+967' },
+  { name: 'Zambia', dial_code: '+260' },
+  { name: 'Zimbabwe', dial_code: '+263' },
 ];
 
 const verifyBankDetailsAPI = (bankData) => {
@@ -55,7 +168,6 @@ const useLocalStorage = (key, initialValue) => {
       return initialValue;
     }
   });
-
   const setValue = (value) => {
     try {
       setStoredValue(value);
@@ -64,7 +176,6 @@ const useLocalStorage = (key, initialValue) => {
       console.error(`Error setting localStorage key “${key}”:`, error);
     }
   };
-
   return [storedValue, setValue];
 };
 
@@ -83,19 +194,16 @@ const EditProfileDialog = ({
     ...user,
     socialLinks: { ...user.socialLinks }
   });
-
   useEffect(() => {
     setFormData({
       ...user,
       socialLinks: { ...user.socialLinks }
     });
   }, [user]);
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
-
   const handleSocialChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -103,142 +211,76 @@ const EditProfileDialog = ({
       socialLinks: { ...prev.socialLinks, [name]: value }
     }));
   };
-
   const handleSave = () => {
     onSave(formData);
     onClose();
   };
-
   return (
     <Dialog open={open} onClose={onClose}>
       <DialogTitle>Edit Profile</DialogTitle>
       <DialogContent dividers>
-        <TextField
-          fullWidth
-          margin="normal"
-          label="Name"
-          name="name"
-          value={formData.name}
-          onChange={handleChange}
-        />
-        <TextField
-          fullWidth
-          margin="normal"
-          label="Email"
-          name="email"
-          type="email"
-          value={formData.email}
-          onChange={handleChange}
-        />
-        <TextField
-          fullWidth
-          margin="normal"
-          label="Location"
-          name="location"
-          value={formData.location}
-          onChange={handleChange}
-        />
-        <TextField
-          fullWidth
-          margin="normal"
-          label="Bio"
-          name="bio"
-          multiline
-          rows={3}
-          value={formData.bio}
-          onChange={handleChange}
-        />
-        <TextField
-          fullWidth
-          margin="normal"
-          label="Phone"
-          name="phone"
-          value={formData.phone}
-          onChange={(e) => {
-            handleChange(e);
-            onUpdatePhone(e);
-          }}
-        />
-
-<Box mt={2} sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-  <Typography variant="body1" sx={{ color: "#fff" }}>Country Code:</Typography>
-  <Box
-    sx={{
-      position: "relative",
-      width: "100%",
-      borderRadius: "8px",
-      overflow: "hidden",
-      backgroundColor: "#1E1E1E",
-      border: "1px solid #555",
-      "&:hover": { border: "1px solid #888" },
-    }}
-  >
-    <select
-      value={formData.countryCode}
-      name="countryCode"
-      onChange={(e) => {
-        handleChange(e);
-        onCountryCodeChange(e);
-      }}
-      style={{
-        width: "100%",
-        padding: "10px",
-        background: "transparent",
-        color: "#fff",
-        border: "none",
-        fontSize: "16px",
-        appearance: "none", // Hides default dropdown arrow
-        outline: "none",
-        cursor: "pointer",
-      }}
-    >
-      {countryCodes.map((country, index) => (
-        <option
-          key={index}
-          value={country.dial_code}
-          style={{ background: "#1E1E1E", color: "#fff" }}
-        >
-          {country.name} ({country.dial_code})
-        </option>
-      ))}
-    </select>
-    {/* Custom Dropdown Arrow */}
-    <Box
-      sx={{
-        position: "absolute",
-        right: "10px",
-        top: "50%",
-        transform: "translateY(-50%)",
-        pointerEvents: "none",
-      }}
-    >
-      ▼
-    </Box>
-  </Box>
-</Box>
-
-        <TextField
-          fullWidth
-          margin="normal"
-          label="LinkedIn"
-          name="linkedin"
-          value={formData.socialLinks.linkedin}
-          onChange={handleSocialChange}
-        />
-        <TextField
-          fullWidth
-          margin="normal"
-          label="GitHub"
-          name="github"
-          value={formData.socialLinks.github}
-          onChange={handleSocialChange}
-        />
+        <TextField fullWidth margin="normal" label="Name" name="name" value={formData.name} onChange={handleChange} />
+        <TextField fullWidth margin="normal" label="Email" name="email" type="email" value={formData.email} onChange={handleChange} />
+        <TextField fullWidth margin="normal" label="Location" name="location" value={formData.location} onChange={handleChange} />
+        <TextField fullWidth margin="normal" label="Bio" name="bio" multiline rows={3} value={formData.bio} onChange={handleChange} />
+        <TextField fullWidth margin="normal" label="Phone" name="phone" value={formData.phone} onChange={(e) => { handleChange(e); onUpdatePhone(e); }} />
+        <Box mt={2} sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          <Typography variant="body1" sx={{ color: "#fff" }}>Country Code:</Typography>
+          <Box
+            sx={{
+              position: "relative",
+              width: "100%",
+              borderRadius: "8px",
+              overflow: "hidden",
+              backgroundColor: "#1E1E1E",
+              border: "1px solid #555",
+              "&:hover": { border: "1px solid #888" },
+            }}
+          >
+            <select
+              value={formData.countryCode}
+              name="countryCode"
+              onChange={(e) => {
+                handleChange(e);
+                onCountryCodeChange(e);
+              }}
+              style={{
+                width: "100%",
+                padding: "10px",
+                background: "transparent",
+                color: "#fff",
+                border: "none",
+                fontSize: "16px",
+                appearance: "none",
+                outline: "none",
+                cursor: "pointer",
+              }}
+            >
+              {countryCodes.map((country, index) => (
+                <option key={index} value={country.dial_code} style={{ background: "#1E1E1E", color: "#fff" }}>
+                  {country.name} ({country.dial_code})
+                </option>
+              ))}
+            </select>
+            <Box
+              sx={{
+                position: "absolute",
+                right: "10px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                pointerEvents: "none",
+              }}
+            >
+              ▼
+            </Box>
+          </Box>
+        </Box>
+        <TextField fullWidth margin="normal" label="LinkedIn" name="linkedin" value={formData.socialLinks.linkedin} onChange={handleSocialChange} />
+        <TextField fullWidth margin="normal" label="GitHub" name="github" value={formData.socialLinks.github} onChange={handleSocialChange} />
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button variant="contained" onClick={handleSave}>
-          Save Changes
-        </Button>
+        <Button variant="contained" onClick={handleSave}>Save Changes</Button>
       </DialogActions>
     </Dialog>
   );
@@ -262,7 +304,6 @@ const EditPictureDialog = ({
       <DialogContent dividers>
         {tempProfilePicture && (
           <Box display="flex" flexDirection="column" alignItems="center">
-            {/* Preview container fixed at 300x300px */}
             <div
               style={{
                 width: '300px',
@@ -301,9 +342,7 @@ const EditPictureDialog = ({
       </DialogContent>
       <DialogActions>
         <Button onClick={cancelProfilePictureEdit}>Cancel</Button>
-        <Button variant="contained" onClick={saveProfilePicture}>
-          Save
-        </Button>
+        <Button variant="contained" onClick={saveProfilePicture}>Save</Button>
       </DialogActions>
     </Dialog>
   );
@@ -343,9 +382,55 @@ const PremiumAIDialog = ({ open, onClose, user }) => {
 };
 
 /* --------------------------------
+   Dialog: Change Password
+-------------------------------- */
+const ChangePasswordDialog = ({ open, onClose, onChangePassword }) => {
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+
+  const handleSave = () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPasswordError('All fields are required.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError('New passwords do not match.');
+      return;
+    }
+    onChangePassword({ currentPassword, newPassword });
+    onClose();
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setPasswordError('');
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose}>
+      <DialogTitle>Change Password</DialogTitle>
+      <DialogContent dividers>
+        {passwordError && <Typography color="error">{passwordError}</Typography>}
+        <TextField fullWidth margin="normal" label="Current Password" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
+        <TextField fullWidth margin="normal" label="New Password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+        <TextField fullWidth margin="normal" label="Confirm New Password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button variant="contained" onClick={handleSave}>Change Password</Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
+/* --------------------------------
    Main Profile Component
 -------------------------------- */
 const Profile = () => {
+  // Responsive adjustments
+  const isMobile = useMediaQuery('(max-width:768px)');
+
   const [user, setUser] = useLocalStorage('profile', {
     name: 'John Doe',
     email: 'johndoe@example.com',
@@ -375,9 +460,11 @@ const Profile = () => {
     iban: '',
     swiftCode: '',
     isBankVerified: false,
+    // For simulation purposes only:
+    password: 'password123'
   });
 
-  // Various states
+  // Additional states
   const [newSkill, setNewSkill] = useState('');
   const [newProject, setNewProject] = useState({ title: '', description: '', tags: [] });
   const [newTag, setNewTag] = useState('');
@@ -414,6 +501,9 @@ const Profile = () => {
 
   // Dialog: Edit Profile
   const [editProfileDialogOpen, setEditProfileDialogOpen] = useState(false);
+
+  // Dialog: Change Password (declared only once)
+  const [changePasswordDialogOpen, setChangePasswordDialogOpen] = useState(false);
 
   // AI analysis
   const [aiAnalysis, setAiAnalysis] = useState('');
@@ -535,6 +625,9 @@ const Profile = () => {
       });
   }, [bankName, accountHolder, accountNumber, routingNumber, iban, swiftCode, setUser]);
 
+  /* --------------------------
+     Social & Additional Features
+  -------------------------- */
   const connectGitHub = useCallback(() => {
     setIsGitHubConnected(true);
     alert('Connected with GitHub successfully!');
@@ -640,7 +733,7 @@ const Profile = () => {
     fileInputRef.current.click();
   }, []);
 
-  // Updated saveProfilePicture function using a canvas to scale the image data
+  // Save profile picture using a canvas to apply scaling
   const saveProfilePicture = useCallback(() => {
     if (tempProfilePicture) {
       const image = new Image();
@@ -691,6 +784,35 @@ const Profile = () => {
     [user.socialLinks, setUser]
   );
 
+  /* --------------------------
+     Dialog: Change Password
+  -------------------------- */
+  const handleChangePassword = useCallback(({ currentPassword, newPassword }) => {
+    if (currentPassword !== user.password) {
+      alert('Current password is incorrect.');
+      return;
+    }
+    setUser((prev) => ({ ...prev, password: newPassword }));
+    alert('Password updated successfully!');
+  }, [user.password, setUser]);
+
+  /* --------------------------
+     Extra: Log Out & Copy Profile Link
+  -------------------------- */
+  const handleLogout = useCallback(() => {
+    if (window.confirm('Are you sure you want to log out?')) {
+      localStorage.removeItem('profile');
+      alert('Logged out successfully!');
+      // Redirect to login if needed.
+    }
+  }, []);
+
+  const handleCopyProfileLink = useCallback(() => {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      alert('Profile link copied to clipboard!');
+    });
+  }, []);
+
   useEffect(() => {
     if (error) {
       const timer = setTimeout(() => setError(''), 3000);
@@ -704,7 +826,11 @@ const Profile = () => {
         <CardContent>
           {/* Profile Picture Section */}
           <div>
-            <img src={profilePicture} alt="Profile" style={{ maxWidth: '150px', borderRadius: '50%' }} />
+            <img
+              src={profilePicture}
+              alt="Profile"
+              style={{ maxWidth: isMobile ? '100px' : '150px', borderRadius: '50%' }}
+            />
             <div style={{ marginTop: '8px' }}>
               <Button onClick={triggerPictureUpload}>Update Picture</Button>
               <Button onClick={removeProfilePicture}>Remove Picture</Button>
@@ -738,6 +864,14 @@ const Profile = () => {
           <p>{user.location}</p>
           {user.isVerified && <span>Verified</span>}
           <p>Subscription Status: {user.subscriptionStatus}</p>
+          <Box mt={1}>
+            <Button variant="outlined" size="small" onClick={handleCopyProfileLink}>
+              Copy Profile Link
+            </Button>{' '}
+            <Button variant="outlined" size="small" onClick={handleLogout}>
+              Log Out
+            </Button>
+          </Box>
 
           {/* Email & Phone Verification */}
           <div style={{ marginTop: '16px' }}>
@@ -828,6 +962,9 @@ const Profile = () => {
           <Button variant="contained" onClick={() => setEditProfileDialogOpen(true)}>
             Edit Profile
           </Button>
+          <Button variant="contained" onClick={() => setChangePasswordDialogOpen(true)}>
+            Change Password
+          </Button>
         </CardActions>
       </Card>
 
@@ -854,11 +991,7 @@ const Profile = () => {
 
       {/* Tags */}
       <Box mt={4}>
-        <TextField
-          label="Add a tag"
-          value={newTag}
-          onChange={(e) => setNewTag(e.target.value)}
-        />
+        <TextField label="Add a tag" value={newTag} onChange={(e) => setNewTag(e.target.value)} />
         <Button onClick={handleAddTag} style={{ marginLeft: '8px' }}>
           Add Tag
         </Button>
@@ -910,11 +1043,7 @@ const Profile = () => {
             </li>
           ))}
         </ul>
-        <TextField
-          label="New Skill"
-          value={newSkill}
-          onChange={(e) => setNewSkill(e.target.value)}
-        />
+        <TextField label="New Skill" value={newSkill} onChange={(e) => setNewSkill(e.target.value)} />
         <Button onClick={handleAddSkill} style={{ marginLeft: '8px' }}>
           Add Skill
         </Button>
@@ -973,6 +1102,13 @@ const Profile = () => {
         </Box>
       </Box>
 
+      {/* Additional Actions: Change Password */}
+      <Box mt={4} display="flex" gap={2} flexWrap="wrap">
+        <Button variant="contained" onClick={() => setChangePasswordDialogOpen(true)}>
+          Change Password
+        </Button>
+      </Box>
+
       {/* Dialog: Edit Profile */}
       <EditProfileDialog
         open={editProfileDialogOpen}
@@ -987,48 +1123,12 @@ const Profile = () => {
       <Dialog open={bankDialogOpen} onClose={() => setBankDialogOpen(false)}>
         <DialogTitle>Verify Bank Details</DialogTitle>
         <DialogContent dividers>
-          <TextField
-            fullWidth
-            margin="normal"
-            label="Bank Name"
-            value={bankName}
-            onChange={(e) => setBankName(e.target.value)}
-          />
-          <TextField
-            fullWidth
-            margin="normal"
-            label="Account Holder Name"
-            value={accountHolder}
-            onChange={(e) => setAccountHolder(e.target.value)}
-          />
-          <TextField
-            fullWidth
-            margin="normal"
-            label="Account Number"
-            value={accountNumber}
-            onChange={(e) => setAccountNumber(e.target.value)}
-          />
-          <TextField
-            fullWidth
-            margin="normal"
-            label="Routing Number"
-            value={routingNumber}
-            onChange={(e) => setRoutingNumber(e.target.value)}
-          />
-          <TextField
-            fullWidth
-            margin="normal"
-            label="IBAN"
-            value={iban}
-            onChange={(e) => setIban(e.target.value)}
-          />
-          <TextField
-            fullWidth
-            margin="normal"
-            label="SWIFT Code"
-            value={swiftCode}
-            onChange={(e) => setSwiftCode(e.target.value)}
-          />
+          <TextField fullWidth margin="normal" label="Bank Name" value={bankName} onChange={(e) => setBankName(e.target.value)} />
+          <TextField fullWidth margin="normal" label="Account Holder Name" value={accountHolder} onChange={(e) => setAccountHolder(e.target.value)} />
+          <TextField fullWidth margin="normal" label="Account Number" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} />
+          <TextField fullWidth margin="normal" label="Routing Number" value={routingNumber} onChange={(e) => setRoutingNumber(e.target.value)} />
+          <TextField fullWidth margin="normal" label="IBAN" value={iban} onChange={(e) => setIban(e.target.value)} />
+          <TextField fullWidth margin="normal" label="SWIFT Code" value={swiftCode} onChange={(e) => setSwiftCode(e.target.value)} />
           <Typography variant="body2" style={{ marginTop: '8px' }}>
             (In a real app, bank details would be verified securely via an API.)
           </Typography>
@@ -1041,11 +1141,14 @@ const Profile = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Dialog: Premium AI */}
-      <PremiumAIDialog
-        open={premiumAIDialogOpen}
-        onClose={() => setPremiumAIDialogOpen(false)}
-        user={user}
+      {/* Dialog: Premium AI Tools */}
+      <PremiumAIDialog open={premiumAIDialogOpen} onClose={() => setPremiumAIDialogOpen(false)} user={user} />
+
+      {/* Dialog: Change Password */}
+      <ChangePasswordDialog
+        open={changePasswordDialogOpen}
+        onClose={() => setChangePasswordDialogOpen(false)}
+        onChangePassword={handleChangePassword}
       />
 
       {/* Snackbar */}

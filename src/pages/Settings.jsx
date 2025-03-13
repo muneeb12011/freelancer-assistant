@@ -27,7 +27,7 @@ const SettingsPage = () => {
     smsNotifications: false
   });
 
-  // Payment Methods Settings – Real payment info fields
+  // Payment Methods Settings – realistic fields
   const [paymentMethods, setPaymentMethods] = useState({
     cardType: "visa", // Options: visa, mastercard, amex
     cardNumber: "",
@@ -38,7 +38,7 @@ const SettingsPage = () => {
     paypalLinked: false
   });
 
-  // Account Security Settings (removing email, phone, and countryCode)
+  // Account Security Settings
   const [accountSecurity, setAccountSecurity] = useState({
     currentPassword: "",
     newPassword: "",
@@ -51,20 +51,20 @@ const SettingsPage = () => {
     avatar: null
   });
 
-  // Display Settings (theme toggle removed)
+  // Display Settings
   const [displaySettings, setDisplaySettings] = useState({
     fontSize: "medium", // Options: small, medium, large
     layout: "grid"      // Options: grid, list
   });
 
-  // Integration Settings (third-party services)
+  // Integration Settings
   const [integrations, setIntegrations] = useState({
     googleDrive: false,
     dropbox: false,
     oneDrive: false
   });
 
-  // Advanced Features: Subscription (new), Security Logs, API Keys, Import, Privacy Policy
+  // Advanced Features: Subscription, Security Logs, API Keys, Import/Export, Privacy Policy
   const [subscription, setSubscription] = useState({
     currentPlan: "free",
     availablePlans: [
@@ -88,7 +88,7 @@ const SettingsPage = () => {
     enteredCode: ""
   });
 
-  // Account Verification (New)
+  // Account Verification State
   const [accountVerification, setAccountVerification] = useState({
     verified: false,
     sending: false,
@@ -158,11 +158,11 @@ const SettingsPage = () => {
       setPrivacy((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
     } else if (section === "notifications") {
       setNotifications((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
-    } else if (section === "paymentMethods") {
+    } else if (section === "payment") {
       setPaymentMethods((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
     } else if (section === "accountSecurity") {
       setAccountSecurity((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
-    } else if (section === "displaySettings") {
+    } else if (section === "display") {
       setDisplaySettings((prev) => ({ ...prev, [name]: value }));
     } else if (section === "integrations") {
       setIntegrations((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
@@ -227,6 +227,7 @@ const SettingsPage = () => {
   const sendTwoFactorCode = async () => {
     try {
       const method = twoFactor.method;
+      // For demo, use dummy contact info
       const contact = method === "sms" ? "1234567890" : accountSecurity.recoveryEmail;
       await axios.post("/api/send-2fa", { method, contact });
       setTwoFactor((prev) => ({ ...prev, codeSent: true }));
@@ -253,7 +254,7 @@ const SettingsPage = () => {
   };
 
   // ---------------------------
-  // SUBSCRIPTION UPGRADE FUNCTION (NEW)
+  // SUBSCRIPTION UPGRADE FUNCTION
   // ---------------------------
   const upgradeSubscription = async (planId) => {
     try {
@@ -267,7 +268,7 @@ const SettingsPage = () => {
   };
 
   // ---------------------------
-  // ACCOUNT VERIFICATION FUNCTIONS (NEW)
+  // ACCOUNT VERIFICATION FUNCTIONS
   // ---------------------------
   const sendVerificationEmail = async () => {
     setAccountVerification((prev) => ({ ...prev, sending: true }));
@@ -519,7 +520,6 @@ const SettingsPage = () => {
       {successMessage && <div className="success-message mb-4">{successMessage}</div>}
       {errorMessage && <div className="error-message mb-4">{errorMessage}</div>}
 
-      {/* Form wrapper to use handleSubmit */}
       <form onSubmit={handleSubmit}>
         {/* TAB NAVIGATION */}
         <div className="settings-tabs mb-6">
@@ -657,7 +657,7 @@ const SettingsPage = () => {
             <h2>Payment Methods</h2>
             <label>
               Card Type:
-              <select name="cardType" value={paymentMethods.cardType} onChange={(e) => handleChange("paymentMethods", e)}>
+              <select name="cardType" value={paymentMethods.cardType} onChange={(e) => handleChange("payment", e)}>
                 <option value="visa">Visa</option>
                 <option value="mastercard">MasterCard</option>
                 <option value="amex">American Express</option>
@@ -669,7 +669,7 @@ const SettingsPage = () => {
                 type="text"
                 name="cardNumber"
                 value={paymentMethods.cardNumber}
-                onChange={(e) => handleChange("paymentMethods", e)}
+                onChange={(e) => handleChange("payment", e)}
                 placeholder="XXXX XXXX XXXX XXXX"
               />
               {errors.cardNumber && <span className="error">{errors.cardNumber}</span>}
@@ -680,7 +680,7 @@ const SettingsPage = () => {
                 type="text"
                 name="expirationDate"
                 value={paymentMethods.expirationDate}
-                onChange={(e) => handleChange("paymentMethods", e)}
+                onChange={(e) => handleChange("payment", e)}
                 placeholder="MM/YY"
               />
               {errors.expirationDate && <span className="error">{errors.expirationDate}</span>}
@@ -691,7 +691,7 @@ const SettingsPage = () => {
                 type="text"
                 name="cvv"
                 value={paymentMethods.cvv}
-                onChange={(e) => handleChange("paymentMethods", e)}
+                onChange={(e) => handleChange("payment", e)}
                 placeholder="CVV"
               />
               {errors.cvv && <span className="error">{errors.cvv}</span>}
@@ -702,7 +702,7 @@ const SettingsPage = () => {
                 type="text"
                 name="cardholderName"
                 value={paymentMethods.cardholderName}
-                onChange={(e) => handleChange("paymentMethods", e)}
+                onChange={(e) => handleChange("payment", e)}
                 placeholder="Name on Card"
               />
             </label>
@@ -712,12 +712,12 @@ const SettingsPage = () => {
                 type="text"
                 name="billingAddress"
                 value={paymentMethods.billingAddress}
-                onChange={(e) => handleChange("paymentMethods", e)}
+                onChange={(e) => handleChange("payment", e)}
                 placeholder="Your billing address"
               />
             </label>
             <label>
-              <input type="checkbox" name="paypalLinked" checked={paymentMethods.paypalLinked} onChange={(e) => handleChange("paymentMethods", e)} />
+              <input type="checkbox" name="paypalLinked" checked={paymentMethods.paypalLinked} onChange={(e) => handleChange("payment", e)} />
               Link PayPal Account
             </label>
           </div>
@@ -830,7 +830,7 @@ const SettingsPage = () => {
             <h2>Display Settings</h2>
             <label>
               Font Size:
-              <select name="fontSize" value={displaySettings.fontSize} onChange={(e) => handleChange("displaySettings", e)}>
+              <select name="fontSize" value={displaySettings.fontSize} onChange={(e) => handleChange("display", e)}>
                 <option value="small">Small</option>
                 <option value="medium">Medium</option>
                 <option value="large">Large</option>
@@ -838,7 +838,7 @@ const SettingsPage = () => {
             </label>
             <label>
               Layout:
-              <select name="layout" value={displaySettings.layout} onChange={(e) => handleChange("displaySettings", e)}>
+              <select name="layout" value={displaySettings.layout} onChange={(e) => handleChange("display", e)}>
                 <option value="grid">Grid</option>
                 <option value="list">List</option>
               </select>
@@ -897,7 +897,7 @@ const SettingsPage = () => {
                 Share Settings Page
               </button>
             </div>
-            {/* Subscription Section (New) */}
+            {/* Subscription Section */}
             <div className="subscription-section">
               <h3>Subscription & Pricing Plans</h3>
               <p>

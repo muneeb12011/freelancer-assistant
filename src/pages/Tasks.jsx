@@ -4,15 +4,89 @@ import * as XLSX from 'xlsx';
 import { v4 as uuidv4 } from 'uuid';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 
+// Modal for editing a task
+const EditTaskModal = ({ show, task, onClose, onSave }) => {
+  const [editedTask, setEditedTask] = useState({});
+
+  useEffect(() => {
+    setEditedTask(task || {});
+  }, [task]);
+
+  if (!show) return null;
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setEditedTask(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSave = () => {
+    onSave(editedTask);
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <h2>Edit Task</h2>
+        <label>
+          Task Name:
+          <input 
+            type="text" 
+            name="name" 
+            value={editedTask.name || ''} 
+            onChange={handleChange} 
+          />
+        </label>
+        <label>
+          Priority:
+          <select name="priority" value={editedTask.priority || 'Medium'} onChange={handleChange}>
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+          </select>
+        </label>
+        <label>
+          Deadline:
+          <input 
+            type="date" 
+            name="deadline" 
+            value={editedTask.deadline || ''} 
+            onChange={handleChange} 
+          />
+        </label>
+        <label>
+          Category:
+          <select name="category" value={editedTask.category || 'General'} onChange={handleChange}>
+            <option value="General">General</option>
+            <option value="Work">Work</option>
+            <option value="Personal">Personal</option>
+            <option value="Urgent">Urgent</option>
+          </select>
+        </label>
+        <label>
+          Tags (comma separated):
+          <input 
+            type="text" 
+            name="tags" 
+            value={editedTask.tags ? editedTask.tags.join(', ') : ''} 
+            onChange={(e) =>
+              setEditedTask(prev => ({ ...prev, tags: e.target.value.split(',').map(t => t.trim()) }))
+            }
+          />
+        </label>
+        <div className="modal-actions">
+          <button onClick={onClose} className="btn-gray">Cancel</button>
+          <button onClick={handleSave} className="btn-blue">Save Changes</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const Tasks = () => {
-  // ---------------------------
   // TAB MANAGEMENT: "tasks", "contracts", "reports"
-  // ---------------------------
   const [activeTab, setActiveTab] = useState('tasks');
 
-  // ---------------------------
   // TASKS STATE & FIELDS
-  // ---------------------------
   const [tasks, setTasks] = useState([]);
   const [archivedTasks, setArchivedTasks] = useState([]);
   const [taskName, setTaskName] = useState('');
@@ -30,24 +104,23 @@ const Tasks = () => {
   const [notification, setNotification] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const tasksPerPage = 5;
-  const [editingTaskId, setEditingTaskId] = useState(null);
   const [selectedTasks, setSelectedTasks] = useState([]);
   // Timer state for tasks
   const [timerTaskId, setTimerTaskId] = useState(null);
   const [timerStart, setTimerStart] = useState(null);
 
-  // ---------------------------
   // CONTRACT MANAGEMENT STATE
-  // ---------------------------
   const [contracts, setContracts] = useState([]);
   const [contractTitle, setContractTitle] = useState('');
   const [contractContent, setContractContent] = useState('');
-  // Use selectedContract to display contract details in a modal
+  // Selected contract for viewing details
   const [selectedContract, setSelectedContract] = useState(null);
 
-  // ---------------------------
-  // LOAD TASKS & ARCHIVED TASKS FROM LOCAL STORAGE
-  // ---------------------------
+  // For editing tasks via modal
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState(null);
+
+  // Load tasks from localStorage
   useEffect(() => {
     const savedTasks = JSON.parse(localStorage.getItem('tasks')) || [];
     setTasks(savedTasks);
@@ -63,9 +136,7 @@ const Tasks = () => {
     localStorage.setItem('archivedTasks', JSON.stringify(archivedTasks));
   }, [archivedTasks]);
 
-  // ---------------------------
-  // AUTO-HIDE NOTIFICATIONS
-  // ---------------------------
+  // Auto-hide notifications
   useEffect(() => {
     if (notification) {
       const timer = setTimeout(() => setNotification(''), 3000);
@@ -73,9 +144,7 @@ const Tasks = () => {
     }
   }, [notification]);
 
-  // ---------------------------
   // EXPORT TASKS TO EXCEL
-  // ---------------------------
   const exportTasksToExcel = () => {
     const ws = XLSX.utils.json_to_sheet(tasks);
     const wb = XLSX.utils.book_new();
@@ -168,17 +237,38 @@ const Tasks = () => {
     setNotification('Task status updated!');
   };
 
-  const editTask = (taskId, newName) => {
-    if (!newName.trim()) return;
+  const openEditModal = (task) => {
+    setTaskToEdit(task);
+    setShowEditModal(true);
+  };
+
+  const saveEditedTask = (editedTask) => {
     setTasks(prevTasks =>
       prevTasks.map(task =>
-        task.id === taskId
-          ? { ...task, name: newName.trim(), history: [...task.history, `Task edited on ${new Date().toLocaleString()}`] }
+        task.id === editedTask.id
+          ? { ...editedTask, history: [...task.history, `Task edited on ${new Date().toLocaleString()}`] }
           : task
       )
     );
-    setEditingTaskId(null);
+    setShowEditModal(false);
+    setTaskToEdit(null);
     setNotification('Task updated successfully!');
+  };
+
+  // New function: Duplicate Task
+  const duplicateTask = (taskId) => {
+    const taskToDuplicate = tasks.find(task => task.id === taskId);
+    if (taskToDuplicate) {
+      const duplicatedTask = {
+        ...taskToDuplicate,
+        id: uuidv4(),
+        name: taskToDuplicate.name + " (Copy)",
+        createdAt: new Date().toISOString(),
+        history: [...taskToDuplicate.history, `Task duplicated on ${new Date().toLocaleString()}`]
+      };
+      setTasks([...tasks, duplicatedTask]);
+      setNotification('Task duplicated successfully!');
+    }
   };
 
   const toggleFavorite = (taskId) => {
@@ -443,51 +533,6 @@ const Tasks = () => {
     return !completed && taskDate < today;
   };
 
-  // ---------------------------
-  // CONTRACT MANAGEMENT FUNCTIONS
-  // ---------------------------
-  const createContract = () => {
-    if (!contractTitle.trim() || !contractContent.trim()) {
-      alert('Contract title and content cannot be empty.');
-      return;
-    }
-    const newContract = {
-      id: uuidv4(),
-      title: contractTitle.trim(),
-      content: contractContent.trim(),
-      createdAt: new Date().toISOString(),
-      signed: false,
-      history: [`Contract created on ${new Date().toLocaleString()}`]
-    };
-    setContracts([...contracts, newContract]);
-    setContractTitle('');
-    setContractContent('');
-    setNotification('Contract created successfully!');
-  };
-
-  const signContract = (contractId) => {
-    setContracts(prevContracts =>
-      prevContracts.map(contract =>
-        contract.id === contractId
-          ? { ...contract, signed: true, history: [...contract.history, `Contract signed on ${new Date().toLocaleString()}`] }
-          : contract
-      )
-    );
-    setNotification('Contract signed successfully!');
-  };
-
-  // ---------------------------
-  // REPORTS / ANALYTICS CALCULATIONS
-  // ---------------------------
-  const totalTasksCount = tasks.length;
-  const completedTasksCount = tasks.filter(task => task.completed).length;
-  const pendingTasksCount = totalTasksCount - completedTasksCount;
-  const totalTimeSpent = tasks.reduce((sum, task) => sum + task.timeSpent, 0);
-  const earnings = (totalTimeSpent * 0.5).toFixed(2);
-
-  // ---------------------------
-  // RENDER COMPONENT WITH TAB NAVIGATION & MODALS
-  // ---------------------------
   return (
     <div className="tasks-container">
       <h2 className="tasks-heading">Task Manager</h2>
@@ -620,19 +665,9 @@ const Tasks = () => {
                             className="task-select-checkbox"
                           />
                           <div className="task-details">
-                            {editingTaskId === task.id ? (
-                              <input
-                                type="text"
-                                defaultValue={task.name}
-                                onBlur={(e) => editTask(task.id, e.target.value)}
-                                autoFocus
-                                className="task-edit-input"
-                              />
-                            ) : (
-                              <h3 onDoubleClick={() => setEditingTaskId(task.id)}>
-                                {task.name} {task.favorite && <span className="favorite-icon">★</span>}
-                              </h3>
-                            )}
+                            <h3 onDoubleClick={() => openEditModal(task)}>
+                              {task.name} {task.favorite && <span className="favorite-icon">★</span>}
+                            </h3>
                             <p>Priority: {task.priority}</p>
                             <p>Deadline: {task.deadline}</p>
                             <p>Category: {task.category}</p>
@@ -659,10 +694,13 @@ const Tasks = () => {
                               {task.completed ? 'Mark as Incomplete' : 'Mark as Complete'}
                             </button>
                             <button
-                              onClick={() => editTask(task.id, prompt('Edit task name:', task.name))}
+                              onClick={() => openEditModal(task)}
                               className="task-edit-button"
                             >
                               Edit Task
+                            </button>
+                            <button onClick={() => duplicateTask(task.id)} className="task-duplicate-button">
+                              Duplicate Task
                             </button>
                             <button onClick={() => editTaskNotes(task.id)} className="task-edit-notes-button">
                               Edit Notes
@@ -695,12 +733,12 @@ const Tasks = () => {
                           >
                             Add Subtask
                           </button>
-                          {task.subtasks.map((subtask, index) => (
-                            <div key={index} className="subtask">
+                          {task.subtasks.map((subtask, idx) => (
+                            <div key={idx} className="subtask">
                               <input
                                 type="checkbox"
                                 checked={subtask.completed}
-                                onChange={() => toggleSubtaskCompletion(task.id, index)}
+                                onChange={() => toggleSubtaskCompletion(task.id, idx)}
                               />
                               {subtask.name}
                             </div>
@@ -786,7 +824,24 @@ const Tasks = () => {
               onChange={(e) => setContractContent(e.target.value)}
               className="contract-textarea"
             />
-            <button onClick={createContract} className="contract-add-button">Create Contract</button>
+            <button onClick={() => {
+              if (!contractTitle.trim() || !contractContent.trim()) {
+                alert('Contract title and content cannot be empty.');
+                return;
+              }
+              const newContract = {
+                id: uuidv4(),
+                title: contractTitle.trim(),
+                content: contractContent.trim(),
+                createdAt: new Date().toISOString(),
+                signed: false,
+                history: [`Contract created on ${new Date().toLocaleString()}`]
+              };
+              setContracts([...contracts, newContract]);
+              setContractTitle('');
+              setContractContent('');
+              setNotification('Contract created successfully!');
+            }} className="contract-add-button">Create Contract</button>
           </div>
           <div className="contracts-list">
             {contracts.length > 0 ? (
@@ -796,7 +851,14 @@ const Tasks = () => {
                     <h3>{contract.title}</h3>
                     <p>Created: {new Date(contract.createdAt).toLocaleString()}</p>
                     <p>Status: {contract.signed ? 'Signed' : 'Pending'}</p>
-                    <button onClick={() => signContract(contract.id)} className="contract-sign-button" disabled={contract.signed}>
+                    <button onClick={() => {
+                      setContracts(prev =>
+                        prev.map(c =>
+                          c.id === contract.id ? { ...c, signed: true, history: [...c.history, `Contract signed on ${new Date().toLocaleString()}`] } : c
+                        )
+                      );
+                      setNotification('Contract signed successfully!');
+                    }} className="contract-sign-button" disabled={contract.signed}>
                       {contract.signed ? 'Signed' : 'Sign Contract'}
                     </button>
                     <button onClick={() => setSelectedContract(contract)} className="contract-view-button">
@@ -818,36 +880,44 @@ const Tasks = () => {
           <h2>Reports & Analytics</h2>
           <div className="report-card">
             <h3>Total Tasks</h3>
-            <p>{totalTasksCount}</p>
+            <p>{tasks.length}</p>
           </div>
           <div className="report-card">
             <h3>Completed Tasks</h3>
-            <p>{completedTasksCount}</p>
+            <p>{tasks.filter(task => task.completed).length}</p>
           </div>
           <div className="report-card">
             <h3>Pending Tasks</h3>
-            <p>{pendingTasksCount}</p>
+            <p>{tasks.length - tasks.filter(task => task.completed).length}</p>
           </div>
           <div className="report-card">
             <h3>Total Time Spent</h3>
-            <p>{totalTimeSpent} minutes</p>
+            <p>{tasks.reduce((sum, task) => sum + task.timeSpent, 0)} minutes</p>
           </div>
           <div className="report-card">
             <h3>Estimated Earnings</h3>
-            <p>${earnings}</p>
+            <p>${(tasks.reduce((sum, task) => sum + task.timeSpent, 0) * 0.5).toFixed(2)}</p>
           </div>
           <div className="report-chart">
-            {/* Placeholder for potential chart/graph integration */}
             <p>Chart/Graph integration coming soon...</p>
           </div>
         </div>
       )}
 
-      {/* CONTRACT DETAILS MODAL */}
+      {/* Edit Task Modal */}
+      <EditTaskModal 
+        show={showEditModal} 
+        task={taskToEdit} 
+        onClose={() => { setShowEditModal(false); setTaskToEdit(null); }} 
+        onSave={saveEditedTask} 
+      />
+
+      {/* Contract Details Modal */}
       {selectedContract && (
         <div className="modal-overlay" onClick={() => setSelectedContract(null)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h2>{selectedContract.title}</h2>
+            <h2>Contract Details</h2>
+            <h3>{selectedContract.title}</h3>
             <p>{selectedContract.content}</p>
             <p>Created: {new Date(selectedContract.createdAt).toLocaleString()}</p>
             <p>Status: {selectedContract.signed ? 'Signed' : 'Pending'}</p>
@@ -857,6 +927,7 @@ const Tasks = () => {
           </div>
         </div>
       )}
+
     </div>
   );
 };
