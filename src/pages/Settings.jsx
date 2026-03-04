@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import "../styles/Settings.css";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Typography
+} from "@mui/material";
+
 
 const SettingsPage = () => {
   const [activeTab, setActiveTab] = useState("general");

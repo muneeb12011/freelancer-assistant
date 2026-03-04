@@ -1169,7 +1169,7 @@ const Profile = () => {
 
       {/* Footer */}
       <Box mt={8} textAlign="center">
-        <Typography variant="caption">© 2025 Freelancer Assistant. All rights reserved.</Typography>
+        <Typography variant="caption">© 2025 Aurelance. All rights reserved.</Typography>
       </Box>
     </div>
   );

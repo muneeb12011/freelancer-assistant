@@ -1,0 +1,183 @@
+/* ============================================================
+   LAYOUT — Obsidian Luxury Theme
+   Handles: sidebar + navbar shell, content area, overlay
+   ============================================================ */
+
+/* ─────────────────────────────────────
+   Root Layout Shell
+───────────────────────────────────── */
+.layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: var(--bg-base);
+  background-image:
+    radial-gradient(ellipse 800px 600px at 0%   0%,   rgba(201, 168, 76, 0.05)  0%, transparent 60%),
+    radial-gradient(ellipse 600px 500px at 100% 30%,  rgba(99, 102, 241, 0.03)  0%, transparent 60%),
+    radial-gradient(ellipse 500px 400px at 40%  100%, rgba(59, 130, 246, 0.03)  0%, transparent 55%);
+  font-family: var(--font-body);
+  color: var(--text-primary);
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Grain overlay — matches home-container::before */
+.layout::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.55;
+}
+
+/* ─────────────────────────────────────
+   Inner wrapper (below Navbar)
+   Navbar is fixed/sticky — this sits
+   beneath it and holds Sidebar + Content
+───────────────────────────────────── */
+.layout-body {
+  display: flex;
+  flex: 1;
+  position: relative;
+  z-index: 1;
+
+  /* Push content below your Navbar height.
+     Change 64px to match your actual Navbar height. */
+  padding-top: 64px;
+}
+
+/* ─────────────────────────────────────
+   Main Content Area
+───────────────────────────────────── */
+.layout-content {
+  flex: 1;
+  min-width: 0;                  /* Prevent flex blowout */
+  min-height: calc(100vh - 64px);
+  position: relative;
+  z-index: 1;
+
+  /* Sidebar width offset — adjust to match your Sidebar width */
+  margin-left: 240px;
+
+  /* Inner padding for page content */
+  padding: 36px 36px 80px;
+
+  /* Smooth transition when sidebar opens/closes on mobile */
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ─────────────────────────────────────
+   Sidebar Overlay (mobile only)
+   Dims the content when sidebar is open
+───────────────────────────────────── */
+.layout-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  z-index: 40;                   /* Just below sidebar (z-index: 50) */
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  cursor: pointer;
+}
+
+/* When sidebar is open, show + fade in the overlay */
+.sidebar-open .layout-overlay {
+  opacity: 1;
+}
+
+/* ─────────────────────────────────────
+   Sidebar-open state adjustments
+───────────────────────────────────── */
+
+/* On desktop the sidebar is always visible — no shift needed */
+/* On mobile, when sidebar opens we nudge content right */
+@media (max-width: 1024px) {
+  .layout-content {
+    margin-left: 0;
+  }
+
+  .layout-overlay {
+    display: block;
+    pointer-events: none;
+  }
+
+  .sidebar-open .layout-overlay {
+    pointer-events: all;
+  }
+}
+
+/* ─────────────────────────────────────
+   Collapsed Sidebar variant
+   Add class="layout layout--sidebar-collapsed" if you
+   ever add a collapse toggle on desktop
+───────────────────────────────────── */
+.layout--sidebar-collapsed .layout-content {
+  margin-left: 72px;             /* Icon-only sidebar width */
+}
+
+/* ─────────────────────────────────────
+   Page transition animation
+   Outlet content fades in on route change
+───────────────────────────────────── */
+.layout-content > * {
+  animation: pageReveal 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes pageReveal {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ─────────────────────────────────────
+   Scrollbar — matches global theme
+───────────────────────────────────── */
+.layout-content::-webkit-scrollbar { width: 5px; }
+.layout-content::-webkit-scrollbar-track { background: transparent; }
+.layout-content::-webkit-scrollbar-thumb {
+  background: rgba(201, 168, 76, 0.2);
+  border-radius: 10px;
+}
+.layout-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(201, 168, 76, 0.4);
+}
+
+/* ─────────────────────────────────────
+   Responsive Breakpoints
+───────────────────────────────────── */
+
+/* Tablet */
+@media (max-width: 1024px) {
+  .layout-content {
+    padding: 28px 24px 64px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .layout-content {
+    padding: 20px 16px 60px;
+  }
+
+  .layout-body {
+    padding-top: 56px;           /* Adjust if mobile Navbar is shorter */
+  }
+}
+
+/* Small mobile */
+@media (max-width: 480px) {
+  .layout-content {
+    padding: 16px 12px 56px;
+  }
+}

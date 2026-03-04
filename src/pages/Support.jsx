@@ -1,20 +1,50 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import {
+  FaQuestionCircle,
+  FaHistory,
+  FaSearch,
+  FaEnvelope,
+  FaPhone,
+  FaPaperPlane,
+  FaStar,
+  FaComments,
+  FaArrowUp,
+  FaTrashAlt,
+  FaTimes,
+  FaPhoneAlt,
+  FaThumbsUp,
+  FaThumbsDown,
+  FaFileAlt,
+  FaShareAlt,
+  FaHeadset,
+} from "react-icons/fa";
 import "../styles/Support.css";
 
 const SupportPage = () => {
-  // Contact Support form states
+  // ----------------------
+  // Tab Navigation State
+  // ----------------------
+  const [activeTab, setActiveTab] = useState("faq"); // faq, history, search, contact, chat, rate
+
+  // ----------------------
+  // Contact Form States
+  // ----------------------
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [attachment, setAttachment] = useState(null);
   const [attachmentPreview, setAttachmentPreview] = useState(null);
 
-  // Notification states
+  // ----------------------
+  // Notification States
+  // ----------------------
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
-  // Enhanced FAQ states with additional FAQs
+  // ----------------------
+  // FAQ States
+  // ----------------------
   const initialFaqs = [
     {
       id: 1,
@@ -86,54 +116,62 @@ const SupportPage = () => {
   const [faqSearch, setFaqSearch] = useState("");
   const [selectedFaqCategory, setSelectedFaqCategory] = useState("All");
 
-  // Ticket lookup/search states
+  // ----------------------
+  // Ticket Lookup / Search States
+  // ----------------------
   const [ticketId, setTicketId] = useState("");
   const [ticketStatus, setTicketStatus] = useState(null);
   const [ticketSearch, setTicketSearch] = useState("");
   const [ticketResults, setTicketResults] = useState([]);
 
-  // Support History state
+  // ----------------------
+  // Support History State
+  // ----------------------
   const [supportHistory, setSupportHistory] = useState([]);
 
-  // Chat states
+  // ----------------------
+  // Chat States
+  // ----------------------
   const [chatInput, setChatInput] = useState("");
   const [chatHistory, setChatHistory] = useState([]);
   const chatContainerRef = useRef(null);
 
-  // Rating states
+  // ----------------------
+  // Rating States
+  // ----------------------
   const [rating, setRating] = useState(0);
   const [ratingComment, setRatingComment] = useState("");
 
-  // Loading indicator state
+  // ----------------------
+  // Loading & Modal States
+  // ----------------------
   const [loading, setLoading] = useState(false);
-
-  // Modal states
   const [showAgentChatModal, setShowAgentChatModal] = useState(false);
   const [showContactOptions, setShowContactOptions] = useState(false);
-
-  // Scroll-to-top visibility
   const [showScrollTop, setShowScrollTop] = useState(false);
 
-  // Ref for Contact Support form
+  // ----------------------
+  // Refs
+  // ----------------------
   const contactFormRef = useRef(null);
 
-  // -------------------------------
-  // Fetch user profile (if needed)
-  // -------------------------------
+  // ----------------------
+  // Fetch Support History on Mount
+  // ----------------------
   useEffect(() => {
     axios
-      .get("/api/user-profile")
+      .get("/api/support-history")
       .then((response) => {
-        // Process user profile data if needed
+        setSupportHistory(response.data.history || []);
       })
       .catch(() => {
-        setErrorMessage("Error fetching user profile.");
+        // Optionally handle error
       });
   }, []);
 
-  // -------------------------------
-  // Auto-clear notifications
-  // -------------------------------
+  // ----------------------
+  // Auto-Clear Notifications
+  // ----------------------
   useEffect(() => {
     if (successMessage || errorMessage) {
       const timer = setTimeout(() => {
@@ -144,32 +182,18 @@ const SupportPage = () => {
     }
   }, [successMessage, errorMessage]);
 
-  // -------------------------------
-  // Auto-scroll chat to bottom
-  // -------------------------------
+  // ----------------------
+  // Auto-Scroll Chat to Bottom
+  // ----------------------
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [chatHistory]);
 
-  // -------------------------------
-  // Fetch support history
-  // -------------------------------
-  useEffect(() => {
-    axios
-      .get("/api/support-history")
-      .then((response) => {
-        setSupportHistory(response.data.history || []);
-      })
-      .catch(() => {
-        // Optionally, setErrorMessage("Error fetching support history.");
-      });
-  }, []);
-
-  // -------------------------------
-  // Listen to window scroll for Scroll-to-Top
-  // -------------------------------
+  // ----------------------
+  // Listen to Scroll for Scroll-to-Top
+  // ----------------------
   useEffect(() => {
     const handleScroll = () => {
       setShowScrollTop(window.scrollY > 300);
@@ -178,18 +202,16 @@ const SupportPage = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // -------------------------------
-  // Handle file selection and preview for contact form
-  // -------------------------------
+  // ----------------------
+  // Handle File Selection & Preview
+  // ----------------------
   const handleFileChange = (e) => {
     if (e.target.files.length > 0) {
       const file = e.target.files[0];
       setAttachment(file);
       if (file.type.startsWith("image/")) {
         const reader = new FileReader();
-        reader.onload = (ev) => {
-          setAttachmentPreview(ev.target.result);
-        };
+        reader.onload = (ev) => setAttachmentPreview(ev.target.result);
         reader.readAsDataURL(file);
       } else {
         setAttachmentPreview(null);
@@ -197,9 +219,9 @@ const SupportPage = () => {
     }
   };
 
-  // -------------------------------
+  // ----------------------
   // Reset Contact Form
-  // -------------------------------
+  // ----------------------
   const resetContactForm = () => {
     setName("");
     setEmail("");
@@ -208,9 +230,9 @@ const SupportPage = () => {
     setAttachmentPreview(null);
   };
 
-  // -------------------------------
-  // Contact form submission
-  // -------------------------------
+  // ----------------------
+  // Contact Form Submission
+  // ----------------------
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSuccessMessage("");
@@ -244,16 +266,16 @@ const SupportPage = () => {
         setSuccessMessage("Your message has been sent successfully!");
         resetContactForm();
       }
-    } catch (error) {
+    } catch {
       setErrorMessage("There was an error sending your message. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  // -------------------------------
-  // Ticket status lookup
-  // -------------------------------
+  // ----------------------
+  // Ticket Status Lookup
+  // ----------------------
   const checkTicketStatus = async () => {
     if (!ticketId) {
       setTicketStatus("Please enter a valid ticket ID.");
@@ -263,16 +285,16 @@ const SupportPage = () => {
     try {
       const response = await axios.get(`/api/ticket-status/${ticketId}`);
       setTicketStatus(response.data.status);
-    } catch (error) {
+    } catch {
       setTicketStatus("Invalid ticket ID or ticket not found.");
     } finally {
       setLoading(false);
     }
   };
 
-  // -------------------------------
-  // Ticket search
-  // -------------------------------
+  // ----------------------
+  // Ticket Search
+  // ----------------------
   const handleTicketSearchSubmit = async () => {
     if (!ticketSearch) {
       setErrorMessage("Please enter a search term.");
@@ -284,25 +306,22 @@ const SupportPage = () => {
         `/api/tickets?query=${encodeURIComponent(ticketSearch)}`
       );
       setTicketResults(response.data.tickets || []);
-    } catch (error) {
+    } catch {
       setErrorMessage("Error searching tickets. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  // -------------------------------
-  // AI Chat submission
-  // -------------------------------
+  // ----------------------
+  // AI Chat Submission
+  // ----------------------
   const handleChatSubmit = async (e) => {
     e.preventDefault();
     if (!chatInput.trim()) return;
 
     const userMessage = chatInput.trim();
-    setChatHistory((prev) => [
-      ...prev,
-      { sender: "user", text: userMessage },
-    ]);
+    setChatHistory((prev) => [...prev, { sender: "user", text: userMessage }]);
     setChatInput("");
 
     setLoading(true);
@@ -310,28 +329,25 @@ const SupportPage = () => {
       const response = await axios.post("/api/ai-support-chat", {
         message: userMessage,
       });
+      setChatHistory((prev) => [...prev, { sender: "bot", text: response.data.reply }]);
+    } catch {
       setChatHistory((prev) => [
         ...prev,
-        { sender: "bot", text: response.data.reply },
-      ]);
-    } catch (error) {
-      setChatHistory((prev) => [
-        ...prev,
-        { sender: "bot", text: "Sorry, I couldn't process your request. Please try again." },
+        { sender: "bot", text: "Sorry, something went wrong. Please try again." },
       ]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Clear chat history
-  const clearChat = () => {
-    setChatHistory([]);
-  };
+  // ----------------------
+  // Clear Chat History
+  // ----------------------
+  const clearChat = () => setChatHistory([]);
 
-  // -------------------------------
-  // Rating submission
-  // -------------------------------
+  // ----------------------
+  // Rating Submission
+  // ----------------------
   const handleRatingSubmit = () => {
     if (rating === 0) {
       setErrorMessage("Please provide a rating.");
@@ -345,54 +361,40 @@ const SupportPage = () => {
         setRating(0);
         setRatingComment("");
       })
-      .catch(() => {
-        setErrorMessage("Error submitting your rating.");
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+      .catch(() => setErrorMessage("Error submitting your rating."))
+      .finally(() => setLoading(false));
   };
 
-  // -------------------------------
-  // FAQ feedback handling
-  // -------------------------------
+  // ----------------------
+  // FAQ Feedback Handling
+  // ----------------------
   const handleFaqFeedback = (faqId, isHelpful) => {
     setFaqsData((prevFaqs) =>
-      prevFaqs.map((faq) => {
-        if (faq.id === faqId) {
-          return {
-            ...faq,
-            helpfulCount: isHelpful ? faq.helpfulCount + 1 : faq.helpfulCount,
-            notHelpfulCount: !isHelpful ? faq.notHelpfulCount + 1 : faq.notHelpfulCount,
-          };
-        }
-        return faq;
-      })
+      prevFaqs.map((faq) =>
+        faq.id === faqId
+          ? {
+              ...faq,
+              helpfulCount: isHelpful ? faq.helpfulCount + 1 : faq.helpfulCount,
+              notHelpfulCount: !isHelpful ? faq.notHelpfulCount + 1 : faq.notHelpfulCount,
+            }
+          : faq
+      )
     );
   };
 
-  // -------------------------------
-  // Scroll to Contact Support form
-  // -------------------------------
-  const scrollToContact = () => {
+  // ----------------------
+  // Scroll to Contact Form
+  // ----------------------
+  const scrollToContact = () => { 
     if (contactFormRef.current) {
       contactFormRef.current.scrollIntoView({ behavior: "smooth" });
+      setActiveTab("contact");
     }
   };
 
-  // -------------------------------
-  // FAQ filtering (by search and category)
-  // -------------------------------
-  const filteredFaqs = faqsData.filter(
-    (faq) =>
-      (selectedFaqCategory === "All" || faq.category === selectedFaqCategory) &&
-      (faq.question.toLowerCase().includes(faqSearch.toLowerCase()) ||
-        faq.answer.toLowerCase().includes(faqSearch.toLowerCase()))
-  );
-
-  // -------------------------------
-  // Request Live Agent (simulate modal)
-  // -------------------------------
+  // ----------------------
+  // Request Live Agent (Modal)
+  // ----------------------
   const requestLiveAgent = () => {
     setShowAgentChatModal(true);
     setTimeout(() => {
@@ -401,31 +403,22 @@ const SupportPage = () => {
     }, 3000);
   };
 
-  // -------------------------------
-  // Contact Options (Email / WhatsApp)
-  // -------------------------------
-  const handleCallSupport = () => {
-    setShowContactOptions(true);
-  };
+  // ----------------------
+  // Contact Options (Modal)
+  // ----------------------
+  const handleCallSupport = () => setShowContactOptions(true);
+  const handleEmailSupport = () => (window.location.href = "mailto:support@freelancersassistant.com");
+  const handleWhatsAppSupport = () =>
+    (window.location.href = "https://api.whatsapp.com/send?phone=+923113313836");
 
-  const handleEmailSupport = () => {
-    window.location.href = "mailto:support@freelancersassistant.com";
-  };
+  // ----------------------
+  // Scroll-to-Top Handler
+  // ----------------------
+  const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
-  const handleWhatsAppSupport = () => {
-    window.location.href = "https://api.whatsapp.com/send?phone=923113313836";
-  };
-
-  // -------------------------------
-  // Scroll-to-top handler
-  // -------------------------------
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  // -------------------------------
-  // Share Support Page (using Web Share API)
-  // -------------------------------
+  // ----------------------
+  // Share Support Page
+  // ----------------------
   const handleShareSupport = async () => {
     if (navigator.share) {
       try {
@@ -434,338 +427,529 @@ const SupportPage = () => {
           text: "Get support from Freelancer Assistant.",
           url: window.location.href,
         });
-      } catch (err) {
-        console.error("Error sharing:", err);
-      }
+      } catch {}
     } else {
       alert("Sharing is not supported in your browser.");
     }
   };
 
-  return (
-    <div className="support-page container">
-      <div className="support-content">
-        <h1 className="text-4xl font-bold mb-6">Support</h1>
+  // ----------------------
+  // Filtered FAQs
+  // ----------------------
+  const filteredFaqs = faqsData.filter(
+    (faq) =>
+      (selectedFaqCategory === "All" || faq.category === selectedFaqCategory) &&
+      (faq.question.toLowerCase().includes(faqSearch.toLowerCase()) ||
+        faq.answer.toLowerCase().includes(faqSearch.toLowerCase()))
+  );
 
-        {/* Enhanced FAQ Section */}
-        <div className="mb-10">
-          <h2 className="text-2xl font-semibold mb-4">Frequently Asked Questions</h2>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 mb-4">
-            <input
-              type="text"
-              placeholder="Search FAQs..."
-              value={faqSearch}
-              onChange={(e) => setFaqSearch(e.target.value)}
-              className="w-full p-2 rounded bg-gray-700 text-white"
-            />
-            <select
-              value={selectedFaqCategory}
-              onChange={(e) => setSelectedFaqCategory(e.target.value)}
-              className="w-full sm:w-auto p-2 rounded bg-gray-700 text-white mt-2 sm:mt-0"
+  // ----------------------
+  // Render Methods for Each Tab
+  // ----------------------
+
+  const renderFaqTab = () => (
+    <div className="mb-8">
+      <h2 className="section-title">
+        <FaQuestionCircle className="icon-inline" /> Frequently Asked Questions
+      </h2>
+      <div className="faq-filters mb-4">
+        <input
+          type="text"
+          placeholder="Search FAQs..."
+          value={faqSearch}
+          onChange={(e) => setFaqSearch(e.target.value)}
+          className="form-input"
+        />
+        <select
+          value={selectedFaqCategory}
+          onChange={(e) => setSelectedFaqCategory(e.target.value)}
+          className="form-input"
+        >
+          <option value="All">All Categories</option>
+          <option value="Account">Account</option>
+          <option value="Support">Support</option>
+          <option value="Payment">Payment</option>
+          <option value="Ticket">Ticket</option>
+          <option value="Billing">Billing</option>
+          <option value="General">General</option>
+          <option value="Technical">Technical</option>
+        </select>
+      </div>
+      <div className="faq-list">
+        {filteredFaqs.length > 0 ? (
+          filteredFaqs.map((faq) => (
+            <div
+              key={faq.id}
+              className={`faq-item ${faqOpen === faq.id ? "faq-open" : ""}`}
             >
-              <option value="All">All Categories</option>
-              <option value="Account">Account</option>
-              <option value="Support">Support</option>
-              <option value="Payment">Payment</option>
-              <option value="Ticket">Ticket</option>
-              <option value="Billing">Billing</option>
-              <option value="General">General</option>
-              <option value="Technical">Technical</option>
-            </select>
-          </div>
-          <div className="faq-section">
-            {filteredFaqs.length > 0 ? (
-              filteredFaqs.map((faq) => (
-                <div
-                  key={faq.id}
-                  className={`faq-item ${faqOpen === faq.id ? "open" : ""}`}
-                  onClick={() => setFaqOpen(faqOpen === faq.id ? null : faq.id)}
-                >
-                  <div className="faq-header">
-                    <span className="faq-question">
-                      {faqOpen === faq.id ? "▼" : "▶"} {faq.question}
-                    </span>
-                    <span className="faq-category">{faq.category}</span>
-                  </div>
-                  {faqOpen === faq.id && (
-                    <>
-                      <p className="faq-answer">{faq.answer}</p>
-                      <div className="faq-feedback">
-                        <span className="text-sm">Was this helpful?</span>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleFaqFeedback(faq.id, true);
-                          }}
-                          className="helpful-btn"
-                        >
-                          👍 {faq.helpfulCount}
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleFaqFeedback(faq.id, false);
-                          }}
-                          className="not-helpful-btn"
-                        >
-                          👎 {faq.notHelpfulCount}
-                        </button>
-                      </div>
-                    </>
-                  )}
+              <div
+                className="faq-header"
+                onClick={() => setFaqOpen(faqOpen === faq.id ? null : faq.id)}
+              >
+                <div className="faq-question-wrapper">
+                  <span className="faq-arrow">
+                    {faqOpen === faq.id ? "▼" : "▶"}
+                  </span>
+                  <h3 className="faq-question">{faq.question}</h3>
                 </div>
-              ))
-            ) : (
-              <p>No FAQs match your search.</p>
-            )}
-          </div>
-          <button onClick={scrollToContact} className="mt-4 btn-blue full-width">
-            Didn't find what you're looking for? Ask a Question
-          </button>
-        </div>
-
-        {/* Support History Section */}
-        <div className="bg-gray-800 p-6 rounded-lg mb-6">
-          <h2 className="text-2xl font-semibold mb-4">Support History</h2>
-          {supportHistory.length > 0 ? (
-            <table className="w-full text-left">
-              <thead>
-                <tr>
-                  <th className="p-2 border-b border-gray-600">Ticket ID</th>
-                  <th className="p-2 border-b border-gray-600">Subject</th>
-                  <th className="p-2 border-b border-gray-600">Status</th>
-                  <th className="p-2 border-b border-gray-600">Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {supportHistory.map((ticket) => (
-                  <tr key={ticket.id}>
-                    <td className="p-2 border-b border-gray-600">{ticket.id}</td>
-                    <td className="p-2 border-b border-gray-600">{ticket.subject}</td>
-                    <td className="p-2 border-b border-gray-600">{ticket.status}</td>
-                    <td className="p-2 border-b border-gray-600">
-                      {new Date(ticket.date).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <p>No support history available.</p>
-          )}
-        </div>
-
-        {/* Ticket Search Section */}
-        <div className="bg-gray-800 p-6 rounded-lg mb-6">
-          <h2 className="text-2xl font-semibold mb-4">Search Tickets</h2>
-          <input
-            type="text"
-            className="w-full p-2 rounded bg-gray-700 text-white mb-3"
-            placeholder="Enter ticket ID or keyword"
-            value={ticketSearch}
-            onChange={(e) => setTicketSearch(e.target.value)}
-          />
-          <button onClick={handleTicketSearchSubmit} className="w-full btn-blue">
-            Search Tickets
-          </button>
-          {loading && <p className="mt-4">Loading...</p>}
-          {ticketResults.length > 0 && (
-            <div className="mt-4">
-              <h3 className="text-xl font-medium mb-2">Results:</h3>
-              <ul>
-                {ticketResults.map((ticket) => (
-                  <li key={ticket.id} className="p-2 border-b border-gray-600">
-                    <span className="font-semibold">ID:</span> {ticket.id} |{" "}
-                    <span className="font-semibold">Subject:</span> {ticket.subject} |{" "}
-                    <span className="font-semibold">Status:</span> {ticket.status}
-                  </li>
-                ))}
-              </ul>
+                <span className="faq-category">{faq.category}</span>
+              </div>
+              {faqOpen === faq.id && (
+                <div className="faq-body">
+                  <p className="faq-answer">{faq.answer}</p>
+                  <div className="faq-feedback">
+                    <span>Was this helpful?</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleFaqFeedback(faq.id, true);
+                      }}
+                      className="fdbtn-helpful"
+                    >
+                      <FaThumbsUp /> {faq.helpfulCount}
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleFaqFeedback(faq.id, false);
+                      }}
+                      className="fdbtn-nothelpful"
+                    >
+                      <FaThumbsDown /> {faq.notHelpfulCount}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          ))
+        ) : (
+          <p className="no-results">No FAQs match your search.</p>
+        )}
+      </div>
+      <button
+        onClick={scrollToContact}
+        className="btn-primary ask-question-btn"
+      >
+        <FaPaperPlane />
+        Ask a Question
+      </button>
+    </div>
+  );
 
-        {/* Ticket Status Lookup Section */}
-        <div className="bg-gray-800 p-6 rounded-lg mb-6">
-          <h2 className="text-2xl font-semibold mb-4">Check Ticket Status</h2>
-          <input
-            type="text"
-            className="w-full p-2 rounded bg-gray-700 text-white mb-3"
-            placeholder="Enter your ticket ID"
-            value={ticketId}
-            onChange={(e) => setTicketId(e.target.value)}
-          />
-          <button onClick={checkTicketStatus} className="w-full btn-blue">
-            Check Status
-          </button>
-          {loading && <p className="mt-4">Loading...</p>}
-          {ticketStatus && <p className="mt-4">{ticketStatus}</p>}
+  const renderHistoryTab = () => (
+    <div className="mb-8">
+      <h2 className="section-title">
+        <FaHistory className="icon-inline" /> Support History
+      </h2>
+      {supportHistory.length > 0 ? (
+        <div className="overflow-x-auto">
+          <table>
+            <thead>
+              <tr>
+                <th>Ticket ID</th>
+                <th>Subject</th>
+                <th>Status</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {supportHistory.map((ticket) => (
+                <tr key={ticket.id}>
+                  <td>{ticket.id}</td>
+                  <td>{ticket.subject}</td>
+                  <td>{ticket.status}</td>
+                  <td>
+                    {new Date(ticket.date).toLocaleDateString(undefined, {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
+      ) : (
+        <p className="no-results">No support history available.</p>
+      )}
+    </div>
+  );
 
-        {/* Contact Support Section */}
-        <div ref={contactFormRef} className="bg-gray-800 p-6 rounded-lg mb-6">
-          <h2 className="text-2xl font-semibold mb-4">Contact Support</h2>
-          <form onSubmit={handleSubmit}>
+  const renderSearchTab = () => (
+    <div className="mb-8">
+      <h2 className="section-title">
+        <FaSearch className="icon-inline" /> Search Tickets
+      </h2>
+      <div className="search-controls mb-4">
+        <input
+          type="text"
+          placeholder="Enter ticket ID or keyword"
+          value={ticketSearch}
+          onChange={(e) => setTicketSearch(e.target.value)}
+          className="form-input"
+        />
+        <button
+          onClick={handleTicketSearchSubmit}
+          className="btn-primary"
+        >
+          <FaSearch /> Search
+        </button>
+      </div>
+      {loading && <p className="loading-text">Searching...</p>}
+      {ticketResults.length > 0 && (
+        <div className="search-results">
+          <ul>
+            {ticketResults.map((ticket) => (
+              <li key={ticket.id} className="ticket-item">
+                <div>
+                  <p>
+                    <span className="bold-label">ID:</span> {ticket.id}
+                  </p>
+                  <p>
+                    <span className="bold-label">Subject:</span> {ticket.subject}
+                  </p>
+                </div>
+                <span
+                  className={`status-badge ${
+                    ticket.status === "Open" ? "status-open" : "status-closed"
+                  }`}
+                >
+                  {ticket.status}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderContactTab = () => (
+    <div ref={contactFormRef} className="mb-8">
+      <h2 className="section-title">
+        <FaEnvelope className="icon-inline" /> Contact Support
+      </h2>
+      <div className="contact-form-container">
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
             <input
               type="text"
-              className="w-full p-2 rounded bg-gray-700 text-white mb-4"
               placeholder="Your Name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               disabled={loading}
+              className="form-input"
             />
+          </div>
+          <div className="form-group">
             <input
               type="email"
-              className="w-full p-2 rounded bg-gray-700 text-white mb-4"
               placeholder="Your Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={loading}
+              className="form-input"
             />
+          </div>
+          <div className="form-group">
             <textarea
-              className="w-full p-2 rounded bg-gray-700 text-white mb-4"
               placeholder="Your Message"
               rows="4"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               disabled={loading}
+              className="form-textarea"
             ></textarea>
-            <input
-              type="file"
-              className="w-full p-2 rounded bg-gray-700 text-white mb-4"
-              onChange={handleFileChange}
-              disabled={loading}
-            />
-            {attachmentPreview && (
-              <div className="attachment-preview mb-4">
-                <p>Attachment Preview:</p>
-                <img src={attachmentPreview} alt="Attachment Preview" style={{ maxWidth: "200px" }} />
-                <button type="button" onClick={() => { setAttachment(null); setAttachmentPreview(null); }} className="btn-red">
-                  Remove Attachment
-                </button>
+          </div>
+          <div className="form-group file-group">
+            <label className="file-label">
+              <span className="file-text">Attach File (optional)</span>
+              <input
+                type="file"
+                onChange={handleFileChange}
+                disabled={loading}
+                className="file-input"
+              />
+            </label>
+            {attachment && (
+              <div className="attachment-preview">
+                {attachmentPreview ? (
+                  <img
+                    src={attachmentPreview}
+                    alt="Preview"
+                    className="attachment-img"
+                  />
+                ) : (
+                  <FaFileAlt className="attachment-icon" />
+                )}
+                <div>
+                  <p className="attachment-name">{attachment.name}</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAttachment(null);
+                      setAttachmentPreview(null);
+                    }}
+                    className="remove-attachment-btn"
+                  >
+                    <FaTimes /> Remove
+                  </button>
+                </div>
               </div>
             )}
-            <div className="flex flex-col sm:flex-row sm:gap-4">
-              <button type="submit" className="w-full btn-blue" disabled={loading}>
-                Submit
-              </button>
-              <button type="button" onClick={handleCallSupport} className="w-full btn-green">
-                Call/Chat Support
-              </button>
-              <button type="button" onClick={resetContactForm} className="w-full btn-gray">
-                Reset Form
-              </button>
-            </div>
-          </form>
-          {successMessage && <p className="mt-4 text-green-500">{successMessage}</p>}
-          {errorMessage && <p className="mt-4 text-red-500">{errorMessage}</p>}
-          <button onClick={handleShareSupport} className="mt-4 full-width btn-purple">
-            Share Support Page
-          </button>
-        </div>
-
-        {/* Rating Section */}
-        <div className="bg-gray-800 p-6 rounded-lg mb-6">
-          <h2 className="text-2xl font-semibold mb-4">Rate Support</h2>
-          <div className="flex items-center mb-4">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <button
-                key={star}
-                onClick={() => setRating(star)}
-                className={`p-2 ${rating >= star ? "bg-yellow-500" : "bg-gray-700"} rounded`}
-              >
-                ⭐
-              </button>
-            ))}
           </div>
-          <textarea
-            className="w-full p-2 rounded bg-gray-700 text-white mb-4"
-            placeholder="Leave an optional comment..."
-            rows="2"
-            value={ratingComment}
-            onChange={(e) => setRatingComment(e.target.value)}
-          ></textarea>
-          <button onClick={handleRatingSubmit} className="w-full btn-blue" disabled={loading}>
-            Submit Rating
-          </button>
-        </div>
 
-        {/* AI Chatbot Section */}
-        <div className="bg-gray-800 p-6 rounded-lg mb-6">
-          <h2 className="text-2xl font-semibold mb-4">Live AI Chat Support</h2>
-          <div
-            ref={chatContainerRef}
-            className="h-60 overflow-y-auto bg-gray-700 p-4 rounded-md mb-4"
-          >
-            {chatHistory.map((chat, index) => (
-              <div
-                key={index}
-                className={`mb-2 ${chat.sender === "user" ? "text-right" : "text-left"}`}
-              >
-                <p className={chat.sender === "user" ? "text-blue-400" : "text-gray-300"}>
-                  {chat.text}
-                </p>
-              </div>
-            ))}
-          </div>
-          <form onSubmit={handleChatSubmit} className="flex">
-            <input
-              type="text"
-              className="w-full p-2 rounded-l bg-gray-700 text-white"
-              placeholder="Type your message..."
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
+          <div className="form-actions">
+            <button
+              type="submit"
+              className="btn-primary"
               disabled={loading}
-            />
-            <button type="submit" className="bg-blue-600 hover:bg-blue-700 p-2 rounded-r font-medium" disabled={loading}>
-              Send
+            >
+              {loading ? "Sending..." : (
+                <>
+                  <FaPaperPlane />
+                  Submit
+                </>
+              )}
             </button>
-          </form>
-          <div className="mt-3 flex gap-4">
-            <button onClick={clearChat} className="w-full btn-red">
-              Clear Chat
+            <button
+              type="button"
+              onClick={handleCallSupport}
+              className="btn-secondary"
+            >
+              <FaPhoneAlt />
+              Call/Chat Support
             </button>
-            <button onClick={requestLiveAgent} className="w-full btn-purple">
-              Request Live Agent
+            <button
+              type="button"
+              onClick={resetContactForm}
+              className="btn-tertiary"
+            >
+              <FaTrashAlt />
+              Reset Form
+            </button>
+          </div>
+        </form>
+
+        {successMessage && <p className="success-text">{successMessage}</p>}
+        {errorMessage && <p className="error-text">{errorMessage}</p>}
+
+        <button
+          onClick={handleShareSupport}
+          className="btn-accent share-btn"
+        >
+          <FaShareAlt />
+          Share Support Page
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderChatTab = () => (
+    <div className="mb-8">
+      <h2 className="section-title">
+        <FaComments className="icon-inline" /> Live AI Chat Support
+      </h2>
+      <div className="chat-container">
+        <div
+          ref={chatContainerRef}
+          className="chat-history"
+        >
+          {chatHistory.length === 0 && (
+            <p className="no-messages">No messages yet. Start the conversation below!</p>
+          )}
+          {chatHistory.map((chat, index) => (
+            <div
+              key={index}
+              className={`chat-message ${chat.sender === "user" ? "chat-user" : "chat-bot"}`}
+            >
+              <p>{chat.text}</p>
+            </div>
+          ))}
+        </div>
+        <form onSubmit={handleChatSubmit} className="chat-input-group">
+          <input
+            type="text"
+            placeholder="Type your message..."
+            value={chatInput}
+            onChange={(e) => setChatInput(e.target.value)}
+            disabled={loading}
+            className="form-input chat-input"
+          />
+          <button
+            type="submit"
+            className="btn-primary chat-send-btn"
+            disabled={loading}
+          >
+            Send
+          </button>
+        </form>
+        <div className="chat-actions">
+          <button onClick={clearChat} className="btn-tertiary">
+            <FaTrashAlt /> Clear Chat
+          </button>
+          <button onClick={requestLiveAgent} className="btn-accent">
+            <FaHeadset /> Request Live Agent
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderRatingTab = () => (
+    <div className="mb-8">
+      <h2 className="section-title">
+        <FaStar className="icon-inline" /> Rate Support
+      </h2>
+      <div className="rating-container">
+        <div className="star-rating">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <button
+              key={star}
+              onClick={() => setRating(star)}
+              className={`star-btn ${rating >= star ? "star-selected" : ""}`}
+            >
+              ★
+            </button>
+          ))}
+        </div>
+        <textarea
+          placeholder="Leave an optional comment..."
+          rows="3"
+          value={ratingComment}
+          onChange={(e) => setRatingComment(e.target.value)}
+          disabled={loading}
+          className="form-textarea"
+        ></textarea>
+        <button
+          onClick={handleRatingSubmit}
+          className="btn-primary"
+          disabled={loading}
+        >
+          Submit Rating
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="support-page container">
+      {/* Page Title */}
+      <h1 className="page-title">Support Center</h1>
+
+      {/* Tab Navigation */}
+      <nav>
+        <button
+          onClick={() => setActiveTab("faq")}
+          className={`tab-button ${activeTab === "faq" ? "tab-active" : ""}`}
+        >
+          <FaQuestionCircle className="icon-inline" /> FAQ
+        </button>
+        <button
+          onClick={() => setActiveTab("history")}
+          className={`tab-button ${activeTab === "history" ? "tab-active" : ""}`}
+        >
+          <FaHistory className="icon-inline" /> History
+        </button>
+        <button
+          onClick={() => setActiveTab("search")}
+          className={`tab-button ${activeTab === "search" ? "tab-active" : ""}`}
+        >
+          <FaSearch className="icon-inline" /> Search
+        </button>
+        <button
+          onClick={() => setActiveTab("contact")}
+          className={`tab-button ${activeTab === "contact" ? "tab-active" : ""}`}
+        >
+          <FaEnvelope className="icon-inline" /> Contact
+        </button>
+        <button
+          onClick={() => setActiveTab("chat")}
+          className={`tab-button ${activeTab === "chat" ? "tab-active" : ""}`}
+        >
+          <FaComments className="icon-inline" /> Chat
+        </button>
+        <button
+          onClick={() => setActiveTab("rate")}
+          className={`tab-button ${activeTab === "rate" ? "tab-active" : ""}`}
+        >
+          <FaStar className="icon-inline" /> Rate
+        </button>
+      </nav>
+
+      {/* Conditionally Render Active Tab */}
+      <div className="tab-content">
+        {activeTab === "faq" && renderFaqTab()}
+        {activeTab === "history" && renderHistoryTab()}
+        {activeTab === "search" && renderSearchTab()}
+        {activeTab === "contact" && renderContactTab()}
+        {activeTab === "chat" && renderChatTab()}
+        {activeTab === "rate" && renderRatingTab()}
+      </div>
+
+      {/* Live Agent Modal */}
+      {showAgentChatModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <button
+              className="modal-close-btn"
+              onClick={() => setShowAgentChatModal(false)}
+            >
+              <FaTimes />
+            </button>
+            <h3 className="modal-title">Live Agent Request</h3>
+            <p>Your request is being processed... Please wait.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Contact Options Modal */}
+      {showContactOptions && (
+        <div className="modal-overlay" onClick={() => setShowContactOptions(false)}>
+          <div
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="modal-close-btn"
+              onClick={() => setShowContactOptions(false)}
+            >
+              <FaTimes />
+            </button>
+            <h3 className="modal-title">Contact Options</h3>
+            <button
+              onClick={handleEmailSupport}
+              className="btn-primary modal-btn"
+            >
+              <FaEnvelope /> Email Support
+            </button>
+            <button
+              onClick={handleWhatsAppSupport}
+              className="btn-secondary modal-btn"
+            >
+              <FaPhoneAlt /> WhatsApp Support
+            </button>
+            <button
+              onClick={() => setShowContactOptions(false)}
+              className="btn-tertiary modal-btn"
+            >
+              Cancel
             </button>
           </div>
         </div>
+      )}
 
-        {/* Live Agent Modal */}
-        {showAgentChatModal && (
-          <div className="modal-overlay">
-            <div className="modal-content">
-              <h3 className="text-xl font-semibold mb-4">Live Agent Request</h3>
-              <p>Your request for a live agent is being processed...</p>
-            </div>
-          </div>
-        )}
-
-        {/* Contact Options Modal */}
-        {showContactOptions && (
-          <div className="modal-overlay" onClick={() => setShowContactOptions(false)}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-              <h3 className="text-xl font-semibold mb-4">Contact Options</h3>
-              <button onClick={handleEmailSupport} className="w-full btn-blue mb-2">
-                Email Support
-              </button>
-              <button onClick={handleWhatsAppSupport} className="w-full btn-green mb-2">
-                WhatsApp Support
-              </button>
-              <button onClick={() => setShowContactOptions(false)} className="w-full btn-gray">
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Scroll-to-Top Button */}
-        {showScrollTop && (
-          <button className="scroll-top" onClick={scrollToTop}>
-            ↑ Top
-          </button>
-        )}
-      </div>
+      {/* Scroll-to-Top Button */}
+      {showScrollTop && (
+        <button
+          className="scroll-top"
+          onClick={scrollToTop}
+          aria-label="Scroll to top"
+        >
+          <FaArrowUp />
+        </button>
+      )}
     </div>
   );
 };

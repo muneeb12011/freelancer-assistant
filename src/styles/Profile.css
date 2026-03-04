@@ -1,481 +1,810 @@
-/* 
-  Fully Customized Profile.css – Polished Edition
-  Bold, Modern, and Polished Styling
-  ----------------------------------
-  NOTE:
-  1. Ensure this CSS loads AFTER any default MUI styles.
-  2. Dialog styling remains unchanged.
-*/
+/* ============================================================
+   PROFILE PAGE — Premium Dark Theme
+   Aesthetic: Obsidian Luxury — consistent with Tasks.css
+   Deep blacks, gold accents, glass morphism, grain texture
+   ============================================================ */
 
-/* Optional: Use a modern font like 'Poppins' */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap');
 
-/* ==========================================
-   Theme Color Variables
-   Dark Theme (Default)
-========================================== */
+/* ── CSS Variables (mirrors Tasks.css) ── */
 :root {
-  --primary-bg: #1e1e1e;
-  --secondary-bg: #292929;
-  --card-bg: rgba(255, 255, 255, 0.07); /* Glassy card background */
-  --dialog-bg: rgba(0, 0, 0, 0.85);
-  --accent-color: #ffcc00;
-  --text-color: #f5f5f5;
-  --subtext-color: #bbb;
-  --input-bg: rgba(255, 255, 255, 0.1);
-  --input-border: #444;
-  --heading-font: 'Poppins', sans-serif;
-  --body-font: 'Poppins', sans-serif;
+  --bg-base:         #0a0a0c;
+  --bg-surface:      #111114;
+  --bg-raised:       #18181d;
+  --bg-glass:        rgba(255, 255, 255, 0.035);
+  --bg-glass-hover:  rgba(255, 255, 255, 0.06);
+
+  --gold:            #c9a84c;
+  --gold-light:      #e8c97a;
+  --gold-dim:        rgba(201, 168, 76, 0.15);
+  --gold-glow:       rgba(201, 168, 76, 0.25);
+
+  --accent-blue:     #4a90d9;
+  --accent-green:    #4caf82;
+  --accent-red:      #e05c5c;
+
+  --text-primary:    #f0ede8;
+  --text-secondary:  #8e8a82;
+  --text-muted:      #4a4843;
+
+  --border:          rgba(255, 255, 255, 0.07);
+  --border-gold:     rgba(201, 168, 76, 0.3);
+
+  --radius-sm:       6px;
+  --radius-md:       12px;
+  --radius-lg:       18px;
+  --radius-xl:       24px;
+
+  --shadow-sm:       0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-md:       0 8px 24px rgba(0, 0, 0, 0.6);
+  --shadow-lg:       0 20px 60px rgba(0, 0, 0, 0.8);
+  --shadow-gold:     0 0 30px rgba(201, 168, 76, 0.12);
+
+  --transition:      all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+  --font-display:    'DM Serif Display', Georgia, serif;
+  --font-body:       'DM Sans', sans-serif;
 }
 
-/* ==========================================
-   Light Theme Overrides
-   (Add "light-theme" class to <body> or <html>)
-========================================== */
-.light-theme {
-  --primary-bg: #ffffff;
-  --secondary-bg: #f0f0f0;
-  --card-bg: rgba(0, 0, 0, 0.06);
-  --dialog-bg: rgba(255, 255, 255, 0.9);
-  --accent-color: #1976d2;
-  --text-color: #333;
-  --subtext-color: #666;
-  --input-bg: rgba(0, 0, 0, 0.04);
-  --input-border: #ccc;
+/* ── Reset ── */
+*, *::before, *::after {
+  box-sizing: border-box;
 }
 
-/* ==========================================
-   Global Page Styling
-========================================== */
-html, body {
-  margin: 0;
-  padding: 0;
-  font-family: var(--body-font);
-  background: var(--primary-bg);
-  color: var(--text-color);
-  overflow-x: hidden;
-}
-
-/* ==========================================
-   Profile Page Container
-========================================== */
+/* ── Page Wrapper ── */
 .profile-page {
   position: relative;
-  max-width: 1000px;
-  margin: 50px auto;
-  padding: 40px 30px;
-  border-radius: 15px;
-  background: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.03) 0%,
-      rgba(255, 255, 255, 0.06) 100%
-    );
-  backdrop-filter: blur(8px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-  transition: all 0.4s ease-in-out;
+  min-height: 100vh;
+  background-color: var(--bg-base);
+  background-image:
+    radial-gradient(ellipse 700px 500px at 10% 0%,   rgba(201, 168, 76, 0.045) 0%, transparent 65%),
+    radial-gradient(ellipse 500px 400px at 90% 100%, rgba(74, 144, 217, 0.04)  0%, transparent 60%);
+  font-family: var(--font-body);
+  color: var(--text-primary);
+  padding: 40px 32px 80px;
+  max-width: 860px;
+  margin: 0 auto;
+  animation: fadeSlideDown 0.45s ease both;
 }
 
-/* ==========================================
-   Profile Header
-========================================== */
-.profile-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-  padding-bottom: 20px;
-  margin-bottom: 30px;
+/* Grain texture overlay */
+.profile-page::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.55;
 }
 
-.profile-picture {
-  width: 130px;
-  height: 130px;
-  border-radius: 50%;
-  border: 4px solid var(--accent-color);
-  object-fit: cover;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-.profile-picture:hover {
-  transform: scale(1.05);
-  box-shadow: 0 0 15px rgba(255, 204, 0, 0.5);
+@keyframes fadeSlideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-.profile-info {
-  flex: 1;
-  margin-left: 30px;
-}
-
-.profile-name {
-  font-size: 2.2rem;
-  font-weight: 700;
-  background: linear-gradient(45deg, var(--accent-color), #ff6f91);
-  -webkit-background-clip : text;
-  -webkit-text-fill-color: transparent;
-  margin: 0;
-  letter-spacing: 1px;
-}
-
-.profile-role {
-  font-size: 1rem;
-  color: var(--subtext-color);
-  margin-top: 5px;
-}
-
-/* ==========================================
-   Edit Button
-========================================== */
-.edit-button {
-  background: var(--accent-color);
-  color: var(--primary-bg);
-  padding: 12px 20px;
-  border-radius: 25px;
-  border: none;
-  cursor: pointer;
-  font-weight: 600;
-  box-shadow: 0 0 10px rgba(255, 204, 0, 0.3);
-  transition: background 0.3s ease, box-shadow 0.3s ease, transform 0.2s;
-}
-.edit-button:hover {
-  background: #e6b800;
-  box-shadow: 0 0 15px rgba(230, 184, 0, 0.5);
-  transform: translateY(-2px);
-}
-
-/* ==========================================
-   Sections Base
-========================================== */
-.profile-section {
-  position: relative;
-  margin-top: 40px;
-  padding: 30px;
-  background: var(--card-bg);
-  backdrop-filter: blur(10px);
-  border-radius: 15px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-.profile-section:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
-}
-
-.section-title {
-  font-size: 1.6rem;
-  font-weight: 700;
-  color: var(--accent-color);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 20px;
-  position: relative;
-}
-.section-title::after {
-  content: "";
-  position: absolute;
-  bottom: -5px;
-  left: 0;
-  width: 50px;
-  height: 3px;
-  background-color: var(--accent-color);
-}
-
-/* ==========================================
-   About Me Section
-========================================== */
-.profile-section.about-me {
-  border-left: 5px solid var(--accent-color);
-}
-.profile-section.about-me .profile-text {
-  font-size: 1rem;
-  color: #ddd;
-  line-height: 1.7;
-}
-
-/* ==========================================
-   Skills Section
-========================================== */
-.profile-section.skills {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.05),
-    rgba(255, 255, 255, 0.01)
-  );
-  border-left: 5px solid var(--accent-color);
-}
-.profile-section.skills .skill-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 15px;
-  margin-top: 10px;
-}
-.profile-section.skills .skill-tag {
-  display: inline-block;
-  background: linear-gradient(45deg, var(--accent-color), #ffdd57);
-  color: #000;
-  padding: 10px 16px;
-  border-radius: 30px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  border: 2px solid #fff;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
-  transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
-}
-.profile-section.skills .skill-tag:hover {
-  transform: translateY(-3px) scale(1.05);
-  box-shadow: 0 4px 10px rgba(255, 204, 0, 0.4);
-  background: linear-gradient(45deg, #ffdd57, var(--accent-color));
-}
-
-/* ==========================================
-   Projects Section
-========================================== */
-.profile-section.projects {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.07),
-    rgba(255, 255, 255, 0.02)
-  );
-  border-left: 5px solid var(--accent-color);
-}
-.profile-section.projects .project-card {
-  position: relative;
-  margin-bottom: 20px;
-  padding: 20px;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid #444;
-  border-radius: 12px;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+/* ─────────────────────────────────────
+   MUI Card Override — Profile Card
+───────────────────────────────────── */
+.profile-page > .MuiCard-root {
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-xl) !important;
+  box-shadow: var(--shadow-md) !important;
   overflow: hidden;
+  position: relative;
+  margin-bottom: 24px;
 }
-.profile-section.projects .project-card::before {
-  content: "";
+
+/* Gold shimmer top border on card */
+.profile-page > .MuiCard-root::before {
+  content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 5px;
-  height: 100%;
-  background: var(--accent-color);
-  opacity: 0.7;
-  border-radius: 0 5px 5px 0;
-  transition: opacity 0.3s ease;
-}
-.profile-section.projects .project-card:hover {
-  transform: translateY(-5px) scale(1.02);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
-}
-.profile-section.projects .project-card:hover::before {
-  opacity: 1;
-}
-.profile-section.projects .project-title {
-  font-size: 1.2rem;
-  font-weight: 600;
-  margin-bottom: 10px;
-  padding-left: 15px;
-  border-left: 3px solid var(--accent-color);
-  color: #fff;
-}
-.profile-section.projects .project-description {
-  color: #ddd;
-  font-size: 0.95rem;
-  line-height: 1.5;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
 }
 
-/* ==========================================
-   Social Links
-========================================== */
-.social-links {
-  display: flex;
-  gap: 16px;
-  margin-top: 15px;
+.profile-page > .MuiCard-root .MuiCardContent-root {
+  padding: 28px 28px 16px !important;
 }
-.social-link {
-  display: flex;
-  align-items: center;
-  gap: 5px;
+
+.profile-page > .MuiCard-root .MuiCardActions-root {
+  padding: 12px 28px 20px !important;
+  gap: 10px;
+  border-top: 1px solid var(--border);
+}
+
+/* ─────────────────────────────────────
+   Profile Picture
+───────────────────────────────────── */
+.profile-page img[alt="Profile"] {
+  display: block;
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 2px solid var(--border-gold);
+  box-shadow: 0 0 0 4px var(--gold-dim), var(--shadow-md);
+  transition: var(--transition-slow);
+}
+
+.profile-page img[alt="Profile"]:hover {
+  box-shadow: 0 0 0 6px var(--gold-dim), var(--shadow-gold);
+  transform: scale(1.03);
+}
+
+/* ─────────────────────────────────────
+   Typography overrides
+───────────────────────────────────── */
+.profile-page .MuiTypography-h5 {
+  font-family: var(--font-display) !important;
+  font-size: 26px !important;
+  font-weight: 400 !important;
+  letter-spacing: -0.02em !important;
+  color: var(--text-primary) !important;
+  background: linear-gradient(135deg, var(--text-primary) 0%, var(--gold-light) 80%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.profile-page .MuiTypography-h6 {
+  font-family: var(--font-display) !important;
+  font-size: 19px !important;
+  font-weight: 400 !important;
+  letter-spacing: -0.015em !important;
+  color: var(--text-primary) !important;
+  margin-bottom: 14px !important;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+
+.profile-page .MuiTypography-h6::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: 0;
+  width: 40px;
+  height: 1px;
+  background: var(--gold);
+}
+
+.profile-page .MuiTypography-body1,
+.profile-page .MuiTypography-body2 {
+  font-family: var(--font-body) !important;
+  color: var(--text-secondary) !important;
+  font-size: 13.5px !important;
+  line-height: 1.65 !important;
+}
+
+.profile-page .MuiTypography-caption {
+  font-family: var(--font-body) !important;
+  color: var(--text-muted) !important;
+  font-size: 11.5px !important;
+  letter-spacing: 0.04em;
+}
+
+/* Plain paragraph tags inside profile */
+.profile-page p {
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  line-height: 1.65;
+  margin: 4px 0;
+}
+
+.profile-page p a {
+  color: var(--gold-light);
   text-decoration: none;
-  color: var(--accent-color);
-  font-size: 1.1rem;
-  transition: color 0.3s ease, transform 0.3s ease;
-}
-.social-link:hover {
-  color: #e6b800;
-  transform: scale(1.1);
+  transition: var(--transition);
+  font-weight: 500;
 }
 
-/* ==========================================
-   GLOBAL MUI Overrides (Non-dialog elements)
-========================================== */
-.MuiCard-root {
-  background: rgba(255, 255, 255, 0.05) !important;
-  backdrop-filter: blur(6px);
-  color: var(--text-color) !important;
-  border: 1px solid var(--input-border);
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-  margin-bottom: 20px;
-}
-.MuiCardContent-root,
-.MuiCardActions-root {
-  background: transparent !important;
-  color: inherit !important;
+.profile-page p a:hover {
+  color: var(--gold);
+  text-decoration: underline;
 }
 
-/* ==========================================
-   (DO NOT MODIFY) Dialog & Paper Styling – Remains Unchanged
-========================================== */
-.MuiDialog-paper,
-.MuiPaper-root {
-  background: var(--dialog-bg) !important;
-  color: var(--text-color) !important;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8) !important;
-  padding: 25px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-.MuiDialogTitle-root {
-  background: transparent !important;
-  color: var(--accent-color) !important;
-  font-size: 24px;
-  font-weight: 700;
-  margin-bottom: 15px;
-  text-align: center;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
-}
-.MuiDialogContent-root {
-  background: transparent !important;
-  color: var(--text-color) !important;
-  font-size: 16px;
-  line-height: 1.6;
-  padding: 20px 30px;
-}
-.MuiDialogActions-root {
-  background: transparent !important;
-  padding: 15px 30px;
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-  border-top: 2px solid rgba(255, 255, 255, 0.1);
-}
-.MuiDialogActions-root button {
-  background: var(--accent-color);
-  color: var(--primary-bg);
-  padding: 10px 20px;
-  border-radius: 8px;
+/* Verified badge */
+.profile-page span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
   font-weight: 600;
-  border: none;
-  cursor: pointer;
-  transition: background 0.3s ease, box-shadow 0.3s ease, transform 0.2s;
-  box-shadow: 0 0 6px rgba(255, 204, 0, 0.3);
-}
-.MuiDialogActions-root button:hover {
-  background: #e6b800;
-  box-shadow: 0 0 10px rgba(230, 184, 0, 0.5);
-  transform: translateY(-2px);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-green);
 }
 
-/* ==========================================
-   Input Fields & MUI TextField Overrides
-========================================== */
-.input-field,
-.MuiInputBase-root {
+/* ─────────────────────────────────────
+   MUI Button overrides
+───────────────────────────────────── */
+
+/* All MUI Buttons base */
+.profile-page .MuiButton-root {
+  font-family: var(--font-body) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  border-radius: var(--radius-sm) !important;
+  transition: var(--transition) !important;
+  padding: 7px 16px !important;
+  line-height: 1 !important;
+}
+
+/* Contained buttons (primary actions) */
+.profile-page .MuiButton-contained {
+  background: linear-gradient(135deg, var(--gold) 0%, #a8802a 100%) !important;
+  color: #0a0a0c !important;
+  border: none !important;
+  box-shadow: 0 4px 16px rgba(201, 168, 76, 0.25) !important;
+}
+
+.profile-page .MuiButton-contained:hover {
+  background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 100%) !important;
+  box-shadow: 0 8px 28px rgba(201, 168, 76, 0.42) !important;
+  transform: translateY(-1px);
+}
+
+/* Outlined buttons */
+.profile-page .MuiButton-outlined {
+  background: transparent !important;
+  border: 1px solid var(--border-gold) !important;
+  color: var(--gold-light) !important;
+}
+
+.profile-page .MuiButton-outlined:hover {
+  background: var(--gold-dim) !important;
+  border-color: var(--gold) !important;
+  color: var(--gold-light) !important;
+}
+
+/* Text / small ghost buttons */
+.profile-page .MuiButton-text {
+  background: var(--bg-glass) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-secondary) !important;
+  border-radius: 20px !important;
+}
+
+.profile-page .MuiButton-text:hover {
+  background: var(--bg-glass-hover) !important;
+  border-color: var(--border-gold) !important;
+  color: var(--gold-light) !important;
+}
+
+/* ─────────────────────────────────────
+   MUI TextField overrides
+───────────────────────────────────── */
+.profile-page .MuiTextField-root {
   width: 100%;
-  background: var(--input-bg);
-  color: #fff !important;
-  border: 1px solid var(--input-border);
-  padding: 12px;
-  border-radius: 8px;
-  font-size: 15px;
-  margin: 8px 0;
-  transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
 }
 
-.MuiFormLabel-root,
-.MuiInputLabel-root,
-.MuiFormLabel-root.Mui-focused,
-.MuiInputLabel-root.Mui-focused {
-  color: #fff !important;
+.profile-page .MuiInputBase-root {
+  font-family: var(--font-body) !important;
+  font-size: 13.5px !important;
+  color: var(--text-primary) !important;
+  background: var(--bg-raised) !important;
+  border-radius: var(--radius-sm) !important;
+  transition: var(--transition) !important;
 }
-.MuiInputBase-input,
-.MuiOutlinedInput-input,
-.MuiFilledInput-input {
-  color: #fff !important;
+
+.profile-page .MuiOutlinedInput-notchedOutline {
+  border-color: var(--border) !important;
+  transition: var(--transition) !important;
 }
-.MuiInputBase-input::placeholder,
-.MuiOutlinedInput-input::placeholder,
-.MuiFilledInput-input::placeholder {
-  color: #fff !important;
+
+.profile-page .MuiInputBase-root:hover .MuiOutlinedInput-notchedOutline {
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.profile-page .MuiInputBase-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: var(--border-gold) !important;
+  box-shadow: 0 0 0 3px var(--gold-dim);
+}
+
+.profile-page .MuiInputLabel-root {
+  font-family: var(--font-body) !important;
+  font-size: 13px !important;
+  color: var(--text-muted) !important;
+}
+
+.profile-page .MuiInputLabel-root.Mui-focused {
+  color: var(--gold-light) !important;
+}
+
+.profile-page .MuiInputBase-input::placeholder {
+  color: var(--text-muted) !important;
   opacity: 1 !important;
 }
 
-.input-field:hover,
-.MuiInputBase-root:hover {
-  border-color: var(--accent-color);
-}
-.input-field:focus,
-.MuiInputBase-root:focus {
-  outline: none;
-  border-color: var(--accent-color);
-  box-shadow: 0 0 5px rgba(255, 204, 0, 0.5);
-}
-
-/* ==========================================
-   Image Preview (Edit Picture)
-========================================== */
-.image-preview-container {
-  width: 300px;
-  height: 300px;
+/* ─────────────────────────────────────
+   Section boxes (Bank, Tags, Bio, Skills, Projects, AI)
+───────────────────────────────────── */
+.profile-page .MuiBox-root[class*="mt"] {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px 26px;
+  margin-bottom: 16px !important;
+  position: relative;
   overflow: hidden;
-  border: 1px solid var(--input-border);
-  margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  transition: transform 0.3s ease;
-}
-.image-preview-container:hover {
-  transform: scale(1.01);
-}
-.profile-page img {
-  border-radius: 50%;
+  animation: sectionReveal 0.4s ease both;
 }
 
-/* ==========================================
-   Responsive Adjustments
-========================================== */
+@keyframes sectionReveal {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Gold shimmer on section tops */
+.profile-page .MuiBox-root[class*="mt"]::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+}
+
+/* ─────────────────────────────────────
+   Skills list
+───────────────────────────────────── */
+.profile-page ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.profile-page ul li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--gold-dim);
+  border: 1px solid var(--border-gold);
+  color: var(--gold-light);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  padding: 5px 12px;
+  border-radius: 20px;
+  transition: var(--transition);
+}
+
+.profile-page ul li:hover {
+  background: rgba(201, 168, 76, 0.22);
+  border-color: var(--gold);
+}
+
+/* Remove / small action buttons inside li */
+.profile-page ul li .MuiButton-root {
+  padding: 2px 8px !important;
+  font-size: 10px !important;
+  border-radius: 10px !important;
+  background: transparent !important;
+  border: none !important;
+  color: rgba(201, 168, 76, 0.5) !important;
+  min-width: unset !important;
+}
+
+.profile-page ul li .MuiButton-root:hover {
+  background: rgba(224, 92, 92, 0.1) !important;
+  color: var(--accent-red) !important;
+}
+
+/* ─────────────────────────────────────
+   Projects
+───────────────────────────────────── */
+.profile-page [key] > div,
+.profile-page .project-card {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  margin-bottom: 10px;
+  transition: var(--transition);
+}
+
+/* Project items (via style prop on div) */
+.profile-page .MuiBox-root div[style*="marginTop: '8px'"],
+.profile-page .MuiBox-root > div {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  margin-bottom: 10px;
+  transition: var(--transition);
+}
+
+.profile-page .MuiBox-root > div:hover {
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: var(--shadow-sm);
+}
+
+.profile-page .MuiBox-root > div strong {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: block;
+  margin-bottom: 4px;
+}
+
+/* ─────────────────────────────────────
+   Bank Details text
+───────────────────────────────────── */
+.profile-page .MuiBox-root p strong {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-right: 6px;
+}
+
+/* ─────────────────────────────────────
+   Verification inline controls
+───────────────────────────────────── */
+.profile-page .MuiBox-root .MuiTextField-root[size="small"] .MuiInputBase-root {
+  font-size: 12.5px !important;
+  padding: 2px 6px !important;
+}
+
+/* ─────────────────────────────────────
+   Social link anchors
+───────────────────────────────────── */
+.profile-page a[href*="linkedin"],
+.profile-page a[href*="github"] {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  padding: 7px 16px;
+  border-radius: 20px;
+  border: 1px solid var(--border-gold);
+  background: var(--gold-dim);
+  color: var(--gold-light);
+  text-decoration: none;
+  transition: var(--transition);
+}
+
+.profile-page a[href*="linkedin"]:hover,
+.profile-page a[href*="github"]:hover {
+  background: rgba(201, 168, 76, 0.22);
+  border-color: var(--gold);
+  box-shadow: 0 4px 16px var(--gold-glow);
+}
+
+/* ─────────────────────────────────────
+   Bio inline edit
+───────────────────────────────────── */
+.profile-page p[style*="cursor: pointer"] {
+  padding: 12px 14px;
+  background: var(--bg-raised);
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+  color: var(--text-secondary);
+}
+
+.profile-page p[style*="cursor: pointer"]:hover {
+  border-color: var(--border-gold);
+  background: #1d1d22;
+  color: var(--text-primary);
+}
+
+/* ─────────────────────────────────────
+   MUI Dialog overrides
+───────────────────────────────────── */
+.MuiDialog-paper {
+  background: var(--bg-raised) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: var(--radius-xl) !important;
+  box-shadow: var(--shadow-lg), 0 0 60px rgba(201, 168, 76, 0.08) !important;
+  font-family: var(--font-body) !important;
+  color: var(--text-primary) !important;
+  min-width: 380px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Gold top border on dialogs */
+.MuiDialog-paper::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+  z-index: 1;
+}
+
+.MuiDialogTitle-root {
+  font-family: var(--font-display) !important;
+  font-size: 22px !important;
+  font-weight: 400 !important;
+  letter-spacing: -0.02em !important;
+  color: var(--text-primary) !important;
+  background: var(--bg-raised) !important;
+  padding: 22px 26px 16px !important;
+}
+
+.MuiDialogContent-root {
+  background: var(--bg-raised) !important;
+  color: var(--text-secondary) !important;
+  padding: 16px 26px !important;
+  border-top: 1px solid var(--border) !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+
+.MuiDialogContent-dividers {
+  border-color: var(--border) !important;
+}
+
+.MuiDialogActions-root {
+  background: var(--bg-raised) !important;
+  padding: 14px 26px !important;
+  gap: 10px;
+}
+
+/* TextField inside dialog */
+.MuiDialog-paper .MuiInputBase-root {
+  background: var(--bg-surface) !important;
+  color: var(--text-primary) !important;
+  font-family: var(--font-body) !important;
+  font-size: 13.5px !important;
+}
+
+.MuiDialog-paper .MuiOutlinedInput-notchedOutline {
+  border-color: var(--border) !important;
+}
+
+.MuiDialog-paper .MuiInputBase-root:hover .MuiOutlinedInput-notchedOutline {
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.MuiDialog-paper .MuiInputBase-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: var(--border-gold) !important;
+  box-shadow: 0 0 0 3px var(--gold-dim);
+}
+
+.MuiDialog-paper .MuiInputLabel-root {
+  font-family: var(--font-body) !important;
+  color: var(--text-muted) !important;
+  font-size: 13px !important;
+}
+
+.MuiDialog-paper .MuiInputLabel-root.Mui-focused {
+  color: var(--gold-light) !important;
+}
+
+.MuiDialog-paper .MuiInputBase-input {
+  color: var(--text-primary) !important;
+}
+
+/* Dialog contained button */
+.MuiDialog-paper .MuiButton-contained {
+  background: linear-gradient(135deg, var(--gold) 0%, #a8802a 100%) !important;
+  color: #0a0a0c !important;
+  font-family: var(--font-body) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  border-radius: var(--radius-sm) !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(201, 168, 76, 0.25) !important;
+}
+
+.MuiDialog-paper .MuiButton-contained:hover {
+  background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 100%) !important;
+  box-shadow: 0 8px 24px rgba(201, 168, 76, 0.42) !important;
+  transform: translateY(-1px);
+}
+
+/* Dialog cancel/text button */
+.MuiDialog-paper .MuiButton-text {
+  font-family: var(--font-body) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+  color: var(--text-muted) !important;
+  background: transparent !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+.MuiDialog-paper .MuiButton-text:hover {
+  background: var(--bg-glass-hover) !important;
+  color: var(--text-secondary) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Dialog Typography */
+.MuiDialog-paper .MuiTypography-body1 {
+  font-family: var(--font-body) !important;
+  color: var(--text-secondary) !important;
+  font-size: 13.5px !important;
+  line-height: 1.7 !important;
+}
+
+.MuiDialog-paper .MuiTypography-body2 {
+  font-family: var(--font-body) !important;
+  color: var(--text-muted) !important;
+  font-size: 12px !important;
+  font-style: italic;
+}
+
+/* ─────────────────────────────────────
+   Snackbar overrides
+───────────────────────────────────── */
+.MuiSnackbar-root .MuiSnackbarContent-root {
+  background: var(--bg-raised) !important;
+  border: 1px solid var(--border-gold) !important;
+  color: var(--gold-light) !important;
+  font-family: var(--font-body) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-md), var(--shadow-gold) !important;
+  min-width: unset !important;
+}
+
+/* ─────────────────────────────────────
+   MUI Backdrop (dialog overlay)
+───────────────────────────────────── */
+.MuiBackdrop-root {
+  background-color: rgba(0, 0, 0, 0.72) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+
+/* ─────────────────────────────────────
+   Range slider (picture editor)
+───────────────────────────────────── */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: var(--border);
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  background: var(--gold);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--gold-glow);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  background: var(--gold-light);
+  transform: scale(1.2);
+}
+
+/* Picture preview box */
+.profile-page div[style*="border: '1px solid #ccc'"],
+.MuiDialog-paper div[style*="width: '300px'"] {
+  border: 1px solid var(--border-gold) !important;
+  border-radius: var(--radius-md) !important;
+  background: var(--bg-surface) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+/* ─────────────────────────────────────
+   Country Code Select (inside dialog)
+───────────────────────────────────── */
+.MuiDialog-paper div[style*="backgroundColor: '#1E1E1E'"],
+.MuiDialog-paper .MuiBox-root[sx] {
+  background: var(--bg-raised) !important;
+  border-color: var(--border) !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+.MuiDialog-paper select {
+  font-family: var(--font-body) !important;
+  font-size: 13.5px !important;
+  background: transparent !important;
+  color: var(--text-primary) !important;
+  border: none !important;
+  outline: none !important;
+  padding: 10px 14px !important;
+  width: 100% !important;
+  cursor: pointer;
+}
+
+.MuiDialog-paper select option {
+  background: var(--bg-raised) !important;
+  color: var(--text-primary) !important;
+}
+
+/* ─────────────────────────────────────
+   Error text (password dialog etc.)
+───────────────────────────────────── */
+.MuiDialog-paper .MuiTypography-colorError,
+.MuiDialog-paper p[style*="color"] {
+  color: var(--accent-red) !important;
+  font-size: 12.5px !important;
+  font-weight: 500;
+  background: rgba(224, 92, 92, 0.07);
+  border: 1px solid rgba(224, 92, 92, 0.2);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+}
+
+/* ─────────────────────────────────────
+   Footer
+───────────────────────────────────── */
+.profile-page footer,
+.profile-page .MuiBox-root[style*="textAlign: 'center'"] {
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+
+/* ─────────────────────────────────────
+   Scrollbar
+───────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(201, 168, 76, 0.2);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(201, 168, 76, 0.4); }
+
+/* ─────────────────────────────────────
+   Responsive
+───────────────────────────────────── */
 @media (max-width: 768px) {
   .profile-page {
-    margin: 20px auto;
-    padding: 20px;
+    padding: 20px 16px 60px;
   }
-  .profile-header {
-    flex-direction: column;
-    text-align: center;
+
+  .profile-page > .MuiCard-root .MuiCardContent-root {
+    padding: 20px 18px 12px !important;
   }
-  .profile-picture {
-    margin-bottom: 15px;
+
+  .profile-page > .MuiCard-root .MuiCardActions-root {
+    padding: 12px 18px 16px !important;
+    flex-wrap: wrap;
   }
-  .profile-info {
-    margin-left: 0;
+
+  .profile-page img[alt="Profile"] {
+    width: 90px;
+    height: 90px;
   }
-  .profile-name {
-    font-size: 1.8rem;
+
+  .MuiDialog-paper {
+    min-width: unset !important;
+    margin: 16px !important;
+    width: calc(100vw - 32px) !important;
   }
-  .profile-role {
-    font-size: 0.9rem;
+
+  .profile-page ul {
+    gap: 6px;
   }
-  .profile-section {
-    margin-top: 20px;
-    padding: 20px;
-  }
-  .section-title {
-    font-size: 1.4rem;
-    margin-bottom: 10px;
-  }
-  .MuiDialogContent-root {
-    padding: 15px;
-  }
-  .MuiDialogActions-root {
-    padding: 15px;
+
+  .profile-page ul li {
+    font-size: 11.5px;
+    padding: 4px 10px;
   }
 }

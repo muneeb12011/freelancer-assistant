@@ -1,16 +1,8 @@
-import React, {
-  useEffect,
-  useState,
-  useMemo,
-  useCallback,
-  useRef
-} from 'react';
+// src/pages/Dashboard.jsx
+import React from 'react';
 import '../styles/Dashboard.css';
-import { Line } from 'react-chartjs-2';
 import {
   Typography,
-  Grid,
-  Card,
   Button,
   TextField,
   Dialog,
@@ -28,1246 +20,1448 @@ import {
   Select,
   MenuItem,
   Box,
-  useMediaQuery
 } from '@mui/material';
 import gsap from 'gsap';
-import Calendar from 'react-calendar';
-import 'react-calendar/dist/Calendar.css';
-import * as FileSaver from 'file-saver';
-import * as XLSX from 'xlsx';
 import { debounce } from 'lodash';
-import CountUp from 'react-countup';
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title as ChartTitle,
-  Tooltip,
-  Legend
-} from 'chart.js';
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Area,
+  AreaChart,
+} from 'recharts';
+import {
+  FiUsers,
+  FiDollarSign,
+  FiTrendingUp,
+  FiCheckCircle,
+  FiAlertCircle,
+  FiClock,
+  FiStar,
+  FiZap,
+  FiTarget,
+  FiActivity,
+  FiBell,
+  FiFileText,
+  FiCalendar,
+  FiAward,
+  FiArrowUp,
+  FiArrowDown,
+  FiRefreshCw,
+  FiPlusCircle,
+  FiX,
+  FiEye,
+} from 'react-icons/fi';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, ChartTitle, Tooltip, Legend);
-
-/* =============================================================================
-   HELPER FUNCTIONS & CUSTOM HOOKS
-============================================================================= */
-const formatDate = (date) => new Date(date).toLocaleDateString();
-
-const useLocalStorage = (key, initialValue) => {
-  const [storedValue, setStoredValue] = useState(() => {
-    try {
-      const item = window.localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
-    } catch (error) {
-      console.error(`Error reading localStorage key “${key}”: `, error);
-      return initialValue;
-    }
-  });
-  const setValue = (value) => {
-    try {
-      setStoredValue(value);
-      window.localStorage.setItem(key, JSON.stringify(value));
-    } catch (error) {
-      console.error(`Error setting localStorage key “${key}”: `, error);
-    }
-  };
-  return [storedValue, setValue];
+/* ─── localStorage helper ─── */
+const loadLS = (key, fallback) => {
+  try { const v = JSON.parse(localStorage.getItem(key)); return v ?? fallback; }
+  catch { return fallback; }
 };
 
-/* =============================================================================
-   SUBCOMPONENTS
-============================================================================= */
+/* ─────────────────────────────────────────────────────────
+   KPI STRIP
+   Uses: clients, recentActivity (both live props)
+───────────────────────────────────────────────────────── */
+class KPIStripSection extends React.Component {
+  render() {
+    const { clients, recentActivity } = this.props;
+    const activeClients   = clients.filter(c => c.active).length;
+    const completedTasks  = recentActivity.filter(a => a.status === 'Completed').length;
+    const pendingTasks    = recentActivity.filter(a => a.status === 'Pending').length;
+    const inProgressTasks = recentActivity.filter(a => a.status === 'In Progress').length;
+    const score = recentActivity.length
+      ? Math.round((completedTasks / recentActivity.length) * 100)
+      : 0;
 
-// -------------------- STATS SECTION --------------------
-const StatsSection = ({ clients, tasks, deadlines }) => {
-  const stats = [
-    { label: 'Active Clients', value: clients.filter(c => c.active).length },
-    { label: 'Tasks Completed', value: tasks.length },
-    { label: 'Upcoming Deadlines', value: deadlines.length }
-  ];
-  return (
-    <Grid container spacing={3} className="dashboard-stats">
-      {stats.map((stat, index) => (
-        <Grid item xs={12} sm={4} key={index}>
-          <Card
-            className="stat-card"
-            variant="outlined"
-            sx={{ padding: '20px', textAlign: 'center', bgcolor: '#222' }}
-          >
-            <Typography variant="h5" gutterBottom>{stat.label}</Typography>
-            <Typography variant="h4">
-              <CountUp end={stat.value} duration={2} />
-            </Typography>
-          </Card>
-        </Grid>
-      ))}
-    </Grid>
-  );
-};
+    const kpis = [
+      { label:'Active Clients',     value:activeClients,        delta:'+2 this week',               trend:'up',   icon:<FiUsers size={20}/>,      color:'#4a90d9' },
+      { label:'Tasks Completed',    value:completedTasks,       delta:`${completedTasks} total`,     trend:'up',   icon:<FiCheckCircle size={20}/>, color:'#4caf82' },
+      { label:'Pending Tasks',      value:pendingTasks,         delta:`${inProgressTasks} in progress`, trend:'down', icon:<FiClock size={20}/>,  color:'#e8a030' },
+      { label:'Productivity Score', value:`${score}%`,          delta:'+3% this week',              trend:'up',   icon:<FiTrendingUp size={20}/>,  color:'#9b72e8' },
+    ];
 
-// -------------------- EXPORT CSV BUTTON --------------------
-const ExportCSVButton = ({ data }) => {
-  const exportToCSV = () => {
-    const fileName = 'clients.xlsx';
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Clients');
-    const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-    const blobData = new Blob([excelBuffer], {
-      type:
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
-    });
-    FileSaver.saveAs(blobData, fileName);
-  };
-  return (
-    <Button variant="outlined" onClick={exportToCSV} sx={{ marginLeft: '10px' }}>
-      Export Clients
-    </Button>
-  );
-};
-
-// -------------------- CLIENT MANAGEMENT SECTION --------------------
-const ClientManagementSection = ({
-  clients,
-  searchTerm,
-  statusFilter,
-  debouncedSearch,
-  setStatusFilter,
-  onEdit,
-  onDelete,
-  onViewDetails,
-  onSortChange,
-  onToggleActive,
-  onAddClientButtonClick
-}) => {
-  const filteredClients = useMemo(() => {
-    return clients.filter(client =>
-      client.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-      (statusFilter ? client.status === statusFilter : true)
+    return (
+      <div className="kpi-strip">
+        {kpis.map((kpi, i) => (
+          <div className="kpi-item" key={i}>
+            <div className="kpi-icon-row">
+              <span className="kpi-icon" style={{ color:kpi.color, background:`${kpi.color}18` }}>{kpi.icon}</span>
+              <span className={`kpi-delta ${kpi.trend}`}>
+                {kpi.trend === 'up' ? <FiArrowUp size={11}/> : <FiArrowDown size={11}/>}
+                {kpi.delta}
+              </span>
+            </div>
+            <div className="kpi-value">{kpi.value}</div>
+            <div className="kpi-label">{kpi.label}</div>
+          </div>
+        ))}
+      </div>
     );
-  }, [clients, searchTerm, statusFilter]);
-
-  return (
-    <Box className="client-management" sx={{ marginBottom: '40px' }}>
-      <Typography variant="h3" gutterBottom>Client Management</Typography>
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: { xs: 'column', md: 'row' },
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '20px'
-        }}
-      >
-        <TextField
-          placeholder="Search Clients"
-          fullWidth
-          defaultValue={searchTerm}
-          onChange={(e) => debouncedSearch(e.target.value)}
-          sx={{ bgcolor: '#1e1e1e', marginBottom: { xs: '10px', md: '0' } }}
-        />
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={onAddClientButtonClick}
-          sx={{ marginLeft: { md: '20px' } }}
-        >
-          Add New Client
-        </Button>
-      </Box>
-      <Select
-        fullWidth
-        value={statusFilter}
-        onChange={(e) => setStatusFilter(e.target.value)}
-        displayEmpty
-        sx={{ marginBottom: '20px', bgcolor: '#1e1e1e' }}
-      >
-        <MenuItem value="">All Statuses</MenuItem>
-        <MenuItem value="In Progress">In Progress</MenuItem>
-        <MenuItem value="Completed">Completed</MenuItem>
-      </Select>
-      <Select
-        fullWidth
-        defaultValue=""
-        onChange={(e) => onSortChange(e.target.value)}
-        displayEmpty
-        sx={{ marginBottom: '20px', bgcolor: '#1e1e1e' }}
-      >
-        <MenuItem value="">Sort By</MenuItem>
-        <MenuItem value="nameAsc">Name (A-Z)</MenuItem>
-        <MenuItem value="nameDesc">Name (Z-A)</MenuItem>
-      </Select>
-      <TableContainer component={Paper} sx={{ marginTop: '20px', bgcolor: '#1e1e1e' }}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell sx={{ color: '#fff' }}>Client Name</TableCell>
-              <TableCell sx={{ color: '#fff' }}>Project</TableCell>
-              <TableCell sx={{ color: '#fff' }}>Status</TableCell>
-              <TableCell sx={{ color: '#fff' }}>Active</TableCell>
-              <TableCell sx={{ color: '#fff' }}>Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filteredClients.length > 0 ? (
-              filteredClients.map((client, index) => (
-                <TableRow key={index}>
-                  <TableCell>{client.name}</TableCell>
-                  <TableCell>{client.project}</TableCell>
-                  <TableCell>{client.status}</TableCell>
-                  <TableCell>{client.active ? 'Active' : 'Inactive'}</TableCell>
-                  <TableCell>
-                    <Button onClick={() => onViewDetails(client)} variant="outlined" size="small" sx={{ marginRight: '8px' }}>
-                      View Details
-                    </Button>
-                    <Button onClick={() => onEdit(client, index)} variant="outlined" size="small" sx={{ marginRight: '8px' }}>
-                      Edit
-                    </Button>
-                    <Button onClick={() => onToggleActive(index)} variant="outlined" size="small" sx={{ marginRight: '8px' }}>
-                      {client.active ? 'Deactivate' : 'Activate'}
-                    </Button>
-                    <Button onClick={() => onDelete(index)} variant="outlined" size="small" color="error">
-                      Delete
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={5} align="center">No clients found.</TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Box>
-  );
-};
-
-// -------------------- PRODUCTIVITY CHART SECTION --------------------
-const ProductivityChartSection = ({ productivity }) => {
-  return (
-    <Box className="chart-section" sx={{ marginBottom: '40px' }}>
-      <Typography variant="h3" gutterBottom>Productivity Analytics</Typography>
-      <Box
-        className="chart-container"
-        sx={{
-          marginTop: '20px',
-          bgcolor: '#1e1e1e',
-          padding: '20px',
-          borderRadius: '8px'
-        }}
-      >
-        <Line data={productivity} />
-      </Box>
-    </Box>
-  );
-};
-
-// -------------------- RECENT ACTIVITY SECTION --------------------
-const RecentActivitySection = ({
-  recentActivity,
-  taskFilter,
-  setTaskFilter,
-  onUpdateActivityStatus,
-  onDeleteActivity,
-  onEditActivity,
-  onOpenTaskDialog
-}) => {
-  const filteredActivities = useMemo(() => {
-    if (taskFilter === 'All') return recentActivity;
-    return recentActivity.filter(activity => activity.priority === taskFilter);
-  }, [recentActivity, taskFilter]);
-
-  return (
-    <Box className="recent-activity" sx={{ marginBottom: '40px' }}>
-      <Typography variant="h3" gutterBottom>Recent Activity</Typography>
-      <Select
-        fullWidth
-        value={taskFilter}
-        onChange={(e) => setTaskFilter(e.target.value)}
-        displayEmpty
-        sx={{ marginBottom: '20px', bgcolor: '#1e1e1e' }}
-      >
-        <MenuItem value="All">All Tasks</MenuItem>
-        <MenuItem value="High">High Priority</MenuItem>
-        <MenuItem value="Medium">Medium Priority</MenuItem>
-        <MenuItem value="Low">Low Priority</MenuItem>
-      </Select>
-      <TableContainer component={Paper} sx={{ bgcolor: '#1e1e1e' }}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell sx={{ color: '#fff' }}>Title</TableCell>
-              <TableCell sx={{ color: '#fff' }}>Status</TableCell>
-              <TableCell sx={{ color: '#fff' }}>Priority</TableCell>
-              <TableCell sx={{ color: '#fff' }}>Timestamp</TableCell>
-              <TableCell sx={{ color: '#fff' }}>Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filteredActivities.length > 0 ? (
-              filteredActivities.map((activity, index) => (
-                <TableRow key={index}>
-                  <TableCell>{activity.title}</TableCell>
-                  <TableCell>{activity.status}</TableCell>
-                  <TableCell>{activity.priority}</TableCell>
-                  <TableCell>{activity.timestamp ? formatDate(activity.timestamp) : ''}</TableCell>
-                  <TableCell>
-                    {activity.status !== 'Completed' && (
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        sx={{ marginRight: '8px' }}
-                        onClick={() => onUpdateActivityStatus(index, 'Completed')}
-                      >
-                        Mark Completed
-                      </Button>
-                    )}
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      sx={{ marginRight: '8px' }}
-                      onClick={() => onEditActivity(index)}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      color="error"
-                      onClick={() => onDeleteActivity(index)}
-                    >
-                      Delete
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={5} align="center">No activities found.</TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
-      <Button
-        variant="contained"
-        color="primary"
-        sx={{ marginTop: '20px' }}
-        onClick={onOpenTaskDialog}
-      >
-        Add Activity
-      </Button>
-    </Box>
-  );
-};
-
-// -------------------- DEADLINES SECTION --------------------
-const DeadlinesSection = ({
-  deadlines,
-  selectedDate,
-  setSelectedDate,
-  onAddDeadline,
-  onCompleteDeadline,
-  onDeleteDeadline
-}) => {
-  const tileContent = useCallback(
-    ({ date }) => {
-      const hasDeadline = deadlines.some(
-        (deadline) => new Date(deadline.date).toDateString() === date.toDateString()
-      );
-      return hasDeadline ? <span>📅</span> : null;
-    },
-    [deadlines]
-  );
-  return (
-    <Box className="deadlines-section" sx={{ marginBottom: '40px' }}>
-      <Typography variant="h3" gutterBottom>Upcoming Deadlines</Typography>
-      <div className="calendar-wrapper">
-        <Calendar
-          onChange={setSelectedDate}
-          value={selectedDate}
-          tileContent={tileContent}
-        />
-      </div>
-      <Button variant="contained" color="primary" sx={{ marginTop: '20px' }} onClick={onAddDeadline}>
-        Add New Deadline
-      </Button>
-      <TableContainer component={Paper} sx={{ marginTop: '20px', bgcolor: '#1e1e1e' }}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell sx={{ color: '#fff' }}>Description</TableCell>
-              <TableCell sx={{ color: '#fff' }}>Date</TableCell>
-              <TableCell sx={{ color: '#fff' }}>Status</TableCell>
-              <TableCell sx={{ color: '#fff' }}>Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {deadlines.length > 0 ? (
-              deadlines.map((deadline, index) => (
-                <TableRow key={index}>
-                  <TableCell>{deadline.description}</TableCell>
-                  <TableCell>{formatDate(deadline.date)}</TableCell>
-                  <TableCell>{deadline.completed ? 'Completed' : 'Pending'}</TableCell>
-                  <TableCell>
-                    <Button variant="outlined" onClick={() => onCompleteDeadline(index)} sx={{ marginRight: '8px' }}>
-                      {deadline.completed ? 'Undo' : 'Complete'}
-                    </Button>
-                    <Button variant="outlined" color="secondary" onClick={() => onDeleteDeadline(index)}>
-                      Delete
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={4} align="center">No upcoming deadlines found.</TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Box>
-  );
-};
-
-// -------------------- AI INSIGHTS SECTION --------------------
-const AIInsightsSection = ({ clients, deadlines, recentActivity }) => {
-  const insights = useMemo(() => {
-    const activeClients = clients.filter(c => c.active);
-    const pendingDeadlines = deadlines.filter(d => !d.completed);
-    const recentTaskCount = recentActivity.length;
-    let suggestions = [];
-    if (activeClients.length > 0) {
-      suggestions.push(`You have ${activeClients.length} active clients. Consider scheduling follow-up meetings.`);
-    }
-    if (pendingDeadlines.length > 0) {
-      suggestions.push(`You have ${pendingDeadlines.length} pending deadlines. Prioritize these tasks to stay on track.`);
-    }
-    if (recentTaskCount > 5) {
-      suggestions.push(`Your recent activity is high. Consider delegating tasks where possible.`);
-    } else {
-      suggestions.push(`Your recent activity is moderate. Consider taking on new projects to boost productivity.`);
-    }
-    return suggestions;
-  }, [clients, deadlines, recentActivity]);
-
-  return (
-    <Box className="ai-insights" sx={{ marginBottom: '40px', bgcolor: '#1e1e1e', padding: '20px', borderRadius: '8px' }}>
-      <Typography variant="h3" gutterBottom>AI Insights</Typography>
-      {insights.map((insight, index) => (
-        <Typography key={index} variant="body1" color="white" sx={{ marginBottom: '10px' }}>
-          {insight}
-        </Typography>
-      ))}
-    </Box>
-  );
-};
-
-// -------------------- AI ASSISTANT SECTION --------------------
-const AIAssistantSection = () => {
-  const [query, setQuery] = useState('');
-  const [response, setResponse] = useState('');
-
-  const handleAskAI = () => {
-    if (!query.trim()) return;
-    setResponse(`AI Suggestion: Based on your dashboard metrics, consider optimizing your client outreach strategy.`);
-  };
-
-  return (
-    <Box className="ai-assistant" sx={{ marginBottom: '40px', bgcolor: '#1e1e1e', padding: '20px', borderRadius: '8px' }}>
-      <Typography variant="h3" gutterBottom>AI Assistant</Typography>
-      <Typography variant="body1" gutterBottom>
-        Ask your questions or get suggestions:
-      </Typography>
-      <TextField
-        fullWidth
-        placeholder="Enter your question..."
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        sx={{ bgcolor: '#fff', borderRadius: '4px', marginBottom: '10px' }}
-      />
-      <Button variant="contained" color="primary" onClick={handleAskAI}>
-        Ask AI
-      </Button>
-      {response && (
-        <Box sx={{ marginTop: '20px', backgroundColor: '#333', padding: '15px', borderRadius: '8px' }}>
-          <Typography variant="body1" color="white">{response}</Typography>
-        </Box>
-      )}
-    </Box>
-  );
-};
-
-// -------------------- AI PROJECT PLANNER SECTION --------------------
-const AIProjectPlannerSection = () => {
-  const [projectDesc, setProjectDesc] = useState('');
-  const [planResponse, setPlanResponse] = useState('');
-
-  const handleGeneratePlan = () => {
-    if (!projectDesc.trim()) return;
-    setPlanResponse(`Project Plan: For your project "${projectDesc}", we suggest a kickoff meeting followed by weekly sprints over 6 weeks.`);
-  };
-
-  return (
-    <Box className="ai-project-planner" sx={{ marginBottom: '40px', bgcolor: '#1e1e1e', padding: '20px', borderRadius: '8px' }}>
-      <Typography variant="h3" gutterBottom>AI Project Planner</Typography>
-      <TextField
-        fullWidth
-        multiline
-        rows={3}
-        placeholder="Describe your project briefly..."
-        value={projectDesc}
-        onChange={(e) => setProjectDesc(e.target.value)}
-        sx={{ bgcolor: '#fff', borderRadius: '4px', marginBottom: '10px' }}
-      />
-      <Button variant="contained" color="primary" onClick={handleGeneratePlan}>
-        Generate Project Plan
-      </Button>
-      {planResponse && (
-        <Box sx={{ marginTop: '20px', backgroundColor: '#333', padding: '15px', borderRadius: '8px' }}>
-          <Typography variant="body1" color="white">{planResponse}</Typography>
-        </Box>
-      )}
-    </Box>
-  );
-};
-
-// -------------------- AI TASK PRIORITIZER SECTION --------------------
-const AITaskPrioritizerSection = ({ recentActivity }) => {
-  const [prioritizedTasks, setPrioritizedTasks] = useState([]);
-
-  const handlePrioritizeTasks = () => {
-    if (!recentActivity.length) return;
-    const completed = recentActivity.filter(a => a.status === 'Completed');
-    const inProgress = recentActivity.filter(a => a.status === 'In Progress');
-    const pending = recentActivity.filter(a => a.status === 'Pending');
-    setPrioritizedTasks([...inProgress, ...pending, ...completed]);
-  };
-
-  return (
-    <Box className="ai-task-prioritizer" sx={{ marginBottom: '40px', bgcolor: '#1e1e1e', padding: '20px', borderRadius: '8px' }}>
-      <Typography variant="h3" gutterBottom>AI Task Prioritizer</Typography>
-      <Button variant="contained" color="primary" onClick={handlePrioritizeTasks}>
-        Prioritize Tasks
-      </Button>
-      {prioritizedTasks.length > 0 && (
-        <Box sx={{ marginTop: '20px', backgroundColor: '#333', padding: '15px', borderRadius: '8px' }}>
-          <Typography variant="body1" color="white">Prioritized Tasks:</Typography>
-          <ul>
-            {prioritizedTasks.map((task, index) => (
-              <li key={index} style={{ color: 'white', marginBottom: '5px' }}>
-                {task.title} [{task.status}] - Priority: {task.priority}
-              </li>
-            ))}
-          </ul>
-        </Box>
-      )}
-    </Box>
-  );
-};
-
-// -------------------- AI PREDICTIVE ANALYTICS SECTION --------------------
-const AIPredictiveAnalyticsSection = ({ clients, deadlines, recentActivity }) => {
-  const [prediction, setPrediction] = useState('');
-
-  const handlePredict = () => {
-    const activeClients = clients.filter(c => c.active).length;
-    const pendingDeadlines = deadlines.filter(d => !d.completed).length;
-    const forecast = activeClients * 10 + pendingDeadlines * 5;
-    setPrediction(`Based on current metrics, you might see an increase in revenue by approximately $${forecast}K next month.`);
-  };
-
-  return (
-    <Box className="ai-predictive-analytics" sx={{ marginBottom: '40px', bgcolor: '#1e1e1e', padding: '20px', borderRadius: '8px' }}>
-      <Typography variant="h3" gutterBottom>AI Predictive Analytics</Typography>
-      <Button variant="contained" color="primary" onClick={handlePredict}>
-        Predict Next Month
-      </Button>
-      {prediction && (
-        <Box sx={{ marginTop: '20px', backgroundColor: '#333', padding: '15px', borderRadius: '8px' }}>
-          <Typography variant="body1" color="white">{prediction}</Typography>
-        </Box>
-      )}
-    </Box>
-  );
-};
-
-// -------------------- AI COLLABORATION RECOMMENDER SECTION --------------------
-const AICollaborationRecommenderSection = ({ clients }) => {
-  const [recommendation, setRecommendation] = useState('');
-
-  const handleRecommend = () => {
-    if (!clients.length) {
-      setRecommendation('No clients found for recommendations.');
-      return;
-    }
-    setRecommendation('AI Recommends collaborating with "Client A" for cross-promotional services.');
-  };
-
-  return (
-    <Box className="ai-collab-recommender" sx={{ marginBottom: '40px', bgcolor: '#1e1e1e', padding: '20px', borderRadius: '8px' }}>
-      <Typography variant="h3" gutterBottom>AI Collaboration Recommender</Typography>
-      <Button variant="contained" color="primary" onClick={handleRecommend}>
-        Recommend Collaboration
-      </Button>
-      {recommendation && (
-        <Box sx={{ marginTop: '20px', backgroundColor: '#333', padding: '15px', borderRadius: '8px' }}>
-          <Typography variant="body1" color="white">{recommendation}</Typography>
-        </Box>
-      )}
-    </Box>
-  );
-};
-
-// -------------------- AI SUMMARIZER SECTION --------------------
-const AISummarizerSection = ({ recentActivity, clients }) => {
-  const [summary, setSummary] = useState('');
-
-  const handleSummarize = () => {
-    if (!recentActivity.length && !clients.length) {
-      setSummary('No data to summarize.');
-      return;
-    }
-    const activeClients = clients.filter(c => c.active).length;
-    const completedTasks = recentActivity.filter(a => a.status === 'Completed').length;
-    setSummary(`You have ${activeClients} active clients and ${completedTasks} completed tasks recently.`);
-  };
-
-  return (
-    <Box className="ai-summarizer" sx={{ marginBottom: '40px', bgcolor: '#1e1e1e', padding: '20px', borderRadius: '8px' }}>
-      <Typography variant="h3" gutterBottom>AI Summarizer</Typography>
-      <Button variant="contained" color="primary" onClick={handleSummarize}>
-        Summarize Data
-      </Button>
-      {summary && (
-        <Box sx={{ marginTop: '20px', backgroundColor: '#333', padding: '15px', borderRadius: '8px' }}>
-          <Typography variant="body1" color="white">{summary}</Typography>
-        </Box>
-      )}
-    </Box>
-  );
-};
-
-/* =============================================================================
-   DIALOG COMPONENTS
-============================================================================= */
-const DeleteConfirmationDialog = ({ open, onClose, onConfirm, itemType }) => (
-  <Dialog open={open} onClose={onClose}>
-    <DialogTitle>Confirm Deletion</DialogTitle>
-    <DialogContent>
-      <Typography>Are you sure you want to delete this {itemType}?</Typography>
-    </DialogContent>
-    <DialogActions>
-      <Button onClick={onClose} color="secondary">Cancel</Button>
-      <Button onClick={onConfirm} color="primary" variant="contained">Delete</Button>
-    </DialogActions>
-  </Dialog>
-);
-
-const AddClientDialog = ({ open, onClose, newClient, setNewClient, onAddClient }) => (
-  <Dialog open={open} onClose={onClose}>
-    <DialogTitle>Add New Client</DialogTitle>
-    <DialogContent>
-      <TextField
-        label="Client Name"
-        fullWidth
-        margin="normal"
-        value={newClient.name}
-        onChange={(e) => setNewClient({ ...newClient, name: e.target.value.trimStart() })}
-      />
-      <TextField
-        label="Project"
-        fullWidth
-        margin="normal"
-        value={newClient.project}
-        onChange={(e) => setNewClient({ ...newClient, project: e.target.value.trimStart() })}
-      />
-      <Select
-        fullWidth
-        margin="normal"
-        value={newClient.status}
-        onChange={(e) => setNewClient({ ...newClient, status: e.target.value })}
-      >
-        <MenuItem value="In Progress">In Progress</MenuItem>
-        <MenuItem value="Completed">Completed</MenuItem>
-      </Select>
-      <Select
-        fullWidth
-        margin="normal"
-        value={newClient.active ? 'Active' : 'Inactive'}
-        onChange={(e) => setNewClient({ ...newClient, active: e.target.value === 'Active' })}
-      >
-        <MenuItem value="Active">Active</MenuItem>
-        <MenuItem value="Inactive">Inactive</MenuItem>
-      </Select>
-    </DialogContent>
-    <DialogActions>
-      <Button onClick={onClose} color="secondary">Cancel</Button>
-      <Button onClick={onAddClient} color="primary" variant="contained">Save Client</Button>
-    </DialogActions>
-  </Dialog>
-);
-
-const AddDeadlineDialog = ({ open, onClose, newDeadline, setNewDeadline, onAddDeadline }) => (
-  <Dialog open={open} onClose={onClose}>
-    <DialogTitle>Add New Deadline</DialogTitle>
-    <DialogContent>
-      <TextField
-        label="Deadline Description"
-        fullWidth
-        margin="normal"
-        value={newDeadline.description}
-        onChange={(e) => setNewDeadline({ ...newDeadline, description: e.target.value })}
-      />
-      <TextField
-        label="Deadline Date"
-        type="date"
-        fullWidth
-        margin="normal"
-        value={newDeadline.date.toISOString().split('T')[0]}
-        onChange={(e) => setNewDeadline({ ...newDeadline, date: new Date(e.target.value) })}
-        InputLabelProps={{ shrink: true }}
-      />
-    </DialogContent>
-    <DialogActions>
-      <Button onClick={onClose} color="secondary">Cancel</Button>
-      <Button onClick={onAddDeadline} color="primary" variant="contained">Add Deadline</Button>
-    </DialogActions>
-  </Dialog>
-);
-
-const AddActivityDialog = ({ open, onClose, newActivity, setNewActivity, onAddActivity }) => (
-  <Dialog open={open} onClose={onClose}>
-    <DialogTitle>Add New Activity</DialogTitle>
-    <DialogContent>
-      <TextField
-        label="Activity Title"
-        fullWidth
-        margin="normal"
-        value={newActivity.title}
-        onChange={(e) => setNewActivity({ ...newActivity, title: e.target.value })}
-      />
-      <Select
-        fullWidth
-        margin="normal"
-        value={newActivity.status}
-        onChange={(e) => setNewActivity({ ...newActivity, status: e.target.value })}
-      >
-        <MenuItem value="Pending">Pending</MenuItem>
-        <MenuItem value="In Progress">In Progress</MenuItem>
-        <MenuItem value="Completed">Completed</MenuItem>
-      </Select>
-      <Select
-        fullWidth
-        margin="normal"
-        value={newActivity.priority}
-        onChange={(e) => setNewActivity({ ...newActivity, priority: e.target.value })}
-      >
-        <MenuItem value="High">High</MenuItem>
-        <MenuItem value="Medium">Medium</MenuItem>
-        <MenuItem value="Low">Low</MenuItem>
-      </Select>
-    </DialogContent>
-    <DialogActions>
-      <Button onClick={onClose} color="secondary">Cancel</Button>
-      <Button onClick={onAddActivity} color="primary" variant="contained">Add Activity</Button>
-    </DialogActions>
-  </Dialog>
-);
-
-const EditActivityDialog = ({ open, onClose, activityToEdit, setActivityToEdit, onSaveActivity }) => (
-  <Dialog open={open} onClose={onClose}>
-    <DialogTitle>Edit Activity</DialogTitle>
-    <DialogContent>
-      <TextField
-        label="Activity Title"
-        fullWidth
-        margin="normal"
-        value={activityToEdit.title}
-        onChange={(e) => setActivityToEdit({ ...activityToEdit, title: e.target.value })}
-      />
-      <Select
-        fullWidth
-        margin="normal"
-        value={activityToEdit.status}
-        onChange={(e) => setActivityToEdit({ ...activityToEdit, status: e.target.value })}
-      >
-        <MenuItem value="Pending">Pending</MenuItem>
-        <MenuItem value="In Progress">In Progress</MenuItem>
-        <MenuItem value="Completed">Completed</MenuItem>
-      </Select>
-      <Select
-        fullWidth
-        margin="normal"
-        value={activityToEdit.priority}
-        onChange={(e) => setActivityToEdit({ ...activityToEdit, priority: e.target.value })}
-      >
-        <MenuItem value="High">High</MenuItem>
-        <MenuItem value="Medium">Medium</MenuItem>
-        <MenuItem value="Low">Low</MenuItem>
-      </Select>
-    </DialogContent>
-    <DialogActions>
-      <Button onClick={onClose} color="secondary">Cancel</Button>
-      <Button onClick={onSaveActivity} color="primary" variant="contained">Save Changes</Button>
-    </DialogActions>
-  </Dialog>
-);
-
-const ClientDetailsDialog = ({ open, onClose, client }) => (
-  <Dialog open={open} onClose={onClose}>
-    <DialogTitle>Client Details</DialogTitle>
-    <DialogContent>
-      {client ? (
-        <>
-          <Typography variant="h6">Name: {client.name}</Typography>
-          <Typography variant="body1">Project: {client.project}</Typography>
-          <Typography variant="body1">Status: {client.status}</Typography>
-          <Typography variant="body1">Active: {client.active ? 'Active' : 'Inactive'}</Typography>
-          <Typography variant="caption">Additional details can be displayed here.</Typography>
-        </>
-      ) : (
-        <Typography>No client details available.</Typography>
-      )}
-    </DialogContent>
-    <DialogActions>
-      <Button onClick={onClose} color="primary" variant="contained">Close</Button>
-    </DialogActions>
-  </Dialog>
-);
-
-/* =============================================================================
-   MAIN DASHBOARD COMPONENT
-============================================================================= */
-const Dashboard = () => {
-  // Local Storage States
-  const [clients, setClients] = useLocalStorage('clients', []);
-  const [deadlines, setDeadlines] = useLocalStorage('deadlines', []);
-  const [recentActivity, setRecentActivity] = useLocalStorage('recentActivity', []);
-
-  // Other States
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [taskFilter, setTaskFilter] = useState('All');
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [error, setError] = useState('');
-
-  // Dialog States
-  const [newClientDialog, setNewClientDialog] = useState(false);
-  const [editingClientDialog, setEditingClientDialog] = useState(false);
-  const [newDeadlineDialog, setNewDeadlineDialog] = useState(false);
-  const [taskDialogOpen, setTaskDialogOpen] = useState(false);
-  const [deleteConfirmationDialog, setDeleteConfirmationDialog] = useState(false);
-  const [clientDetailsDialog, setClientDetailsDialog] = useState(false);
-  const [editActivityDialog, setEditActivityDialog] = useState(false);
-
-  // Items for delete/edit operations
-  const [clientToDelete, setClientToDelete] = useState(null);
-  const [deadlineToDelete, setDeadlineToDelete] = useState(null);
-  const [editedClient, setEditedClient] = useState({ name: '', project: '', status: '', index: null });
-  const [newClient, setNewClient] = useState({ name: '', project: '', status: '', active: true });
-  const [newDeadline, setNewDeadline] = useState({ description: '', date: new Date() });
-  const [newActivityDialogData, setNewActivityDialogData] = useState({ title: '', status: 'Pending', priority: 'Medium' });
-  const [activityToEdit, setActivityToEdit] = useState({ title: '', status: 'Pending', priority: 'Medium', index: null });
-  const [clientDetails, setClientDetails] = useState(null);
-
-  // Productivity Chart Data
-  const productivity = {
-    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-    datasets: [
-      {
-        label: 'Hours Worked',
-        data: [5, 6, 7, 4, 8, 3, 2],
-        borderColor: '#3f51b5',
-        backgroundColor: 'rgba(63, 81, 181, 0.3)',
-        tension: 0.4
-      }
-    ]
-  };
-
-  // Check if mobile (for additional responsive tweaks)
-  const isMobile = useMediaQuery('(max-width:768px)');
-
-  // Initial Data Setup (once)
-  const didInit = useRef(false);
-  useEffect(() => {
-    if (didInit.current) return;
-    didInit.current = true;
-    const timer = setTimeout(() => {
-      if (clients.length === 0) {
-        setClients([
-          { name: 'Client A', project: 'Website Development', status: 'In Progress', active: true },
-          { name: 'Client B', project: 'Mobile App Design', status: 'Completed', active: false }
-        ]);
-      }
-      if (recentActivity.length === 0) {
-        setRecentActivity([
-          { title: 'Completed Project Alpha milestone', status: 'Completed', priority: 'High', timestamp: new Date() },
-          { title: 'Updated profile on freelancing platform', status: 'Pending', priority: 'Medium', timestamp: new Date() }
-        ]);
-      }
-      if (deadlines.length === 0) {
-        setDeadlines([]);
-      }
-      gsap.from('.stat-card', { opacity: 0, y: 50, duration: 0.8, stagger: 0.2 });
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, [clients, deadlines, recentActivity, setClients, setDeadlines, setRecentActivity]);
-
-  // Debounced Search
-  const debouncedSearch = useMemo(() => debounce((value) => setSearchTerm(value), 300), []);
-
-  // Auto-clear error messages
-  useEffect(() => {
-    if (error) {
-      const timer = setTimeout(() => setError(''), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [error]);
-
-  // ===================== HANDLER FUNCTIONS =====================
-  const handleAddClient = useCallback(() => {
-    if (!newClient.name.trim() || !newClient.project.trim() || !newClient.status) {
-      setError('All client fields are required.');
-      return;
-    }
-    const updatedClients = [...clients, {
-      ...newClient,
-      name: newClient.name.trim(),
-      project: newClient.project.trim()
-    }];
-    setClients(updatedClients);
-    setNewClient({ name: '', project: '', status: '', active: true });
-    setNewClientDialog(false);
-    setSnackbarOpen(true);
-  }, [newClient, clients, setClients]);
-
-  const handleEditClient = useCallback(() => {
-    if (!editedClient.name.trim() || !editedClient.project.trim() || !editedClient.status) {
-      setError('All fields are required to edit a client.');
-      return;
-    }
-    const updatedClients = [...clients];
-    updatedClients[editedClient.index] = {
-      ...editedClient,
-      name: editedClient.name.trim(),
-      project: editedClient.project.trim()
-    };
-    setClients(updatedClients);
-    setEditedClient({ name: '', project: '', status: '', index: null });
-    setEditingClientDialog(false);
-    setSnackbarOpen(true);
-  }, [editedClient, clients, setClients]);
-
-  const handleToggleClientActive = useCallback((index) => {
-    const updatedClients = [...clients];
-    updatedClients[index].active = !updatedClients[index].active;
-    setClients(updatedClients);
-    setSnackbarOpen(true);
-  }, [clients, setClients]);
-
-  const handleViewClientDetails = useCallback((client) => {
-    setClientDetails(client);
-    setClientDetailsDialog(true);
-  }, []);
-
-  const confirmDeleteClient = useCallback((index) => {
-    setClientToDelete(index);
-    setDeleteConfirmationDialog(true);
-  }, []);
-
-  const handleDeleteClient = useCallback(() => {
-    const updatedClients = clients.filter((_, i) => i !== clientToDelete);
-    setClients(updatedClients);
-    setDeleteConfirmationDialog(false);
-    setSnackbarOpen(true);
-  }, [clients, clientToDelete, setClients]);
-
-  const handleAddDeadline = useCallback(() => {
-    if (!newDeadline.description.trim() || !newDeadline.date) {
-      setError('Both description and date are required for a deadline.');
-      return;
-    }
-    const updatedDeadlines = [...deadlines, {
-      ...newDeadline,
-      description: newDeadline.description.trim(),
-      completed: false
-    }];
-    setDeadlines(updatedDeadlines);
-    setNewDeadline({ description: '', date: new Date() });
-    setNewDeadlineDialog(false);
-    setSnackbarOpen(true);
-  }, [newDeadline, deadlines, setDeadlines]);
-
-  const confirmDeleteDeadline = useCallback((index) => {
-    setDeadlineToDelete(index);
-    setDeleteConfirmationDialog(true);
-  }, []);
-
-  const handleDeleteDeadline = useCallback(() => {
-    const updatedDeadlines = deadlines.filter((_, i) => i !== deadlineToDelete);
-    setDeadlines(updatedDeadlines);
-    setDeleteConfirmationDialog(false);
-    setSnackbarOpen(true);
-  }, [deadlines, deadlineToDelete, setDeadlines]);
-
-  const handleCompleteDeadline = useCallback((index) => {
-    const updatedDeadlines = [...deadlines];
-    updatedDeadlines[index].completed = !updatedDeadlines[index].completed;
-    setDeadlines(updatedDeadlines);
-  }, [deadlines, setDeadlines]);
-
-  const handleSortClients = useCallback((sortOrder) => {
-    let sortedClients = [...clients];
-    if (sortOrder === 'nameAsc') {
-      sortedClients.sort((a, b) => a.name.localeCompare(b.name));
-    } else if (sortOrder === 'nameDesc') {
-      sortedClients.sort((a, b) => b.name.localeCompare(a.name));
-    }
-    setClients(sortedClients);
-  }, [clients, setClients]);
-
-  // ===================== RECENT ACTIVITY HANDLERS =====================
-  const handleAddActivity = useCallback(() => {
-    if (!newActivityDialogData.title.trim()) {
-      setError('Activity title cannot be empty.');
-      return;
-    }
-    const newActivity = {
-      title: newActivityDialogData.title.trim(),
-      status: newActivityDialogData.status,
-      priority: newActivityDialogData.priority,
-      timestamp: new Date()
-    };
-    const updatedActivities = [...recentActivity, newActivity];
-    setRecentActivity(updatedActivities);
-    setNewActivityDialogData({ title: '', status: 'Pending', priority: 'Medium' });
-    setTaskDialogOpen(false);
-    setSnackbarOpen(true);
-  }, [newActivityDialogData, recentActivity, setRecentActivity]);
-
-  const handleUpdateActivityStatus = useCallback((index, newStatus) => {
-    const updatedActivities = [...recentActivity];
-    updatedActivities[index].status = newStatus;
-    setRecentActivity(updatedActivities);
-    setSnackbarOpen(true);
-  }, [recentActivity, setRecentActivity]);
-
-  const handleDeleteActivity = useCallback((index) => {
-    const updatedActivities = recentActivity.filter((_, i) => i !== index);
-    setRecentActivity(updatedActivities);
-    setSnackbarOpen(true);
-  }, [recentActivity, setRecentActivity]);
-
-  const handleEditActivity = useCallback((index) => {
-    const activity = recentActivity[index];
-    setActivityToEdit({ ...activity, index });
-    setEditActivityDialog(true);
-  }, [recentActivity]);
-
-  const handleSaveActivity = useCallback(() => {
-    if (!activityToEdit.title.trim()) {
-      setError('Activity title cannot be empty.');
-      return;
-    }
-    const updatedActivities = [...recentActivity];
-    updatedActivities[activityToEdit.index] = {
-      ...activityToEdit,
-      title: activityToEdit.title.trim()
-    };
-    setRecentActivity(updatedActivities);
-    setActivityToEdit({ title: '', status: 'Pending', priority: 'Medium', index: null });
-    setEditActivityDialog(false);
-    setSnackbarOpen(true);
-  }, [activityToEdit, recentActivity, setRecentActivity]);
-
-  // ===================== RENDERING THE DASHBOARD =====================
-  return (
-    <div className="dashboard">
-      <div className="dashboard-header">
-        {/* Using isMobile to adjust the header font size */}
-        <Typography variant="h2" sx={{ fontSize: isMobile ? '2rem' : '2.75rem' }}>
-          Freelancer Assistant Dashboard
-        </Typography>
-        <ExportCSVButton data={clients} />
-      </div>
-
-      <StatsSection
-        clients={clients}
-        tasks={recentActivity}
-        deadlines={deadlines}
-      />
-
-      <ClientManagementSection
-        clients={clients}
-        searchTerm={searchTerm}
-        statusFilter={statusFilter}
-        debouncedSearch={debouncedSearch}
-        setStatusFilter={setStatusFilter}
-        onEdit={(client, index) => {
-          setEditedClient({ ...client, index });
-          setEditingClientDialog(true);
-        }}
-        onDelete={(index) => confirmDeleteClient(index)}
-        onViewDetails={handleViewClientDetails}
-        onSortChange={handleSortClients}
-        onToggleActive={handleToggleClientActive}
-        onAddClientButtonClick={() => setNewClientDialog(true)}
-      />
-
-      <ProductivityChartSection productivity={productivity} />
-
-      <RecentActivitySection
-        recentActivity={recentActivity}
-        taskFilter={taskFilter}
-        setTaskFilter={setTaskFilter}
-        onUpdateActivityStatus={handleUpdateActivityStatus}
-        onDeleteActivity={handleDeleteActivity}
-        onEditActivity={handleEditActivity}
-        onOpenTaskDialog={() => setTaskDialogOpen(true)}
-      />
-
-      <DeadlinesSection
-        deadlines={deadlines}
-        selectedDate={selectedDate}
-        setSelectedDate={setSelectedDate}
-        onAddDeadline={() => setNewDeadlineDialog(true)}
-        onCompleteDeadline={handleCompleteDeadline}
-        onDeleteDeadline={confirmDeleteDeadline}
-      />
-
-      <AIInsightsSection
-        clients={clients}
-        deadlines={deadlines}
-        recentActivity={recentActivity}
-      />
-      <AIAssistantSection />
-      <AIProjectPlannerSection />
-      <AITaskPrioritizerSection recentActivity={recentActivity} />
-      <AIPredictiveAnalyticsSection
-        clients={clients}
-        deadlines={deadlines}
-        recentActivity={recentActivity}
-      />
-      <AICollaborationRecommenderSection clients={clients} />
-      <AISummarizerSection
-        recentActivity={recentActivity}
-        clients={clients}
-      />
-
-      {/* DIALOGS */}
-      <AddClientDialog
-        open={newClientDialog}
-        onClose={() => setNewClientDialog(false)}
-        newClient={newClient}
-        setNewClient={setNewClient}
-        onAddClient={handleAddClient}
-      />
-
-      <Dialog
-        open={editingClientDialog}
-        onClose={() => setEditingClientDialog(false)}
-      >
-        <DialogTitle>Edit Client</DialogTitle>
+  }
+}
+
+/* ─────────────────────────────────────────────────────────
+   CLIENT DETAIL DIALOG  — replaces the alert() call
+───────────────────────────────────────────────────────── */
+class ClientDetailDialog extends React.Component {
+  render() {
+    const { open, client, onClose } = this.props;
+    if (!client) return null;
+    const rows = [
+      ['Name',    client.name],
+      ['Project', client.project],
+      ['Status',  client.status],
+      ['Active',  client.active ? 'Yes' : 'No'],
+      ['Added',   client.addedAt || '—'],
+    ];
+    return (
+      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+            <span className="client-avatar large">{client.name.charAt(0)}</span>
+            {client.name}
+          </div>
+        </DialogTitle>
         <DialogContent>
-          <TextField
-            label="Client Name"
-            fullWidth
-            margin="normal"
-            value={editedClient.name}
-            onChange={(e) => setEditedClient({ ...editedClient, name: e.target.value })}
-          />
-          <TextField
-            label="Project"
-            fullWidth
-            margin="normal"
-            value={editedClient.project}
-            onChange={(e) => setEditedClient({ ...editedClient, project: e.target.value })}
-          />
-          <TextField
-            label="Status"
-            fullWidth
-            margin="normal"
-            value={editedClient.status}
-            onChange={(e) => setEditedClient({ ...editedClient, status: e.target.value })}
-          />
+          <div className="client-detail-grid">
+            {rows.map(([label, value]) => (
+              <div key={label} className="client-detail-row">
+                <span className="cd-label">{label}</span>
+                <span className="cd-value">{value}</span>
+              </div>
+            ))}
+          </div>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setEditingClientDialog(false)} color="secondary">Cancel</Button>
-          <Button onClick={handleEditClient} color="primary">Save Changes</Button>
+          <Button onClick={onClose} color="secondary">Close</Button>
         </DialogActions>
       </Dialog>
+    );
+  }
+}
 
-      <AddDeadlineDialog
-        open={newDeadlineDialog}
-        onClose={() => setNewDeadlineDialog(false)}
-        newDeadline={newDeadline}
-        setNewDeadline={setNewDeadline}
-        onAddDeadline={handleAddDeadline}
-      />
+/* ─────────────────────────────────────────────────────────
+   CLIENT MANAGEMENT
+───────────────────────────────────────────────────────── */
+class ClientManagementSection extends React.Component {
+  statusPill(status) {
+    const map = { 'In Progress':'pill-inprogress', 'Completed':'pill-completed' };
+    return <span className={`status-pill ${map[status] || ''}`}>{status}</span>;
+  }
+  activePill(active) {
+    return <span className={`status-pill ${active ? 'pill-active' : 'pill-inactive'}`}>{active ? 'Active' : 'Inactive'}</span>;
+  }
 
-      <AddActivityDialog
-        open={taskDialogOpen}
-        onClose={() => setTaskDialogOpen(false)}
-        newActivity={newActivityDialogData}
-        setNewActivity={setNewActivityDialogData}
-        onAddActivity={handleAddActivity}
-      />
+  render() {
+    const {
+      clients, searchTerm, statusFilter, debouncedSearch,
+      setStatusFilter, onEdit, onDelete, onViewDetails,
+      onSortChange, onToggleActive, onAddClientButtonClick, isMobile,
+    } = this.props;
 
-      <EditActivityDialog
-        open={editActivityDialog}
-        onClose={() => setEditActivityDialog(false)}
-        activityToEdit={activityToEdit}
-        setActivityToEdit={setActivityToEdit}
-        onSaveActivity={handleSaveActivity}
-      />
+    const filtered = clients.filter(c => {
+      const name   = c.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const status = statusFilter ? c.status === statusFilter : true;
+      return name && status;
+    });
 
-      <DeleteConfirmationDialog
-        open={deleteConfirmationDialog}
-        onClose={() => setDeleteConfirmationDialog(false)}
-        onConfirm={() => {
-          if (clientToDelete !== null) {
-            handleDeleteClient();
-          } else if (deadlineToDelete !== null) {
-            handleDeleteDeadline();
-          }
-        }}
-        itemType={clientToDelete !== null ? 'client' : 'deadline'}
-      />
+    return (
+      <Box className="client-management">
+        <div className="section-header-row">
+          <Typography variant="h4">Client Management</Typography>
+          <span className="section-count-badge">{filtered.length} clients</span>
+        </div>
 
-      <ClientDetailsDialog
-        open={clientDetailsDialog}
-        onClose={() => setClientDetailsDialog(false)}
-        client={clientDetails}
-      />
+        <Box sx={{ display:'flex', flexDirection:isMobile?'column':'row', justifyContent:'space-between', alignItems:'center', mb:2, gap:1.5 }}>
+          <TextField placeholder="Search clients…" fullWidth defaultValue={searchTerm}
+            onChange={e => debouncedSearch(e.target.value)} />
+          <Button variant="contained" color="primary" onClick={onAddClientButtonClick}
+            startIcon={<FiPlusCircle/>} sx={{ whiteSpace:'nowrap', minWidth:'fit-content' }}>
+            Add Client
+          </Button>
+        </Box>
 
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={3000}
-        message="Action successful"
-        onClose={() => setSnackbarOpen(false)}
-      />
-      {error && (
-        <Snackbar
-          open={!!error}
-          autoHideDuration={3000}
-          message={error}
-          onClose={() => setError('')}
-        />
-      )}
+        <Box sx={{ display:'flex', gap:1.5, mb:2, flexWrap:'wrap' }}>
+          <Select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} displayEmpty sx={{ minWidth:160 }}>
+            <MenuItem value="">All Statuses</MenuItem>
+            <MenuItem value="In Progress">In Progress</MenuItem>
+            <MenuItem value="Completed">Completed</MenuItem>
+          </Select>
+          <Select defaultValue="" onChange={e => onSortChange(e.target.value)} displayEmpty sx={{ minWidth:160 }}>
+            <MenuItem value="">Sort By</MenuItem>
+            <MenuItem value="nameAsc">Name (A–Z)</MenuItem>
+            <MenuItem value="nameDesc">Name (Z–A)</MenuItem>
+          </Select>
+        </Box>
 
-      <Box sx={{ height: '200px' }}></Box>
-      <Box sx={{ textAlign: 'center', padding: '20px', color: '#777' }}>
-        <Typography variant="caption">© 2025 Freelancer Assistant. All rights reserved.</Typography>
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Client</TableCell>
+                <TableCell>Project</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Active</TableCell>
+                <TableCell>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filtered.length > 0 ? filtered.map((client, idx) => (
+                <TableRow key={idx}>
+                  <TableCell>
+                    <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                      <span className="client-avatar">{client.name.charAt(0)}</span>
+                      {client.name}
+                    </div>
+                  </TableCell>
+                  <TableCell>{client.project}</TableCell>
+                  <TableCell>{this.statusPill(client.status)}</TableCell>
+                  <TableCell>{this.activePill(client.active)}</TableCell>
+                  <TableCell>
+                    <Button onClick={() => onViewDetails(client)}  variant="outlined" size="small" sx={{ mr:0.5 }}><FiEye size={13}/></Button>
+                    <Button onClick={() => onEdit(client, idx)}    variant="outlined" size="small" sx={{ mr:0.5 }}>Edit</Button>
+                    <Button onClick={() => onToggleActive(idx)}    variant="outlined" size="small" sx={{ mr:0.5 }}>
+                      {client.active ? 'Deactivate' : 'Activate'}
+                    </Button>
+                    <Button onClick={() => onDelete(idx)} variant="outlined" size="small" color="error">Delete</Button>
+                  </TableCell>
+                </TableRow>
+              )) : (
+                <TableRow><TableCell colSpan={5} align="center">No clients found.</TableCell></TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
       </Box>
-    </div>
-  );
-};
+    );
+  }
+}
 
-export default Dashboard;
+/* ─────────────────────────────────────────────────────────
+   REVENUE OVERVIEW
+   Reads real data from at_invoices + at_expenses (Atelier)
+   Falls back to static demo data if empty
+───────────────────────────────────────────────────────── */
+class RevenueOverviewSection extends React.Component {
+  buildData() {
+    const invoices = loadLS('at_invoices', []);
+    const expenses = loadLS('at_expenses', []);
+    const now = new Date();
+    const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    const live = Array.from({ length:6 }, (_, i) => {
+      const d   = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+      const rev = invoices.filter(inv => inv.status === 'paid' && (inv.date||'').startsWith(key))
+                          .reduce((s, inv) => s + (inv.total||0), 0);
+      const exp = expenses.filter(ex => (ex.date||'').startsWith(key))
+                          .reduce((s, ex)  => s + (ex.amount||0), 0);
+      return { month:MONTHS[d.getMonth()], revenue:rev, expenses:exp };
+    });
+
+    const hasData = live.some(d => d.revenue > 0 || d.expenses > 0);
+    return hasData ? live : [
+      { month:'Jan', revenue:3200, expenses:1800 },
+      { month:'Feb', revenue:4100, expenses:2100 },
+      { month:'Mar', revenue:3800, expenses:1900 },
+      { month:'Apr', revenue:5200, expenses:2400 },
+      { month:'May', revenue:4800, expenses:2200 },
+      { month:'Jun', revenue:6100, expenses:2600 },
+    ];
+  }
+
+  render() {
+    const data     = this.buildData();
+    const totalRev = data.reduce((s, d) => s + d.revenue, 0);
+    const totalExp = data.reduce((s, d) => s + d.expenses, 0);
+    const net      = totalRev - totalExp;
+
+    return (
+      <Box className="revenue-overview">
+        <div className="section-header-row">
+          <Typography variant="h4">
+            <FiDollarSign style={{ color:'#c9a84c', marginRight:8 }}/>Revenue Overview
+          </Typography>
+          <span className="ai-badge">Live Data</span>
+        </div>
+
+        <div className="revenue-summary-row">
+          <div className="revenue-summary-card">
+            <span className="rscard-label">Total Revenue</span>
+            <span className="rscard-value">${totalRev.toLocaleString()}</span>
+            <span className="rscard-delta up"><FiArrowUp size={11}/> 6-month total</span>
+          </div>
+          <div className="revenue-summary-card">
+            <span className="rscard-label">Total Expenses</span>
+            <span className="rscard-value">${totalExp.toLocaleString()}</span>
+            <span className="rscard-delta down"><FiArrowDown size={11}/> 6-month total</span>
+          </div>
+          <div className="revenue-summary-card highlight">
+            <span className="rscard-label">Net Profit</span>
+            <span className="rscard-value">${net.toLocaleString()}</span>
+            <span className={`rscard-delta ${net >= 0 ? 'up' : 'down'}`}>
+              {net >= 0 ? <FiArrowUp size={11}/> : <FiArrowDown size={11}/>} net 6 months
+            </span>
+          </div>
+        </div>
+
+        <div className="chart-container" style={{ height:280 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={data} margin={{ top:10, right:20, left:0, bottom:0 }}>
+              <defs>
+                <linearGradient id="gradRevenue" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor="#c9a84c" stopOpacity={0.25}/>
+                  <stop offset="95%" stopColor="#c9a84c" stopOpacity={0}/>
+                </linearGradient>
+                <linearGradient id="gradExpenses" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor="#9b72e8" stopOpacity={0.2}/>
+                  <stop offset="95%" stopColor="#9b72e8" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid stroke="rgba(255,255,255,0.04)"/>
+              <XAxis dataKey="month" stroke="#4a4843" tick={{ fill:'#4a4843', fontSize:11 }}/>
+              <YAxis stroke="#4a4843" tick={{ fill:'#4a4843', fontSize:11 }}/>
+              <RechartsTooltip
+                contentStyle={{ background:'#18181d', border:'1px solid rgba(201,168,76,0.3)', borderRadius:10, fontFamily:'DM Sans' }}
+                itemStyle={{ color:'#e8c97a' }}
+                labelStyle={{ color:'#4a4843', textTransform:'uppercase', fontSize:10 }}
+              />
+              <Area type="monotone" dataKey="revenue"  stroke="#c9a84c" strokeWidth={2.5} fill="url(#gradRevenue)"
+                dot={{ r:4, fill:'#c9a84c', strokeWidth:2, stroke:'#0a0a0c' }}/>
+              <Area type="monotone" dataKey="expenses" stroke="#9b72e8" strokeWidth={2} fill="url(#gradExpenses)"
+                dot={{ r:3, fill:'#9b72e8', strokeWidth:2, stroke:'#0a0a0c' }}/>
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="chart-legend-row">
+          <span className="legend-item"><span className="legend-dot" style={{ background:'#c9a84c' }}/>Revenue</span>
+          <span className="legend-item"><span className="legend-dot" style={{ background:'#9b72e8' }}/>Expenses</span>
+        </div>
+      </Box>
+    );
+  }
+}
+
+/* ─────────────────────────────────────────────────────────
+   PRODUCTIVITY CHART
+   Computes from real recentActivity prop (weekly buckets)
+   Falls back to demo data if no activity
+───────────────────────────────────────────────────────── */
+class ProductivityChartSection extends React.Component {
+  buildData() {
+    const activity = this.props.recentActivity || [];
+    if (!activity.length) return [
+      { name:'Week 1', productivity:65 },
+      { name:'Week 2', productivity:78 },
+      { name:'Week 3', productivity:90 },
+      { name:'Week 4', productivity:82 },
+      { name:'Week 5', productivity:95 },
+    ];
+    const perWeek = Math.ceil(activity.length / 5) || 1;
+    return Array.from({ length:5 }, (_, i) => {
+      const slice = activity.slice(i * perWeek, (i + 1) * perWeek);
+      const done  = slice.filter(a => a.status === 'Completed').length;
+      return { name:`Week ${i+1}`, productivity: slice.length ? Math.round((done / slice.length) * 100) : 0 };
+    });
+  }
+
+  render() {
+    const data = this.buildData();
+    return (
+      <Box className="chart-section">
+        <div className="section-header-row">
+          <Typography variant="h4">
+            <FiActivity style={{ color:'#4a90d9', marginRight:8 }}/>Productivity Analytics
+          </Typography>
+        </div>
+        <div className="chart-container" style={{ height:280 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data} margin={{ top:10, right:20, left:0, bottom:0 }}>
+              <CartesianGrid stroke="rgba(255,255,255,0.04)"/>
+              <XAxis dataKey="name" stroke="#4a4843" tick={{ fill:'#4a4843', fontSize:11 }}/>
+              <YAxis stroke="#4a4843" tick={{ fill:'#4a4843', fontSize:11 }} domain={[0,100]}/>
+              <RechartsTooltip
+                contentStyle={{ background:'#18181d', border:'1px solid rgba(201,168,76,0.3)', borderRadius:10, fontFamily:'DM Sans' }}
+                itemStyle={{ color:'#e8c97a' }}
+                labelStyle={{ color:'#4a4843', textTransform:'uppercase', fontSize:10 }}
+                formatter={v => [`${v}%`, 'Productivity']}
+              />
+              <Bar dataKey="productivity" radius={[6,6,0,0]}>
+                {data.map((entry, i) => (
+                  <Cell key={i} fill={entry.productivity >= 90 ? '#e8c97a' : entry.productivity >= 80 ? '#c9a84c' : '#9b7a2a'}/>
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="productivity-legend">
+          <span className="prod-legend-item"><span style={{ background:'#e8c97a' }}/>90%+ Excellent</span>
+          <span className="prod-legend-item"><span style={{ background:'#c9a84c' }}/>80–89% Good</span>
+          <span className="prod-legend-item"><span style={{ background:'#9b7a2a' }}/>Below 80%</span>
+        </div>
+      </Box>
+    );
+  }
+}
+
+/* ─────────────────────────────────────────────────────────
+   GOAL TRACKER
+   Was: hardcoded static numbers
+   Now: reads from live clients, recentActivity, localStorage
+───────────────────────────────────────────────────────── */
+class GoalTrackerSection extends React.Component {
+  render() {
+    const { clients, recentActivity } = this.props;
+    const invoices      = loadLS('at_invoices', []);
+    const tasks         = loadLS('tasks', []);
+    const earned        = invoices.filter(i => i.status === 'paid').reduce((s, i) => s + (i.total||0), 0);
+    const completed     = recentActivity.filter(a => a.status === 'Completed').length;
+    const activeClients = clients.filter(c => c.active).length;
+    const taskDonePct   = tasks.length ? Math.round((tasks.filter(t => t.completed).length / tasks.length) * 100) : 0;
+
+    const goals = [
+      { label:'Monthly Revenue Target', current:earned,        target:25000, color:'#c9a84c', icon:<FiDollarSign size={16}/>, prefix:'$' },
+      { label:'Active Clients',         current:activeClients, target:10,    color:'#4caf82', icon:<FiUsers size={16}/>,      prefix:''  },
+      { label:'Tasks Completed',        current:completed,     target:Math.max(recentActivity.length, 1), color:'#4a90d9', icon:<FiCheckCircle size={16}/>, prefix:'' },
+      { label:'Task Completion Rate',   current:taskDonePct,   target:100,   color:'#9b72e8', icon:<FiStar size={16}/>,       prefix:'',  suffix:'%' },
+    ];
+
+    return (
+      <Box className="goal-tracker">
+        <div className="section-header-row">
+          <Typography variant="h4">
+            <FiTarget style={{ color:'#c9a84c', marginRight:8 }}/>Goal Tracker
+          </Typography>
+          <span className="ai-badge teal">Live</span>
+        </div>
+        <div className="goals-grid">
+          {goals.map((goal, i) => {
+            const pct = Math.min(100, Math.round((goal.current / goal.target) * 100));
+            return (
+              <div className="goal-card" key={i}>
+                <div className="goal-card-header">
+                  <span className="goal-icon" style={{ color:goal.color, background:`${goal.color}18` }}>{goal.icon}</span>
+                  <span className="goal-pct" style={{ color:goal.color }}>{pct}%</span>
+                </div>
+                <div className="goal-label">{goal.label}</div>
+                <div className="goal-values">
+                  <span className="goal-current" style={{ color:goal.color }}>
+                    {goal.prefix}{typeof goal.current === 'number' && goal.current > 999 ? goal.current.toLocaleString() : goal.current}{goal.suffix||''}
+                  </span>
+                  <span className="goal-sep">/</span>
+                  <span className="goal-target">
+                    {goal.prefix}{typeof goal.target === 'number' && goal.target > 999 ? goal.target.toLocaleString() : goal.target}{goal.suffix||''}
+                  </span>
+                </div>
+                <div className="goal-bar-bg">
+                  <div className="goal-bar-fill" style={{ width:`${pct}%`, background:goal.color }}/>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Box>
+    );
+  }
+}
+
+/* ─────────────────────────────────────────────────────────
+   INVOICE TRACKER
+   Was: hardcoded static invoices + pie data
+   Now: reads from at_invoices (Atelier localStorage)
+───────────────────────────────────────────────────────── */
+class InvoiceTrackerSection extends React.Component {
+  statusPill(status) {
+    const map = { Paid:'pill-completed', Pending:'pill-inprogress', Overdue:'pill-overdue' };
+    return <span className={`status-pill ${map[status] || ''}`}>{status}</span>;
+  }
+
+  render() {
+    const raw  = loadLS('at_invoices', []);
+    const now  = new Date();
+
+    // Normalise status and derive overdue
+    const invoices = raw.slice(0, 8).map(inv => ({
+      id:     inv.invoiceNum || String(inv.id),
+      client: inv.client || 'Unknown',
+      amount: inv.total  || 0,
+      due:    inv.dueDate || inv.date || '—',
+      status: inv.status === 'paid'   ? 'Paid'
+            : inv.dueDate && new Date(inv.dueDate) < now ? 'Overdue'
+            : 'Pending',
+    }));
+
+    // Fall back to demo data if Atelier is empty
+    const display = invoices.length ? invoices : [
+      { id:'INV-001', client:'Acme Corp',         amount:3200, due:'2025-07-15', status:'Paid' },
+      { id:'INV-002', client:'Globex Industries', amount:1800, due:'2025-07-01', status:'Overdue' },
+      { id:'INV-003', client:'Wayne Enterprises', amount:5500, due:'2025-07-20', status:'Pending' },
+      { id:'INV-004', client:'Stark Solutions',   amount:2200, due:'2025-07-10', status:'Paid' },
+      { id:'INV-005', client:'Umbrella Co.',       amount:900,  due:'2025-07-05', status:'Overdue' },
+    ];
+
+    const total   = display.reduce((s, i) => s + i.amount, 0);
+    const paid    = display.filter(i => i.status === 'Paid').reduce((s, i) => s + i.amount, 0);
+    const pending = display.filter(i => i.status === 'Pending').reduce((s, i) => s + i.amount, 0);
+    const overdue = display.filter(i => i.status === 'Overdue').reduce((s, i) => s + i.amount, 0);
+
+    const pieData = [
+      { name:'Paid',    value:paid    || 1, color:'#4caf82' },
+      { name:'Pending', value:pending || 1, color:'#e8a030' },
+      { name:'Overdue', value:overdue || 1, color:'#e05c5c' },
+    ];
+
+    return (
+      <Box className="invoice-tracker">
+        <div className="section-header-row">
+          <Typography variant="h4">
+            <FiFileText style={{ color:'#e8a030', marginRight:8 }}/>Invoice Tracker
+          </Typography>
+          <span className="ai-badge amber">Live from Atelier</span>
+        </div>
+
+        <div className="invoice-overview-row">
+          <div className="invoice-pie-wrap">
+            <ResponsiveContainer width="100%" height={180}>
+              <PieChart>
+                <Pie data={pieData} cx="50%" cy="50%" innerRadius={52} outerRadius={76} paddingAngle={3} dataKey="value">
+                  {pieData.map((entry, i) => <Cell key={i} fill={entry.color} stroke="transparent"/>)}
+                </Pie>
+                <RechartsTooltip
+                  contentStyle={{ background:'#18181d', border:'1px solid rgba(201,168,76,0.3)', borderRadius:10 }}
+                  itemStyle={{ color:'#e8c97a' }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="pie-center-label">
+              <span className="pie-total">${total >= 1000 ? (total/1000).toFixed(1)+'k' : total}</span>
+              <span className="pie-total-label">Total</span>
+            </div>
+          </div>
+
+          <div className="invoice-stats-col">
+            {pieData.map((d, i) => (
+              <div className="invoice-stat-row" key={i}>
+                <span className="inv-stat-dot" style={{ background:d.color }}/>
+                <span className="inv-stat-name">{d.name}</span>
+                <span className="inv-stat-val" style={{ color:d.color }}>${d.value.toLocaleString()}</span>
+              </div>
+            ))}
+            <div className="invoice-collection-rate">
+              <span className="icr-label">Collection Rate</span>
+              <span className="icr-value">{total > 0 ? Math.round((paid / total) * 100) : 0}%</span>
+            </div>
+          </div>
+        </div>
+
+        <TableContainer component={Paper} sx={{ mt:2 }}>
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Invoice</TableCell>
+                <TableCell>Client</TableCell>
+                <TableCell>Amount</TableCell>
+                <TableCell>Due Date</TableCell>
+                <TableCell>Status</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {display.map((inv, i) => (
+                <TableRow key={i}>
+                  <TableCell>{inv.id}</TableCell>
+                  <TableCell>{inv.client}</TableCell>
+                  <TableCell>${inv.amount.toLocaleString()}</TableCell>
+                  <TableCell>{inv.due}</TableCell>
+                  <TableCell>{this.statusPill(inv.status)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Box>
+    );
+  }
+}
+
+/* ─────────────────────────────────────────────────────────
+   DEADLINE TRACKER
+   Now: lifts state up via onDeadlinesChange so Dashboard
+   can pass real deadlines to AIInsightsSection
+───────────────────────────────────────────────────────── */
+class DeadlineTrackerSection extends React.Component {
+  constructor(props) {
+    super(props);
+    // Merge tasks-with-deadlines from localStorage + stored manual deadlines
+    const tasks    = loadLS('tasks', []);
+    const fromTasks = tasks
+      .filter(t => t.deadline && !t.completed)
+      .slice(0, 5)
+      .map(t => ({
+        id:        String(t.id),
+        title:     t.name,
+        dueDate:   t.deadline,
+        priority:  t.priority || 'Medium',
+        completed: !!t.completed,
+        source:    'task',
+      }));
+    const stored = loadLS('db_deadlines', []);
+    const initial = fromTasks.length ? fromTasks : stored.length ? stored : [
+      { id:'d1', title:'Submit Proposal — Client A',  dueDate:'2025-08-08', priority:'High',   completed:false },
+      { id:'d2', title:'Design Review — Wayne Ent.',  dueDate:'2025-08-10', priority:'Medium', completed:false },
+      { id:'d3', title:'Invoice Follow-up',            dueDate:'2025-08-05', priority:'High',   completed:true  },
+      { id:'d4', title:'Onboarding Call — Stark',      dueDate:'2025-08-12', priority:'Low',    completed:false },
+      { id:'d5', title:'Quarterly Report Draft',       dueDate:'2025-08-15', priority:'Medium', completed:false },
+    ];
+    this.state = { deadlines:initial, newTitle:'', newDue:'', newPriority:'Medium', showForm:false };
+  }
+
+  save(deadlines) {
+    this.setState({ deadlines });
+    localStorage.setItem('db_deadlines', JSON.stringify(deadlines));
+    // Notify parent so AIInsightsSection has real data
+    if (this.props.onDeadlinesChange) this.props.onDeadlinesChange(deadlines);
+  }
+
+  toggle(id) { this.save(this.state.deadlines.map(d => d.id === id ? { ...d, completed:!d.completed } : d)); }
+
+  del(id) { this.save(this.state.deadlines.filter(d => d.id !== id)); }
+
+  addDeadline() {
+    const { newTitle, newDue, newPriority, deadlines } = this.state;
+    if (!newTitle.trim() || !newDue) return;
+    this.save([...deadlines, { id:String(Date.now()), title:newTitle.trim(), dueDate:newDue, priority:newPriority, completed:false }]);
+    this.setState({ newTitle:'', newDue:'', showForm:false });
+  }
+
+  daysLeft(dueDate) { return Math.ceil((new Date(dueDate) - new Date()) / (1000*60*60*24)); }
+
+  render() {
+    const { deadlines, showForm, newTitle, newDue, newPriority } = this.state;
+    const priorityColor = { High:'#e05c5c', Medium:'#e8a030', Low:'#4caf82' };
+    const done  = deadlines.filter(d => d.completed).length;
+    const total = deadlines.length;
+
+    return (
+      <Box className="deadline-tracker">
+        <div className="section-header-row">
+          <Typography variant="h4">
+            <FiCalendar style={{ color:'#4a90d9', marginRight:8 }}/>Deadline Tracker
+          </Typography>
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+            <span className="deadline-progress-mini">
+              <span style={{ color:'#4caf82', fontWeight:700 }}>{done}</span>
+              <span style={{ color:'#4a4843' }}>/{total} done</span>
+            </span>
+            <button className="refresh-btn" onClick={() => this.setState({ showForm:!showForm })}>
+              <FiPlusCircle size={13}/> Add
+            </button>
+          </div>
+        </div>
+
+        {showForm && (
+          <div className="dl-add-form">
+            <input className="dl-input" placeholder="Deadline title…" value={newTitle}
+              onChange={e => this.setState({ newTitle:e.target.value })}/>
+            <input className="dl-input" type="date" value={newDue}
+              onChange={e => this.setState({ newDue:e.target.value })}/>
+            <select className="dl-select" value={newPriority}
+              onChange={e => this.setState({ newPriority:e.target.value })}>
+              {['High','Medium','Low'].map(p => <option key={p}>{p}</option>)}
+            </select>
+            <button className="dl-save-btn" onClick={() => this.addDeadline()}>Save</button>
+          </div>
+        )}
+
+        <div className="deadline-completion-bar">
+          <div className="dcbar-fill" style={{ width:`${total ? (done/total)*100 : 0}%` }}/>
+        </div>
+
+        <div className="deadline-list">
+          {deadlines.map(dl => {
+            const left = this.daysLeft(dl.dueDate);
+            return (
+              <div key={dl.id}
+                className={`deadline-item ${dl.completed ? 'completed' : ''} ${left < 0 && !dl.completed ? 'overdue' : ''}`}>
+                <div className="dl-check" onClick={() => this.toggle(dl.id)}>
+                  {dl.completed ? <FiCheckCircle size={18} color="#4caf82"/> : <div className="dl-circle"/>}
+                </div>
+                <div className="dl-body" onClick={() => this.toggle(dl.id)}>
+                  <span className="dl-title">{dl.title}</span>
+                  <div className="dl-meta">
+                    <span className="dl-date"><FiCalendar size={11}/> {dl.dueDate}</span>
+                    <span className="dl-priority"
+                      style={{ color:priorityColor[dl.priority], borderColor:`${priorityColor[dl.priority]}40`, background:`${priorityColor[dl.priority]}12` }}>
+                      {dl.priority}
+                    </span>
+                  </div>
+                </div>
+                <div className="dl-days">
+                  {dl.completed
+                    ? <span className="dl-done-tag">Done</span>
+                    : left < 0
+                      ? <span className="dl-overdue-tag">Overdue</span>
+                      : <span className="dl-days-left"
+                          style={{ color:left <= 2 ? '#e05c5c' : left <= 5 ? '#e8a030' : '#8e8a82' }}>
+                          {left}d left
+                        </span>}
+                </div>
+                <button className="dl-del-btn" onClick={() => this.del(dl.id)}><FiX size={12}/></button>
+              </div>
+            );
+          })}
+          {deadlines.length === 0 && <p className="empty-state">No deadlines. Click + Add above.</p>}
+        </div>
+      </Box>
+    );
+  }
+}
+
+/* ─────────────────────────────────────────────────────────
+   ACTIVITY FEED
+   Was: static array, Refresh button had no onClick
+   Now: reads recentActivity prop; Refresh re-reads localStorage
+───────────────────────────────────────────────────────── */
+class ActivityFeedSection extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { activities: this.build(props.recentActivity) };
+    this.handleRefresh = this.handleRefresh.bind(this);
+  }
+
+  build(activity = []) {
+    if (!activity.length) return [
+      { icon:<FiCheckCircle size={16}/>, color:'#4caf82', text:'Task "Design Homepage" marked complete',         time:'2 min ago',  type:'task' },
+      { icon:<FiDollarSign size={16}/>,  color:'#c9a84c', text:'Invoice INV-004 paid by Stark — $2,200',          time:'1 hr ago',   type:'invoice' },
+      { icon:<FiUsers size={16}/>,       color:'#4a90d9', text:'New client "Acme Corp" added to pipeline',        time:'3 hrs ago',  type:'client' },
+      { icon:<FiAlertCircle size={16}/>, color:'#e05c5c', text:'Invoice INV-002 is 5 days overdue',               time:'5 hrs ago',  type:'alert' },
+      { icon:<FiStar size={16}/>,        color:'#9b72e8', text:'Productivity score reached 87% — personal best!', time:'Yesterday',  type:'milestone' },
+      { icon:<FiBell size={16}/>,        color:'#e8a030', text:'Deadline "Submit Proposal" due in 2 days',        time:'Yesterday',  type:'reminder' },
+    ];
+    return activity.slice(0, 8).map(a => ({
+      icon:  a.status === 'Completed'  ? <FiCheckCircle size={16}/>
+           : a.status === 'In Progress'? <FiActivity size={16}/>
+           : <FiClock size={16}/>,
+      color: a.status === 'Completed'  ? '#4caf82'
+           : a.status === 'In Progress'? '#e8a030'
+           : '#4a90d9',
+      text: `${a.title} — ${a.status}`,
+      time: a.timestamp ? new Date(a.timestamp).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }) : 'recently',
+      type: (a.status || '').toLowerCase().replace(/\s+/g, '-'),
+    }));
+  }
+
+  // Refresh: re-reads from localStorage so changes from Tasks page appear live
+  handleRefresh() {
+    const fresh = loadLS('recentActivity', []);
+    this.setState({ activities: this.build(fresh) });
+  }
+
+  render() {
+    const { activities } = this.state;
+    return (
+      <Box className="activity-feed">
+        <div className="section-header-row">
+          <Typography variant="h4">
+            <FiActivity style={{ color:'#9b72e8', marginRight:8 }}/>Activity Feed
+          </Typography>
+          {/* FiRefreshCw is now wired to a real handler */}
+          <button className="refresh-btn" onClick={this.handleRefresh}>
+            <FiRefreshCw size={14}/> Refresh
+          </button>
+        </div>
+        <div className="activity-list">
+          {activities.map((act, i) => (
+            <div className="activity-row" key={i}>
+              <div className="activity-icon-wrap" style={{ color:act.color, background:`${act.color}16` }}>
+                {act.icon}
+              </div>
+              <div className="activity-text-col">
+                <span className="activity-text">{act.text}</span>
+                <span className="activity-time">{act.time}</span>
+              </div>
+              <span className={`activity-type-badge type-${act.type}`}>{act.type}</span>
+            </div>
+          ))}
+        </div>
+      </Box>
+    );
+  }
+}
+
+/* ─────────────────────────────────────────────────────────
+   CLIENT DISTRIBUTION PIE
+   Uses: clients prop (live)
+───────────────────────────────────────────────────────── */
+class ClientDistributionSection extends React.Component {
+  render() {
+    const { clients } = this.props;
+    const data = [
+      { name:'In Progress', value:clients.filter(c => c.status === 'In Progress').length || 1, color:'#e8a030' },
+      { name:'Completed',   value:clients.filter(c => c.status === 'Completed').length  || 1, color:'#4caf82' },
+      { name:'Inactive',    value:clients.filter(c => !c.active).length                 || 1, color:'#4a4843' },
+    ];
+    return (
+      <Box className="client-distribution">
+        <div className="section-header-row">
+          <Typography variant="h4">
+            <FiAward style={{ color:'#4caf82', marginRight:8 }}/>Client Distribution
+          </Typography>
+        </div>
+        <div className="dist-chart-wrap">
+          <ResponsiveContainer width="100%" height={200}>
+            <PieChart>
+              <Pie data={data} cx="50%" cy="50%" outerRadius={80} paddingAngle={4} dataKey="value">
+                {data.map((entry, i) => <Cell key={i} fill={entry.color} stroke="transparent"/>)}
+              </Pie>
+              <RechartsTooltip
+                contentStyle={{ background:'#18181d', border:'1px solid rgba(201,168,76,0.3)', borderRadius:10 }}
+                itemStyle={{ color:'#e8c97a' }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="dist-legend">
+          {data.map((d, i) => (
+            <div className="dist-legend-row" key={i}>
+              <span className="dist-dot" style={{ background:d.color }}/>
+              <span className="dist-name">{d.name}</span>
+              <span className="dist-val" style={{ color:d.color }}>{d.value}</span>
+            </div>
+          ))}
+        </div>
+      </Box>
+    );
+  }
+}
+
+/* ─────────────────────────────────────────────────────────
+   AI INSIGHTS
+   Was: received deadlines prop but Dashboard passed []
+   Now: receives live deadlines lifted from DeadlineTracker
+   Also reads real invoices + tasks from localStorage
+───────────────────────────────────────────────────────── */
+class AIInsightsSection extends React.Component {
+  computeInsights() {
+    const { clients, deadlines } = this.props;
+    const invoices     = loadLS('at_invoices', []);
+    const tasks        = loadLS('tasks', []);
+    const activeC      = clients.filter(c => c.active).length;
+    const pendingDL    = deadlines.filter(d => !d.completed).length;
+    const overdueDL    = deadlines.filter(d => !d.completed && d.dueDate && new Date(d.dueDate) < new Date()).length;
+    const unpaidInv    = invoices.filter(i => i.status !== 'paid').length;
+    const overdueTasks = tasks.filter(t => !t.completed && t.deadline && new Date(t.deadline) < new Date()).length;
+    const earned       = invoices.filter(i => i.status === 'paid').reduce((s, i) => s + (i.total||0), 0);
+    const out = [];
+    if (activeC > 0)      out.push(`You have ${activeC} active client${activeC > 1 ? 's' : ''}. Schedule weekly check-ins to improve retention.`);
+    if (pendingDL > 0)    out.push(`${pendingDL} deadline${pendingDL > 1 ? 's' : ''} pending${overdueDL > 0 ? ` — ${overdueDL} already overdue` : ''}. Prioritise these first.`);
+    if (unpaidInv > 0)    out.push(`${unpaidInv} unpaid invoice${unpaidInv > 1 ? 's' : ''}. A polite reminder typically recovers payment within 48 hours.`);
+    if (earned > 0)       out.push(`You've earned $${earned.toLocaleString()} in tracked invoices. Consider raising your rate by 10–15%.`);
+    if (overdueTasks > 0) out.push(`${overdueTasks} task${overdueTasks > 1 ? 's are' : ' is'} past deadline. Clear these to keep your productivity score high.`);
+    if (!out.length)      out.push('Add clients, tasks, and invoices in Atelier to start seeing personalised AI insights here.');
+    return out;
+  }
+
+  render() {
+    const insights = this.computeInsights();
+    const icons = [<FiUsers size={15}/>, <FiClock size={15}/>, <FiTrendingUp size={15}/>, <FiAlertCircle size={15}/>];
+    return (
+      <Box className="ai-insights">
+        <div className="section-header-row">
+          <Typography variant="h4">
+            <FiZap style={{ color:'#38bdf8', marginRight:8 }}/>AI Insights
+          </Typography>
+          <span className="ai-badge teal">✦ Live</span>
+        </div>
+        <div className="insights-grid">
+          {insights.map((insight, i) => (
+            <div className="insight-card" key={i}>
+              <span className="insight-icon">{icons[i % icons.length]}</span>
+              <span className="insight-text">{insight}</span>
+            </div>
+          ))}
+        </div>
+      </Box>
+    );
+  }
+}
+
+/* ─────────────────────────────────────────────────────────
+   AI ASSISTANT
+   Was: setTimeout fake response
+   Now: real Anthropic API call with business context
+───────────────────────────────────────────────────────── */
+class AIAssistantSection extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { query:'', response:'', loading:false, error:'' };
+    this.handleAskAI = this.handleAskAI.bind(this);
+  }
+
+  async handleAskAI() {
+    const { query } = this.state;
+    if (!query.trim()) return;
+
+    const clients  = loadLS('clients', []);
+    const invoices = loadLS('at_invoices', []);
+    const tasks    = loadLS('tasks', []);
+    const earned   = invoices.filter(i => i.status === 'paid').reduce((s, i) => s + (i.total||0), 0);
+    const context  = `Freelancer context: ${clients.length} clients (${clients.filter(c=>c.active).length} active), ${tasks.length} tasks (${tasks.filter(t=>t.completed).length} completed), $${earned.toLocaleString()} earned in tracked invoices.`;
+
+    this.setState({ loading:true, response:'', error:'' });
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system: `You are a concise freelance business advisor embedded in Aurelance, a freelancer dashboard. Give practical, specific advice in 2–4 sentences. ${context}`,
+          messages: [{ role:'user', content:query }],
+        }),
+      });
+      const data = await res.json();
+      const text = data.content?.map(b => b.text || '').join('') || 'No response received.';
+      this.setState({ loading:false, response:text });
+    } catch {
+      this.setState({ loading:false, error:'Could not reach AI. Please check your connection.' });
+    }
+  }
+
+  render() {
+    const { query, response, loading, error } = this.state;
+    return (
+      <Box className="ai-assistant">
+        <div className="section-header-row">
+          <Typography variant="h4">
+            <FiZap style={{ color:'#9b72e8', marginRight:8 }}/>AI Assistant
+          </Typography>
+          <span className="ai-badge purple">✦ AI</span>
+        </div>
+        <p className="ai-section-subtext">Ask anything about your freelance business:</p>
+        <div className="ai-input-row">
+          <TextField fullWidth placeholder="e.g. How can I improve client retention?"
+            value={query} onChange={e => this.setState({ query:e.target.value })}
+            onKeyDown={e => e.key === 'Enter' && this.handleAskAI()}/>
+          <Button variant="contained" color="primary" onClick={this.handleAskAI}
+            disabled={loading} sx={{ minWidth:100, ml:1 }}>
+            {loading ? '…' : 'Ask AI'}
+          </Button>
+        </div>
+        {response && (
+          <div className="ai-response-box">
+            <span className="ai-response-icon"><FiZap size={14}/></span>
+            <Typography variant="body1">{response}</Typography>
+          </div>
+        )}
+        {error && <p style={{ color:'#ef4444', fontSize:13, marginTop:8 }}>{error}</p>}
+      </Box>
+    );
+  }
+}
+
+/* ─────────────────────────────────────────────────────────
+   AI PROJECT PLANNER
+   Was: setTimeout with hardcoded fake plan
+   Now: real Anthropic API call
+───────────────────────────────────────────────────────── */
+class AIProjectPlannerSection extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { projectDesc:'', planResponse:'', loading:false, error:'' };
+    this.handleGeneratePlan = this.handleGeneratePlan.bind(this);
+  }
+
+  async handleGeneratePlan() {
+    const { projectDesc } = this.state;
+    if (!projectDesc.trim()) return;
+    this.setState({ loading:true, planResponse:'', error:'' });
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system: 'You are a project planning expert for freelancers. Generate a numbered week-by-week milestone plan. Be concise — 5 to 8 milestones max. Format each line as: "1. Milestone name (Week X)" with no extra text before or after.',
+          messages: [{ role:'user', content:`Create a project milestone plan for: ${projectDesc}` }],
+        }),
+      });
+      const data = await res.json();
+      const text = data.content?.map(b => b.text || '').join('') || '';
+      this.setState({ loading:false, planResponse:text });
+    } catch {
+      this.setState({ loading:false, error:'Could not reach AI. Please check your connection.' });
+    }
+  }
+
+  render() {
+    const { projectDesc, planResponse, loading, error } = this.state;
+    const steps = planResponse ? planResponse.split('\n').filter(Boolean) : [];
+    return (
+      <Box className="ai-project-planner">
+        <div className="section-header-row">
+          <Typography variant="h4">
+            <FiTarget style={{ color:'#e8a030', marginRight:8 }}/>AI Project Planner
+          </Typography>
+          <span className="ai-badge amber">✦ AI</span>
+        </div>
+        <p className="ai-section-subtext">Describe your project and get an AI milestone plan:</p>
+        <TextField fullWidth multiline rows={3}
+          placeholder="e.g. Build a mobile app for a fitness startup with user profiles, workout tracking…"
+          value={projectDesc} onChange={e => this.setState({ projectDesc:e.target.value })}
+          sx={{ mb:1.5 }}/>
+        <Button variant="contained" color="primary" onClick={this.handleGeneratePlan} disabled={loading}>
+          {loading ? 'Generating…' : 'Generate Plan'}
+        </Button>
+        {planResponse && (
+          <div className="ai-response-box amber">
+            <div className="plan-steps">
+              {steps.map((step, i) => (
+                <div className="plan-step" key={i}>
+                  <span className="plan-step-text">{step}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {error && <p style={{ color:'#ef4444', fontSize:13, marginTop:8 }}>{error}</p>}
+      </Box>
+    );
+  }
+}
+
+/* ─────────────────────────────────────────────────────────
+   AI TASK PRIORITIZER
+   Was: setTimeout that just sorted by status (no AI)
+   Now: real Anthropic API call with actual task list
+───────────────────────────────────────────────────────── */
+class AITaskPrioritizerSection extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { prioritizedTasks:[], loading:false, error:'' };
+    this.handlePrioritizeTasks = this.handlePrioritizeTasks.bind(this);
+  }
+
+  async handlePrioritizeTasks() {
+    const tasks = loadLS('tasks', this.props.recentActivity || []);
+    if (!tasks.length) {
+      this.setState({ error:'No tasks found. Add tasks in the Tasks section first.' });
+      return;
+    }
+    this.setState({ loading:true, error:'' });
+
+    const taskList = tasks.slice(0, 20).map((t, i) =>
+      `${i+1}. ${t.name || t.title} [${t.priority || 'Medium'} priority, ${t.completed ? 'Done' : t.status || 'Pending'}${t.deadline ? `, due ${t.deadline}` : ''}]`
+    ).join('\n');
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system: 'You are a task prioritisation assistant for a freelancer. Re-order the provided tasks by urgency and impact. Return ONLY a numbered list. After each task name, add a short parenthetical reason. No intro, no outro.',
+          messages: [{ role:'user', content:`Prioritise these tasks by urgency and impact:\n${taskList}` }],
+        }),
+      });
+      const data = await res.json();
+      const text = data.content?.map(b => b.text || '').join('') || '';
+      const lines = text.split('\n').filter(Boolean);
+      // Map first 3 → High, next 3 → Medium, rest → Low
+      const prioritized = lines.map((line, i) => ({
+        title:  line,
+        status: i < 3 ? 'High' : i < 6 ? 'Medium' : 'Low',
+      }));
+      this.setState({ loading:false, prioritizedTasks:prioritized });
+    } catch {
+      this.setState({ loading:false, error:'Could not reach AI. Please check your connection.' });
+    }
+  }
+
+  render() {
+    const { prioritizedTasks, loading, error } = this.state;
+    const priorityColors = { High:'#e05c5c', Medium:'#e8a030', Low:'#4caf82' };
+    return (
+      <Box className="ai-task-prioritizer">
+        <div className="section-header-row">
+          <Typography variant="h4">
+            <FiZap style={{ color:'#4caf82', marginRight:8 }}/>AI Task Prioritizer
+          </Typography>
+          <span className="ai-badge green">✦ AI</span>
+        </div>
+        <p className="ai-section-subtext">Let AI sort your real tasks by urgency and impact:</p>
+        <Button variant="contained" color="primary" onClick={this.handlePrioritizeTasks} disabled={loading}>
+          {loading ? 'Prioritizing…' : 'Prioritize My Tasks'}
+        </Button>
+        {prioritizedTasks.length > 0 && (
+          <div className="ai-response-box green">
+            <p className="ai-response-subhead">AI-sorted by urgency and impact:</p>
+            <div className="task-priority-list">
+              {prioritizedTasks.map((task, i) => (
+                <div className="task-priority-item" key={i}>
+                  <span className="task-priority-num">{String(i+1).padStart(2,'0')}</span>
+                  <span className="task-priority-title">{task.title}</span>
+                  <span className="task-priority-badge"
+                    style={{ color:priorityColors[task.status], background:`${priorityColors[task.status]}16`, borderColor:`${priorityColors[task.status]}30` }}>
+                    {task.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {error && <p style={{ color:'#ef4444', fontSize:13, marginTop:8 }}>{error}</p>}
+      </Box>
+    );
+  }
+}
+
+/* ─────────────────────────────────────────────────────────
+   DIALOGS
+───────────────────────────────────────────────────────── */
+class DeleteConfirmationDialog extends React.Component {
+  render() {
+    const { open, onClose, onConfirm, itemType } = this.props;
+    return (
+      <Dialog open={open} onClose={onClose}>
+        <DialogTitle>Confirm Deletion</DialogTitle>
+        <DialogContent>
+          <Typography>Are you sure you want to delete this {itemType}?</Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onClose} color="secondary">Cancel</Button>
+          <Button onClick={onConfirm} color="primary" variant="contained">Delete</Button>
+        </DialogActions>
+      </Dialog>
+    );
+  }
+}
+
+class AddClientDialog extends React.Component {
+  render() {
+    const { open, onClose, newClient, setNewClient, onAddClient } = this.props;
+    return (
+      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+        <DialogTitle>Add New Client</DialogTitle>
+        <DialogContent>
+          <TextField label="Client Name" fullWidth margin="normal" value={newClient.name}
+            onChange={e => setNewClient({ ...newClient, name:e.target.value.trimStart() })}/>
+          <TextField label="Project" fullWidth margin="normal" value={newClient.project}
+            onChange={e => setNewClient({ ...newClient, project:e.target.value.trimStart() })}/>
+          <Select fullWidth sx={{ mt:1.5 }} value={newClient.status} displayEmpty
+            onChange={e => setNewClient({ ...newClient, status:e.target.value })}>
+            <MenuItem value="" disabled>Select Status</MenuItem>
+            <MenuItem value="In Progress">In Progress</MenuItem>
+            <MenuItem value="Completed">Completed</MenuItem>
+          </Select>
+          <Select fullWidth sx={{ mt:1.5 }} value={newClient.active ? 'Active' : 'Inactive'}
+            onChange={e => setNewClient({ ...newClient, active:e.target.value === 'Active' })}>
+            <MenuItem value="Active">Active</MenuItem>
+            <MenuItem value="Inactive">Inactive</MenuItem>
+          </Select>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onClose} color="secondary">Cancel</Button>
+          <Button onClick={onAddClient} color="primary" variant="contained">Save Client</Button>
+        </DialogActions>
+      </Dialog>
+    );
+  }
+}
+
+class EditClientDialog extends React.Component {
+  render() {
+    const { open, onClose, editedClient, setEditedClient, onSaveClient } = this.props;
+    return (
+      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+        <DialogTitle>Edit Client</DialogTitle>
+        <DialogContent>
+          <TextField label="Client Name" fullWidth margin="normal" value={editedClient.name}
+            onChange={e => setEditedClient({ ...editedClient, name:e.target.value })}/>
+          <TextField label="Project" fullWidth margin="normal" value={editedClient.project}
+            onChange={e => setEditedClient({ ...editedClient, project:e.target.value })}/>
+          <Select fullWidth sx={{ mt:1.5 }} value={editedClient.status}
+            onChange={e => setEditedClient({ ...editedClient, status:e.target.value })}>
+            <MenuItem value="In Progress">In Progress</MenuItem>
+            <MenuItem value="Completed">Completed</MenuItem>
+          </Select>
+          <Select fullWidth sx={{ mt:1.5 }} value={editedClient.active ? 'Active' : 'Inactive'}
+            onChange={e => setEditedClient({ ...editedClient, active:e.target.value === 'Active' })}>
+            <MenuItem value="Active">Active</MenuItem>
+            <MenuItem value="Inactive">Inactive</MenuItem>
+          </Select>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onClose} color="secondary">Cancel</Button>
+          <Button onClick={onSaveClient} color="primary">Save Changes</Button>
+        </DialogActions>
+      </Dialog>
+    );
+  }
+}
+
+/* ─────────────────────────────────────────────────────────
+   MAIN DASHBOARD
+───────────────────────────────────────────────────────── */
+export default class Dashboard extends React.Component {
+  constructor(props) {
+    super(props);
+    const storedClients  = loadLS('clients',       []);
+    const storedActivity = loadLS('recentActivity', []);
+    const storedDL       = loadLS('db_deadlines',  []);
+
+    this.state = {
+      clients: storedClients.length ? storedClients : [
+        { name:'Client A',  project:'Website Development', status:'In Progress', active:true,  addedAt:new Date().toLocaleDateString() },
+        { name:'Client B',  project:'Mobile App Design',   status:'Completed',   active:false, addedAt:new Date().toLocaleDateString() },
+        { name:'Acme Corp', project:'Brand Redesign',       status:'In Progress', active:true,  addedAt:new Date().toLocaleDateString() },
+      ],
+      // deadlines is now lifted from DeadlineTrackerSection so AIInsights receives real data
+      deadlines: storedDL,
+      recentActivity: storedActivity.length ? storedActivity : [
+        { title:'Completed Project Alpha milestone', status:'Completed',   priority:'High',   timestamp:new Date() },
+        { title:'Updated profile on platform',       status:'Pending',     priority:'Medium', timestamp:new Date() },
+        { title:'Client onboarding call',            status:'In Progress', priority:'High',   timestamp:new Date() },
+      ],
+      searchTerm:               '',
+      statusFilter:             '',
+      snackbarOpen:             false,
+      snackbarMsg:              'Action successful',
+      error:                    '',
+      newClientDialog:          false,
+      editingClientDialog:      false,
+      deleteConfirmationDialog: false,
+      clientDetailDialog:       false,
+      clientToView:             null,
+      clientToDelete:           null,
+      newClient:    { name:'', project:'', status:'', active:true },
+      editedClient: { name:'', project:'', status:'', active:true, index:null },
+      isMobile: window.matchMedia('(max-width:768px)').matches,
+    };
+
+    this.debouncedSearch          = debounce(this.handleSearch.bind(this), 300);
+    this.handleSearch             = this.handleSearch.bind(this);
+    this.setStatusFilter          = this.setStatusFilter.bind(this);
+    this.handleAddClient          = this.handleAddClient.bind(this);
+    this.handleEditClient         = this.handleEditClient.bind(this);
+    this.handleToggleClientActive = this.handleToggleClientActive.bind(this);
+    this.handleViewClientDetails  = this.handleViewClientDetails.bind(this);
+    this.confirmDeleteClient      = this.confirmDeleteClient.bind(this);
+    this.handleDeleteClient       = this.handleDeleteClient.bind(this);
+    this.handleSortClients        = this.handleSortClients.bind(this);
+    this.handleResize             = this.handleResize.bind(this);
+    this.handleCloseSnackbar      = this.handleCloseSnackbar.bind(this);
+    this.handleDeadlinesChange    = this.handleDeadlinesChange.bind(this);
+  }
+
+  componentDidMount() {
+    // Animate KPI strip items — selector matches actual class name
+    gsap.from('.kpi-item', {
+      opacity:0, y:30, duration:0.6, stagger:0.1, ease:'power2.out',
+    });
+    // Animate all section cards — selectors match actual class names used below
+    gsap.from([
+      '.revenue-overview', '.chart-section', '.goal-tracker',
+      '.invoice-tracker',  '.deadline-tracker', '.activity-feed',
+      '.ai-insights',      '.ai-assistant',     '.ai-project-planner',
+      '.ai-task-prioritizer', '.client-distribution', '.client-management',
+    ], {
+      opacity:0, y:40, duration:0.7, stagger:0.08, delay:0.3, ease:'power2.out',
+    });
+    window.addEventListener('resize', this.handleResize);
+  }
+
+  componentWillUnmount() { window.removeEventListener('resize', this.handleResize); }
+
+  handleResize()   { this.setState({ isMobile:window.matchMedia('(max-width:768px)').matches }); }
+  handleSearch(v)  { this.setState({ searchTerm:v }); }
+  setStatusFilter(v) { this.setState({ statusFilter:v }); }
+  handleCloseSnackbar() { this.setState({ snackbarOpen:false, error:'' }); }
+
+  // Lifted from DeadlineTrackerSection so AIInsightsSection receives live deadlines
+  handleDeadlinesChange(deadlines) { this.setState({ deadlines }); }
+
+  persistClients(clients, msg = 'Action successful') {
+    this.setState({ clients, snackbarOpen:true, snackbarMsg:msg });
+    localStorage.setItem('clients', JSON.stringify(clients));
+  }
+
+  handleAddClient() {
+    const { newClient, clients } = this.state;
+    if (!newClient.name.trim() || !newClient.project.trim() || !newClient.status) {
+      this.setState({ error:'All client fields are required.' }); return;
+    }
+    this.persistClients(
+      [...clients, { ...newClient, name:newClient.name.trim(), project:newClient.project.trim(), addedAt:new Date().toLocaleDateString() }],
+      'Client added'
+    );
+    this.setState({ newClient:{ name:'', project:'', status:'', active:true }, newClientDialog:false });
+  }
+
+  handleEditClient() {
+    const { editedClient, clients } = this.state;
+    if (!editedClient.name.trim() || !editedClient.project.trim() || !editedClient.status) {
+      this.setState({ error:'All fields are required.' }); return;
+    }
+    const updated = [...clients];
+    updated[editedClient.index] = {
+      name:     editedClient.name.trim(),
+      project:  editedClient.project.trim(),
+      status:   editedClient.status,
+      active:   editedClient.active,
+      addedAt:  clients[editedClient.index]?.addedAt,
+    };
+    this.persistClients(updated, 'Client updated');
+    this.setState({ editedClient:{ name:'', project:'', status:'', active:true, index:null }, editingClientDialog:false });
+  }
+
+  handleToggleClientActive(index) {
+    const updated = [...this.state.clients];
+    updated[index].active = !updated[index].active;
+    this.persistClients(updated, `Client ${updated[index].active ? 'activated' : 'deactivated'}`);
+  }
+
+  // Was: alert() — now opens a proper Dialog
+  handleViewClientDetails(client) {
+    this.setState({ clientToView:client, clientDetailDialog:true });
+  }
+
+  confirmDeleteClient(index) { this.setState({ clientToDelete:index, deleteConfirmationDialog:true }); }
+
+  handleDeleteClient() {
+    const updated = this.state.clients.filter((_, i) => i !== this.state.clientToDelete);
+    this.persistClients(updated, 'Client deleted');
+    this.setState({ deleteConfirmationDialog:false });
+  }
+
+  handleSortClients(sortOrder) {
+    const sorted = [...this.state.clients];
+    if (sortOrder === 'nameAsc')  sorted.sort((a, b) => a.name.localeCompare(b.name));
+    if (sortOrder === 'nameDesc') sorted.sort((a, b) => b.name.localeCompare(a.name));
+    this.persistClients(sorted, 'Sorted');
+  }
+
+  render() {
+    const {
+      clients, deadlines, recentActivity, searchTerm, statusFilter,
+      snackbarOpen, snackbarMsg, error,
+      newClientDialog, editingClientDialog, deleteConfirmationDialog,
+      clientDetailDialog, clientToView,
+      newClient, editedClient, isMobile,
+    } = this.state;
+
+    return (
+      <div className="dashboard">
+        {/* Header */}
+        <div className="dashboard-header">
+          <div className="dashboard-header-left">
+            <Typography variant="h3" sx={{ fontSize:isMobile ? '1.75rem' : '2.5rem' }}>
+              Dashboard
+            </Typography>
+            <span className="dashboard-header-sub">Welcome back — here's your overview</span>
+          </div>
+          <div className="dashboard-header-right">
+            <span className="header-date-badge">
+              <FiCalendar size={13}/>
+              {new Date().toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' })}
+            </span>
+            <span className="header-plan-badge"><FiStar size={12}/> Premium</span>
+          </div>
+        </div>
+
+        {/* KPI Strip */}
+        <KPIStripSection clients={clients} recentActivity={recentActivity}/>
+
+        <div className="dashboard-body">
+          {/* Client Management */}
+          <div className="dashboard-row full">
+            <ClientManagementSection
+              clients={clients} searchTerm={searchTerm} statusFilter={statusFilter}
+              debouncedSearch={this.debouncedSearch} setStatusFilter={this.setStatusFilter}
+              onEdit={(client, idx) => this.setState({ editedClient:{ ...client, index:idx }, editingClientDialog:true })}
+              onDelete={this.confirmDeleteClient}
+              onViewDetails={this.handleViewClientDetails}
+              onSortChange={this.handleSortClients}
+              onToggleActive={this.handleToggleClientActive}
+              onAddClientButtonClick={() => this.setState({ newClientDialog:true })}
+              isMobile={isMobile}
+            />
+          </div>
+
+          {/* Revenue + Distribution */}
+          <div className="dashboard-row split-7-3">
+            <RevenueOverviewSection/>
+            <ClientDistributionSection clients={clients}/>
+          </div>
+
+          {/* Productivity + Goals */}
+          <div className="dashboard-row split-6-4">
+            <ProductivityChartSection recentActivity={recentActivity}/>
+            <GoalTrackerSection clients={clients} recentActivity={recentActivity}/>
+          </div>
+
+          {/* Invoice Tracker */}
+          <div className="dashboard-row full">
+            <InvoiceTrackerSection/>
+          </div>
+
+          {/* Deadlines + Activity — onDeadlinesChange lifts state so AIInsights gets real data */}
+          <div className="dashboard-row split-5-5">
+            <DeadlineTrackerSection onDeadlinesChange={this.handleDeadlinesChange}/>
+            <ActivityFeedSection recentActivity={recentActivity}/>
+          </div>
+
+          {/* AI Insights — now receives live deadlines from state */}
+          <div className="dashboard-row full">
+            <AIInsightsSection clients={clients} deadlines={deadlines}/>
+          </div>
+
+          {/* AI Tools */}
+          <div className="dashboard-row split-5-5">
+            <AIAssistantSection/>
+            <AIProjectPlannerSection/>
+          </div>
+
+          <div className="dashboard-row full">
+            <AITaskPrioritizerSection recentActivity={recentActivity}/>
+          </div>
+        </div>
+
+        {/* All Dialogs */}
+        <ClientDetailDialog
+          open={clientDetailDialog} client={clientToView}
+          onClose={() => this.setState({ clientDetailDialog:false })}
+        />
+        <AddClientDialog
+          open={newClientDialog} newClient={newClient}
+          setNewClient={data => this.setState({ newClient:data })}
+          onAddClient={this.handleAddClient}
+          onClose={() => this.setState({ newClientDialog:false })}
+        />
+        <EditClientDialog
+          open={editingClientDialog} editedClient={editedClient}
+          setEditedClient={data => this.setState({ editedClient:data })}
+          onSaveClient={this.handleEditClient}
+          onClose={() => this.setState({ editingClientDialog:false })}
+        />
+        <DeleteConfirmationDialog
+          open={deleteConfirmationDialog} itemType="client"
+          onConfirm={this.handleDeleteClient}
+          onClose={() => this.setState({ deleteConfirmationDialog:false })}
+        />
+
+        <Snackbar open={snackbarOpen} autoHideDuration={3000} message={snackbarMsg} onClose={this.handleCloseSnackbar}/>
+        {error && <Snackbar open={!!error} autoHideDuration={3000} message={error} onClose={this.handleCloseSnackbar}/>}
+      </div>
+    );
+  }
+}
