@@ -1,3 +1,4 @@
+// src/components/Layout.jsx
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Navbar from './Navbar';
@@ -8,17 +9,30 @@ const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const onToggleSidebar = () => setSidebarOpen((prev) => !prev);
-  const onCloseSidebar = () => setSidebarOpen(false);
+  const onCloseSidebar  = () => setSidebarOpen(false);
 
   return (
     <div className={`layout ${sidebarOpen ? "sidebar-open" : ""}`}>
+
+      {/* ── Fixed top navbar ── */}
       <Navbar onToggleSidebar={onToggleSidebar} />
+
+      {/* ── Fixed left sidebar ── */}
       <Sidebar isOpen={sidebarOpen} onClose={onCloseSidebar} />
 
-      {/* This wrapper must be visible; check its CSS */}
-      <div className="layout-content">
-        <Outlet />
+      {/* ── Body: sits below navbar, offset from sidebar ── */}
+      <div className="layout-body">
+
+        {/* Mobile overlay — dims content when sidebar is open */}
+        <div className="layout-overlay" onClick={onCloseSidebar} />
+
+        {/* ── Page content ── */}
+        <main className="layout-content">
+          <Outlet />
+        </main>
+
       </div>
+
     </div>
   );
 };

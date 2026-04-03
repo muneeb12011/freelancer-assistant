@@ -13,7 +13,6 @@
   --navbar-height: 60px;
   --sidebar-width: 260px;
 
-  /* Navbar Colors & Effects */
   --navbar-bg:           rgba(17, 17, 20, 0.92);
   --navbar-blur:         blur(18px);
   --navbar-text:         #f0ede8;
@@ -23,16 +22,14 @@
   --navbar-glow:         0 0 14px rgba(201, 168, 76, 0.3);
   --navbar-border:       rgba(201, 168, 76, 0.12);
 
-  /* Font */
-  --navbar-font: 'DM Sans', 'Inter', 'Segoe UI', sans-serif;
-  --display-font: 'DM Serif Display', Georgia, serif;
+  --navbar-font:   'DM Sans', 'Inter', 'Segoe UI', sans-serif;
+  --display-font:  'DM Serif Display', Georgia, serif;
 }
 
 /* ------------------- NAVBAR ------------------- */
 .navbar {
   position: fixed;
-  top: 0;
-  left: 0;
+  top: 0; left: 0;
   height: var(--navbar-height);
   width: 100%;
   background: var(--navbar-bg);
@@ -50,18 +47,12 @@
   animation: floatNav 1.2s ease-out;
 }
 
-/* Gold shimmer top edge */
 .navbar::before {
   content: '';
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(201, 168, 76, 0.6) 50%,
-    transparent
-  );
+  background: linear-gradient(90deg, transparent, rgba(201,168,76,0.6) 50%, transparent);
   pointer-events: none;
 }
 
@@ -70,18 +61,17 @@
   100% { transform: translateY(0%);    opacity: 1; }
 }
 
-/* Adjust navbar when sidebar is open */
 .layout.sidebar-open .navbar {
   margin-left: var(--sidebar-width);
   width: calc(100% - var(--sidebar-width));
 }
 
+/* ------------------- LEFT ------------------- */
 .navbar-left {
   display: flex;
   align-items: center;
 }
 
-/* Navbar Hamburger */
 .navbar-hamburger {
   background: none;
   border: none;
@@ -93,14 +83,12 @@
   padding: 10px;
   border-radius: 8px;
 }
-.navbar-hamburger:hover,
-.navbar-hamburger:focus {
+.navbar-hamburger:hover {
   color: var(--navbar-accent-light);
   transform: scale(1.1);
-  background-color: rgba(201, 168, 76, 0.1);
+  background-color: rgba(201,168,76,0.1);
 }
 
-/* App Name */
 .app-name {
   font-family: var(--display-font);
   font-size: 1.7rem;
@@ -114,11 +102,11 @@
 }
 
 @keyframes goldPulse {
-  from { filter: drop-shadow(0 0 4px rgba(201, 168, 76, 0.2)); }
-  to   { filter: drop-shadow(0 0 16px rgba(201, 168, 76, 0.55)); }
+  from { filter: drop-shadow(0 0 4px rgba(201,168,76,0.2)); }
+  to   { filter: drop-shadow(0 0 16px rgba(201,168,76,0.55)); }
 }
 
-/* Navbar Center */
+/* ------------------- CENTER ------------------- */
 .navbar-center {
   display: flex;
   gap: 28px;
@@ -126,7 +114,7 @@
 
 .nav-link {
   position: relative;
-  color: rgba(240, 237, 232, 0.6);
+  color: rgba(240,237,232,0.6);
   text-decoration: none;
   font-size: 1.05rem;
   font-weight: 500;
@@ -134,37 +122,24 @@
   transition: all 0.25s ease;
   letter-spacing: 0.4px;
 }
-.nav-link:hover,
-.nav-link:focus {
-  color: var(--navbar-accent-light);
-  text-shadow: 0 0 8px rgba(201, 168, 76, 0.4);
-}
+.nav-link:hover { color: var(--navbar-accent-light); text-shadow: 0 0 8px rgba(201,168,76,0.4); }
 
 .nav-link::after {
   content: '';
   position: absolute;
-  bottom: -4px;
-  left: 50%;
-  width: 0%;
-  height: 2px;
+  bottom: -4px; left: 50%;
+  width: 0%; height: 2px;
   background: var(--navbar-accent);
   transform: translateX(-50%);
   transition: width 0.35s ease;
-  box-shadow: 0 0 6px rgba(201, 168, 76, 0.5);
+  box-shadow: 0 0 6px rgba(201,168,76,0.5);
   border-radius: 3px;
 }
 .nav-link:hover::after,
-.nav-link:focus::after,
-.nav-link--active::after {
-  width: 100%;
-}
+.nav-link--active::after { width: 100%; }
+.nav-link--active { color: var(--navbar-accent-light); }
 
-/* Active link */
-.nav-link--active {
-  color: var(--navbar-accent-light);
-}
-
-/* Navbar Right */
+/* ------------------- RIGHT ------------------- */
 .navbar-right {
   display: flex;
   align-items: center;
@@ -178,60 +153,148 @@
   color: var(--navbar-text);
   cursor: pointer;
   transition: transform 0.25s ease, color 0.25s ease;
+  padding: 6px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
 }
-.logout-button:hover,
-.logout-button:focus {
-  color: #ef4444;
-  transform: translateX(5px);
-}
+.logout-button:hover { color: #ef4444; transform: translateX(4px); }
 
-/* Profile Picture */
+/* ── Profile picture (OAuth photo) ── */
 .profile-picture {
-  width: 40px;
-  height: 40px;
-  border-radius: 4px;
+  width: 38px; height: 38px;
+  border-radius: 6px;
   border: 2px solid var(--navbar-accent);
   object-fit: cover;
-  box-shadow: 0 0 12px rgba(201, 168, 76, 0.4);
+  box-shadow: 0 0 12px rgba(201,168,76,0.4);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  display: block;
 }
-.profile-picture:hover,
-.profile-picture:focus {
+.profile-picture:hover {
   transform: scale(1.08);
-  box-shadow: 0 0 20px rgba(201, 168, 76, 0.7);
+  box-shadow: 0 0 20px rgba(201,168,76,0.7);
 }
 
-/* ------------------- RESPONSIVE STYLES ------------------- */
+/* ── Initials avatar (when no photo) ── */
+.profile-initials {
+  width: 38px; height: 38px;
+  border-radius: 6px;
+  border: 2px solid var(--navbar-accent);
+  background: linear-gradient(135deg, #2a2208, #4a3a10);
+  color: var(--navbar-accent-light);
+  font-family: var(--display-font);
+  font-size: 14px;
+  font-weight: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.05em;
+  box-shadow: 0 0 12px rgba(201,168,76,0.3);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  user-select: none;
+}
+.profile-initials:hover {
+  transform: scale(1.08);
+  box-shadow: 0 0 20px rgba(201,168,76,0.6);
+}
+
+/* ── Avatar button wrapper ── */
+.navbar-user {
+  position: relative;
+}
+
+.navbar-avatar-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  border-radius: 6px;
+}
+
+/* ── Dropdown ── */
+.navbar-dropdown {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  min-width: 210px;
+  background: rgba(16, 16, 20, 0.97);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 12px;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03);
+  overflow: hidden;
+  animation: dropdownIn 0.2s cubic-bezier(0.34,1.36,0.64,1) both;
+  z-index: 2000;
+}
+
+@keyframes dropdownIn {
+  from { opacity: 0; transform: translateY(-8px) scale(0.97); }
+  to   { opacity: 1; transform: none; }
+}
+
+.navbar-dropdown-header {
+  padding: 14px 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.navbar-dropdown-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f0ede8;
+  letter-spacing: 0.01em;
+}
+
+.navbar-dropdown-email {
+  font-size: 11.5px;
+  color: rgba(240,237,232,0.4);
+  letter-spacing: 0.02em;
+}
+
+.navbar-dropdown-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.07);
+  margin: 2px 0;
+}
+
+.navbar-dropdown-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 10px 16px;
+  font-family: var(--navbar-font);
+  font-size: 13.5px;
+  font-weight: 500;
+  color: rgba(240,237,232,0.75);
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  text-align: left;
+}
+.navbar-dropdown-item:hover {
+  background: rgba(201,168,76,0.08);
+  color: var(--navbar-accent-light);
+}
+.navbar-dropdown-item.logout:hover {
+  background: rgba(239,68,68,0.08);
+  color: #ef4444;
+}
+
+/* ------------------- RESPONSIVE ------------------- */
 @media (max-width: 768px) {
-  :root {
-    --sidebar-width: 240px;
-  }
-
-  .navbar {
-    padding: 0 16px;
-  }
-
-  .navbar-hamburger {
-    margin-right: 12px;
-    padding: 8px;
-  }
-
-  .app-name {
-    font-size: 1.5rem;
-  }
-
-  .navbar-center {
-    gap: 16px;
-  }
-
-  .profile-picture {
-    width: 36px;
-    height: 36px;
-  }
+  .navbar { padding: 0 16px; }
+  .navbar-hamburger { margin-right: 12px; padding: 8px; }
+  .app-name { font-size: 1.5rem; }
+  .navbar-center { gap: 16px; }
+  .profile-picture, .profile-initials { width: 34px; height: 34px; }
 }
 
 @media (max-width: 480px) {
-  .navbar-center {
-    display: none;
-  }
+  .navbar-center { display: none; }
 }
