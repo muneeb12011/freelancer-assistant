@@ -26,9 +26,9 @@ import {
   FiFileText, FiDollarSign, FiBarChart2, FiShield,
   FiClipboard, FiList, FiPlus, FiTrash2, FiEdit3,
   FiDownload, FiSave, FiX, FiCheck, FiSearch,
-  FiCopy, FiRefreshCw, FiAlertCircle, FiPenTool,
-  FiPaperclip, FiPackage, FiTrendingUp, FiActivity,
-  FiUsers, FiSliders, FiChevronRight, FiExternalLink,
+  FiCopy, FiAlertCircle, FiPenTool,
+  FiPaperclip, FiPackage, 
+  FiSliders, FiChevronRight, FiExternalLink,
   FiSend, FiCpu, FiGrid, FiArrowRight, FiTarget,
 } from "react-icons/fi";
 import { useAuth } from "../context/AuthContext";
@@ -54,7 +54,6 @@ const ls = {
 
 /* ── Helpers ─────────────────────────────────────────────── */
 const fmt$   = n  => "$" + Number(n||0).toLocaleString(undefined, { minimumFractionDigits:2, maximumFractionDigits:2 });
-const fmtInt = n  => "$" + Number(n||0).toLocaleString();
 const today  = ()  => new Date().toISOString().split("T")[0];
 const arr    = v  => Array.isArray(v) ? v : [];
 const canAccess = (tier, plan) => tier === "free" || plan === "premium";
