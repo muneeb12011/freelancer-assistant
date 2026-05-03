@@ -29,7 +29,7 @@ const TIMELINE = [
 
 const TEAM = [
   {
-    name:     "Shahzad Bhatti",
+    name:     "Shahzad",
     role:     "Co-Founder & CEO",
     bio:      "Former freelance developer turned product builder. Obsessed with making freelancers more profitable.",
     initials: "AR",
@@ -39,7 +39,7 @@ const TEAM = [
     github:   "https://github.com",
   },
   {
-    name:     "Priya Mehta",
+    name:     "David",
     role:     "Co-Founder & CTO",
     bio:      "Full-stack engineer. Built the backend that powers smart invoicing, contracts, and real-time analytics.",
     initials: "PM",
@@ -73,7 +73,7 @@ const TEAM = [
 const TESTIMONIALS = [
   {
     quote:   "Aurelance transformed how I handle my freelance business. The Atelier tools alone save me 3+ hours every week.",
-    author:  "Shahzad bhatti",
+    author:  "Shahzad",
     role:    "UI/UX Designer",
     initials:"SJ",
     color:   "#4a90d9",
