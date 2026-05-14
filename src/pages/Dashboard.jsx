@@ -17,7 +17,7 @@
 //   recentInvoices, recentTasks, upcomingTasks
 // ─────────────────────────────────────────────────────────────
 import React from 'react';
-import '../styles/components.css';
+import '../styles/Dashboard.css';
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, ResponsiveContainer,

@@ -44,7 +44,7 @@ import {
   FiChevronDown, FiChevronUp,
 } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
-import '../styles/components.css';
+import '../styles/Profile.css';
 
 // ── API ───────────────────────────────────────────────────────
 const BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';

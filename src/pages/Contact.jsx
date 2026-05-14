@@ -6,7 +6,7 @@ import {
   FaCheck, FaChevronDown, FaHeadset, FaShieldAlt,
   FaRocket, FaMapMarkerAlt, FaExclamationCircle,
 } from "react-icons/fa";
-import '../styles/components.css';
+import '../styles/Contact.css';
 
 /* ── API ───────────────────────────────────────────────────── */
 const BASE    = process.env.REACT_APP_API_URL || "http://localhost:5000/api";

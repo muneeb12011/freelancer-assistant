@@ -16,7 +16,7 @@ import React, {
 } from 'react';
 import { useAuth }    from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import '../styles/components.css';
+import '../styles/Tasks.css';
 import {
   FiPlus, FiSearch, FiX, FiCheck, FiCheckCircle,
   FiClock, FiAlertCircle, FiCalendar, FiList,
