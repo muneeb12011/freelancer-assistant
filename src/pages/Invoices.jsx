@@ -27,7 +27,7 @@ import {
   FiSquare, FiMinusSquare, FiCreditCard, FiShield,
 } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
-import '../styles/invoices.css';
+import '../styles/Invoices.css';
 
 /* ── API ───────────────────────────────────────────────────── */
 const BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
