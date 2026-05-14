@@ -38,8 +38,7 @@ import {
   FiBriefcase, FiSend,
 } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
-import '../styles/Settings.css';
-
+import '../styles/components.css';
 // ── API ───────────────────────────────────────────────────────
 const BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 const tok  = () => localStorage.getItem('authToken');

@@ -9,7 +9,7 @@ import {
   FaShieldAlt, FaBolt, FaChartLine, FaCode,
   FaCrown, FaCheckCircle,
 } from "react-icons/fa";
-import "../styles/About.css";
+import '../styles/components.css';
 
 /* ── Data ──────────────────────────────────────────────────── */
 const STATS = [

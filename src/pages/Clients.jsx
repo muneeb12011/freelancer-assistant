@@ -41,7 +41,7 @@ import {
   FiCoffee, FiLock, FiRepeat,
 } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
-import '../styles/Clients.css';
+import '../styles/components.css';
 
 /* ── API ─────────────────────────────────────────────────────── */
 const BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
