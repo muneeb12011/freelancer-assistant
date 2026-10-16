@@ -58,19 +58,9 @@ import {
 import { useAuth } from '../context/AuthContext';
 import '../styles/Connections.css';
 
+import api from '../services/api';
 /* ── API ─────────────────────────────────────────────────────── */
-const BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-const tok  = () => localStorage.getItem('authToken');
-const hdrs = (json = true) => ({
-  ...(json ? { 'Content-Type': 'application/json' } : {}),
-  Authorization: `Bearer ${tok()}`,
-});
-const api = {
-  get:    url      => fetch(`${BASE}${url}`, { headers: hdrs(false) }).then(r => r.json()),
-  post:   (url, b) => fetch(`${BASE}${url}`, { method: 'POST',   headers: hdrs(), body: JSON.stringify(b) }).then(r => r.json()),
-  patch:  (url, b) => fetch(`${BASE}${url}`, { method: 'PATCH',  headers: hdrs(), body: JSON.stringify(b) }).then(r => r.json()),
-  delete: url      => fetch(`${BASE}${url}`, { method: 'DELETE', headers: hdrs(false) }).then(r => r.json()),
-};
+
 
 /* ── Security ────────────────────────────────────────────────── */
 const san   = str => String(str || '').replace(/[<>"'`]/g, c => ({ '<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','`':'&#96;' }[c])).trim().slice(0, 1000);
@@ -161,18 +151,18 @@ const exportCSV = (rows, filename) => {
 const PAGE = 9;
 
 const AV_CFG = {
-  available: { label:'Available', color:'#4caf82', bg:'rgba(76,175,130,.12)',  bd:'rgba(76,175,130,.3)'   },
-  busy:      { label:'Busy',      color:'#e8a030', bg:'rgba(232,160,48,.12)',  bd:'rgba(232,160,48,.3)'   },
-  offline:   { label:'Offline',   color:'#4a4843', bg:'rgba(255,255,255,.04)', bd:'rgba(255,255,255,.07)' },
+  available: { label:'Available', color:'#7DC39A', bg:'rgba(125,195,154,.12)',  bd:'rgba(125,195,154,.3)'   },
+  busy:      { label:'Busy',      color:'#E3A64B', bg:'rgba(227,166,75,.12)',  bd:'rgba(227,166,75,.3)'   },
+  offline:   { label:'Offline',   color:'#5F6B63', bg:'rgba(222,232,216,.04)', bd:'rgba(222,232,216,.07)' },
 };
 
 const TAG_CFG = {
-  'Hot Lead':     { bg:'rgba(224,92,92,.12)',   color:'#e08888', bd:'rgba(224,92,92,.3)'    },
-  'Collaborator': { bg:'rgba(155,114,232,.12)', color:'#c0a4f4', bd:'rgba(155,114,232,.3)'  },
-  'Client':       { bg:'rgba(201,168,76,.12)',  color:'#e8c97a', bd:'rgba(201,168,76,.3)'   },
-  'Mentor':       { bg:'rgba(74,144,217,.12)',  color:'#7db8e8', bd:'rgba(74,144,217,.3)'   },
-  'Partner':      { bg:'rgba(76,175,130,.12)',  color:'#7fcfaa', bd:'rgba(76,175,130,.3)'   },
-  'Prospect':     { bg:'rgba(232,160,48,.12)',  color:'#f0c060', bd:'rgba(232,160,48,.3)'   },
+  'Hot Lead':     { bg:'rgba(217,96,90,.12)',   color:'#E89590', bd:'rgba(217,96,90,.3)'    },
+  'Collaborator': { bg:'rgba(169,155,214,.12)', color:'#C7BCE6', bd:'rgba(169,155,214,.3)'  },
+  'Client':       { bg:'rgba(207,167,90,.12)',  color:'#E6C98D', bd:'rgba(207,167,90,.3)'   },
+  'Mentor':       { bg:'rgba(127,166,207,.12)',  color:'#A6C4E2', bd:'rgba(127,166,207,.3)'   },
+  'Partner':      { bg:'rgba(125,195,154,.12)',  color:'#A3D9B8', bd:'rgba(125,195,154,.3)'   },
+  'Prospect':     { bg:'rgba(227,166,75,.12)',  color:'#E9BE6E', bd:'rgba(227,166,75,.3)'   },
 };
 const ALL_TAGS = Object.keys(TAG_CFG);
 
@@ -236,13 +226,13 @@ function AvBadge({ status = 'offline' }) {
 }
 
 function Strength({ level = 0 }) {
-  const colors = ['#e05c5c','#e8a030','#e8a030','#4caf82','#4caf82'];
+  const colors = ['#D9605A','#E3A64B','#E3A64B','#7DC39A','#7DC39A'];
   const label  = ['','Acquaintance','Familiar','Active','Close','Core'][level] || '';
   return (
     <div className="cn-strength" title={`Strength: ${label} (${level}/5)`}>
       {[1,2,3,4,5].map(i => (
         <div key={i} className="cn-strength-bar"
-          style={{ background: i <= level ? colors[level-1] : 'rgba(255,255,255,.07)' }}/>
+          style={{ background: i <= level ? colors[level-1] : 'rgba(222,232,216,.07)' }}/>
       ))}
       {level > 0 && <span className="cn-strength-lbl" style={{ color: colors[level-1] }}>{label}</span>}
     </div>
@@ -250,7 +240,7 @@ function Strength({ level = 0 }) {
 }
 
 function MatchBadge({ score }) {
-  const color = score >= 80 ? '#4caf82' : score >= 60 ? '#e8a030' : '#8e8a82';
+  const color = score >= 80 ? '#7DC39A' : score >= 60 ? '#E3A64B' : '#A9B1A3';
   return (
     <span className="cn-match-badge" style={{ color, background: `${color}14`, borderColor: `${color}30` }}>
       {score}% match
@@ -332,7 +322,7 @@ export default function Connections() {
   const [reminderModal, setReminderModal] = useState(null);
   const [reminderDate,  setReminderDate]  = useState('');
   const [groupModal,    setGroupModal]    = useState(false);
-  const [groupForm,     setGroupForm]     = useState({ name:'', color:'#c9a84c' });
+  const [groupForm,     setGroupForm]     = useState({ name:'', color:'#CFA75A' });
   const [bulkMsgModal,  setBulkMsgModal]  = useState(false);
   const [bulkMsg,       setBulkMsg]       = useState('');
   const [blockModal,    setBlockModal]    = useState(null);
@@ -530,7 +520,7 @@ export default function Connections() {
   const acceptRequest = async (requestId, name) => {
     try {
       await api.post(`/connections/request/${requestId}/accept`);
-      notify(`Connected with ${sanS(name)}!`);
+      notify(`Connected with ${sanS(name)} — your conversation is in Messages.`);
       loadAll();
     } catch { notify('Failed to accept.', true); }
   };
@@ -661,7 +651,7 @@ export default function Connections() {
     if (!groupForm.name.trim()) return;
     const g = { id: Date.now(), name: sanS(groupForm.name), color: groupForm.color, members: selected };
     const u = [...groups, g]; setGroups(u); ls.set('cn_groups', u);
-    setGroupModal(false); setGroupForm({ name:'', color:'#c9a84c' });
+    setGroupModal(false); setGroupForm({ name:'', color:'#CFA75A' });
     notify(`Group "${g.name}" created.`); clrSel();
   };
 
@@ -675,6 +665,9 @@ export default function Connections() {
 
   /* ── Profile modal ──────────────────────────────────────────── */
   const viewProfile = async conn => {
+    // Aurelance members have a real profile page; private contact cards open the quick view.
+    const memberId = conn?.linkedUser || (conn && !conn.user && conn._id) || null;
+    if (memberId) { navigate(`/profile/${memberId}`); return; }
     trackView(conn);
     setProfileModal(conn);
     try {
@@ -685,6 +678,11 @@ export default function Connections() {
 
   /* ── Chat ───────────────────────────────────────────────────── */
   const openChat = async conn => {
+    // Members of Aurelance are messaged through the shared inbox.
+    if (conn.linkedUser) { navigate(`/messages?user=${conn.linkedUser}`); return; }
+    if (!conn.linkedUser && conn._id && !conn.messages) {
+      notify(`${sanS(conn.name)} isn’t on Aurelance yet — use Invite so you can message them here. Notes you write below stay private.`);
+    }
     setChatWith(conn); setChatLoad(true);
     try {
       const d = await api.get(`/connections/chat/${conn._id}`);
@@ -700,7 +698,7 @@ export default function Connections() {
     if (!chatInput.trim() || !chatWith) return;
     const txt = san(chatInput.trim()); setChatInput('');
     setChatMsgs(p => [...p, { sender:'me', text:txt, createdAt:new Date().toISOString() }]);
-    try { await api.post(`/connections/chat/${chatWith._id}`, { message: txt }); }
+    try { await api.post(`/connections/chat/${chatWith._id}`, { text: txt }); }
     catch { notify('Message failed.', true); }
   };
 
@@ -859,10 +857,10 @@ export default function Connections() {
       <div className="cn-stats-strip">
         {[
           { l:'Connections',  v:activeConns.length,       icon:<FiUsers size={13}/>,       color:'var(--cn-gold)'  },
-          { l:'Favorites',    v:favs.length,               icon:<FiStar size={13}/>,        color:'#e8c97a'         },
-          { l:'Requests',     v:requests.length,           icon:<FiBell size={13}/>,        color:'#e08888'         },
-          { l:'At-Risk',      v:atRisk.length,             icon:<FiAlertCircle size={13}/>, color:'#e8a030'         },
-          { l:'Available Now',v:analytics.available,       icon:<FiZap size={13}/>,         color:'#7fcfaa'         },
+          { l:'Favorites',    v:favs.length,               icon:<FiStar size={13}/>,        color:'#E6C98D'         },
+          { l:'Requests',     v:requests.length,           icon:<FiBell size={13}/>,        color:'#E89590'         },
+          { l:'At-Risk',      v:atRisk.length,             icon:<FiAlertCircle size={13}/>, color:'#E3A64B'         },
+          { l:'Available Now',v:analytics.available,       icon:<FiZap size={13}/>,         color:'#A3D9B8'         },
           { l:'Net Value/hr', v:`$${netValue.toLocaleString()}`, icon:<FiDollarSign size={13}/>, color:'var(--cn-gold)' },
         ].map(({ l, v, icon, color }) => (
           <div className="cn-stat" key={l}>
@@ -912,6 +910,7 @@ export default function Connections() {
                           : sentReqs.some(r => r.userId === u._id)
                           ? <button className="cn-btn ghost sm" disabled><FiCheck size={11}/> Sent</button>
                           : <button className="cn-btn gold sm" onClick={() => sendRequest(u._id, u.name)}><FiUserPlus size={11}/> Connect</button>}
+                        <button className="cn-btn ghost sm" onClick={() => navigate(`/messages?user=${u._id}`)}><FiMessageSquare size={11}/> Message</button>
                       </div>
                     </div>
                   );
@@ -951,7 +950,7 @@ export default function Connections() {
                     <Avatar name={c.name} photo={c.photo} size={36}/>
                     <div className="cn-list-info">
                       <div className="cn-list-name">{c.name}</div>
-                      <div className="cn-list-sub">{c.role||'Freelancer'} · Last contact: <span style={{color:'#e8a030'}}>{fmtDays(daysAgo(c.lastInteraction))}</span></div>
+                      <div className="cn-list-sub">{c.role||'Freelancer'} · Last contact: <span style={{color:'#E3A64B'}}>{fmtDays(daysAgo(c.lastInteraction))}</span></div>
                     </div>
                     <div className="cn-list-acts">
                       <button className="cn-btn blue sm" onClick={() => openChat(c)}><FiMessageSquare size={11}/> Reach Out</button>
@@ -992,6 +991,7 @@ export default function Connections() {
                       {sentReqs.some(r => r.userId === u._id)
                         ? <button className="cn-btn ghost sm" disabled><FiCheck size={11}/> Sent</button>
                         : <button className="cn-btn gold sm" onClick={() => sendRequest(u._id, u.name)}><FiUserPlus size={11}/> Connect</button>}
+                        <button className="cn-btn ghost sm" onClick={() => navigate(`/messages?user=${u._id}`)}><FiMessageSquare size={11}/> Message</button>
                     </div>
                   </div>
                 );
@@ -1232,7 +1232,7 @@ export default function Connections() {
             <div className="cn-pipeline-cols">
               {['pending','accepted','declined'].map(status => {
                 const col = collabReqs.filter(c => c.collabStatus === status);
-                const colors = { pending:'#e8c97a', accepted:'#7fcfaa', declined:'#e08888' };
+                const colors = { pending:'#E6C98D', accepted:'#A3D9B8', declined:'#E89590' };
                 const totalRate = col.reduce((s,c) => s+(c.hourlyRate||0), 0);
                 return (
                   <div className="cn-pipeline-col" key={status}>
@@ -1352,11 +1352,11 @@ export default function Connections() {
           <div className="cn-analytics-grid">
             {[
               { l:'Total Connections',  v:analytics.total,              color:'var(--cn-gold)' },
-              { l:'Network Value/hr',   v:`$${netValue.toLocaleString()}`, color:'#7fcfaa'     },
-              { l:'Avg Rating',         v:analytics.avgRating+'★',       color:'#e8c97a'       },
-              { l:'Avg Hourly Rate',    v:`$${analytics.avgRate}`,        color:'#7db8e8'       },
-              { l:'Active Collabs',     v:analytics.topCollabs,          color:'#c0a4f4'        },
-              { l:'At-Risk',           v:analytics.atRiskCount,          color:'#e8a030'        },
+              { l:'Network Value/hr',   v:`$${netValue.toLocaleString()}`, color:'#A3D9B8'     },
+              { l:'Avg Rating',         v:analytics.avgRating+'★',       color:'#E6C98D'       },
+              { l:'Avg Hourly Rate',    v:`$${analytics.avgRate}`,        color:'#A6C4E2'       },
+              { l:'Active Collabs',     v:analytics.topCollabs,          color:'#C7BCE6'        },
+              { l:'At-Risk',           v:analytics.atRiskCount,          color:'#E3A64B'        },
             ].map(({ l, v, color }) => (
               <div className="cn-kpi" key={l}>
                 <div className="cn-kpi-val" style={{color}}>{v}</div>
@@ -1370,11 +1370,11 @@ export default function Connections() {
             <h2 className="cn-section-title"><FiBarChart2 size={14}/> Network Breakdown</h2>
             <div className="cn-breakdown-list">
               {[
-                { label:'Developers / Engineers', count:analytics.devCount,    pct:analytics.devPct,    color:'#7db8e8' },
-                { label:'Designers / UX/UI',      count:analytics.designCount, pct:analytics.designPct, color:'#c0a4f4' },
-                { label:'Clients / Founders',     count:analytics.clientCount, pct:analytics.clientPct, color:'#e8c97a' },
+                { label:'Developers / Engineers', count:analytics.devCount,    pct:analytics.devPct,    color:'#A6C4E2' },
+                { label:'Designers / UX/UI',      count:analytics.designCount, pct:analytics.designPct, color:'#C7BCE6' },
+                { label:'Clients / Founders',     count:analytics.clientCount, pct:analytics.clientPct, color:'#E6C98D' },
                 { label:'Other Roles',            count:analytics.total-analytics.devCount-analytics.designCount-analytics.clientCount,
-                  pct:Math.max(0,100-analytics.devPct-analytics.designPct-analytics.clientPct), color:'#7fcfaa' },
+                  pct:Math.max(0,100-analytics.devPct-analytics.designPct-analytics.clientPct), color:'#A3D9B8' },
               ].filter(r => r.count > 0).map(r => (
                 <div className="cn-breakdown-row" key={r.label}>
                   <div className="cn-breakdown-label">{r.label}</div>
@@ -1400,7 +1400,7 @@ export default function Connections() {
                     <Avatar name={c.name} photo={c.photo} size={34}/>
                     <div className="cn-list-info">
                       <div className="cn-list-name">{c.name}</div>
-                      <div className="cn-list-sub">Last contact: <span style={{color:'#e8a030'}}>{fmtDays(daysAgo(c.lastInteraction))}</span></div>
+                      <div className="cn-list-sub">Last contact: <span style={{color:'#E3A64B'}}>{fmtDays(daysAgo(c.lastInteraction))}</span></div>
                     </div>
                     <div className="cn-list-acts">
                       <button className="cn-btn blue sm" onClick={() => { openChat(c); setTab('network'); }}><FiMessageSquare size={11}/> Reach Out</button>
@@ -1547,7 +1547,7 @@ export default function Connections() {
             </div>
             {notes[profileModal._id] && (
               <div className="cn-profile-note">
-                <div style={{fontSize:10,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:'var(--cn-tm)',marginBottom:5}}>Your Note</div>
+                <div style={{fontSize:10,fontWeight:700,letterSpacing:'0',textTransform:'none',color:'var(--cn-tm)',marginBottom:5}}>Your Note</div>
                 <p style={{fontSize:13,color:'var(--cn-ts)',lineHeight:1.6}}>{notes[profileModal._id]}</p>
               </div>
             )}
@@ -1767,7 +1767,7 @@ export default function Connections() {
                 <div className="cn-gap-grid">
                   {Object.entries(skillMap).sort(([,a],[,b])=>b-a).map(([skill, count]) => {
                     const pct   = Math.min(100, Math.round((count / Math.max(1, activeConns.length)) * 100));
-                    const color = pct > 30 ? '#4caf82' : pct > 10 ? '#e8a030' : '#e05c5c';
+                    const color = pct > 30 ? '#7DC39A' : pct > 10 ? '#E3A64B' : '#D9605A';
                     return (
                       <div key={skill} className="cn-gap-item">
                         <div style={{display:'flex',justifyContent:'space-between',marginBottom:3}}>
@@ -1847,7 +1847,7 @@ export default function Connections() {
             <div className="cn-modal-field">
               <label>Colour</label>
               <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:4}}>
-                {['#c9a84c','#9b72e8','#4caf82','#4a90d9','#e05c5c','#e8a030'].map(col => (
+                {['#CFA75A','#A99BD6','#7DC39A','#7FA6CF','#D9605A','#E3A64B'].map(col => (
                   <button key={col} onClick={() => setGroupForm(f=>({...f,color:col}))}
                     style={{width:26,height:26,borderRadius:'50%',background:col,border:groupForm.color===col?'2px solid white':'2px solid transparent',cursor:'pointer'}}/>
                 ))}
@@ -1964,9 +1964,9 @@ function ConnCard({
                 <button onClick={()=>{setMenuOpen(false);onReminder();}}><FiClock size={11}/> Set Reminder</button>
                 <button onClick={()=>{setMenuOpen(false);onLog();}}><FiActivity size={11}/> Log Interaction</button>
                 <button onClick={()=>{setMenuOpen(false);onTimeline();}}><FiClock size={11}/> View Timeline {arr(timeline).length>0&&`(${arr(timeline).length})`}</button>
-                <div style={{height:1,background:'rgba(255,255,255,.07)',margin:'3px 0'}}/>
+                <div style={{height:1,background:'rgba(222,232,216,.07)',margin:'3px 0'}}/>
                 <button onClick={()=>{setMenuOpen(false);onArchive();}} style={{color:'var(--cn-ts)'}}><FiDownload size={11}/> Archive</button>
-                <button onClick={()=>{setMenuOpen(false);onBlock();}} style={{color:'#e8a030'}}><FiAlertTriangle size={11}/> Block</button>
+                <button onClick={()=>{setMenuOpen(false);onBlock();}} style={{color:'#E3A64B'}}><FiAlertTriangle size={11}/> Block</button>
                 <button className="danger" onClick={()=>{setMenuOpen(false);onRemove();}}><FiTrash2 size={11}/> Remove</button>
               </div>
             )}
@@ -2035,7 +2035,7 @@ function ConnRow({
         <div style={{display:'flex',alignItems:'center',gap:7,flexWrap:'wrap'}}>
           <span className="cn-card-name" style={{fontSize:13.5}}>{c.name}</span>
           {isPinned && <FiBookmark size={10} style={{color:'var(--cn-gold)',opacity:.7}}/>}
-          {reminder  && <FiClock size={10} style={{color:'#e8a030',opacity:.8}}/>}
+          {reminder  && <FiClock size={10} style={{color:'#E3A64B',opacity:.8}}/>}
           {tagCfg    && <span className="cn-tag-badge" style={{background:tagCfg.bg,color:tagCfg.color,borderColor:tagCfg.bd,fontSize:9}}>{tag}</span>}
           <AtRiskBadge days={daysNoContact}/>
         </div>
@@ -2067,7 +2067,7 @@ function ConnRow({
               <button onClick={()=>{setMenuOpen(false);onReminder();}}><FiClock size={11}/> Reminder</button>
               <button onClick={()=>{setMenuOpen(false);onLog();}}><FiActivity size={11}/> Log</button>
               <button onClick={()=>{setMenuOpen(false);onTimeline();}}><FiClock size={11}/> Timeline</button>
-              <div style={{height:1,background:'rgba(255,255,255,.07)',margin:'3px 0'}}/>
+              <div style={{height:1,background:'rgba(222,232,216,.07)',margin:'3px 0'}}/>
               <button onClick={()=>{setMenuOpen(false);onArchive();}}><FiDownload size={11}/> Archive</button>
               <button className="danger" onClick={()=>{setMenuOpen(false);onRemove();}}><FiTrash2 size={11}/> Remove</button>
             </div>

@@ -1,0 +1,111 @@
+/* Jobs — a notice board ruled like a ledger: one entry per row, budget in the amount column. */
+.jb { max-width: 1180px; }
+.jb-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; flex-wrap: wrap; }
+.jb-back { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 14px; font-size: var(--fs-sm); color: var(--bone-2); }
+.jb-dim { color: var(--bone-3); font-size: var(--fs-xs); display: inline-flex; align-items: center; gap: 4px; }
+.jb-note { margin-bottom: 8px; }
+
+.jb-tabs { display: flex; align-items: center; gap: 4px; margin: -8px 0 20px; flex-wrap: wrap; }
+.jb-tabs button { padding: 8px 14px; border: 0; border-radius: var(--r-control); background: none; color: var(--bone-2); font-size: var(--fs-sm); font-weight: 600; }
+.jb-tabs button:hover { background: var(--ink-1); color: var(--bone); }
+.jb-tabs button.is-on { background: var(--ink-2); color: var(--bone); box-shadow: inset 0 -2px 0 var(--gilt); }
+.jb-limits { margin-left: auto; font-size: var(--fs-xs); color: var(--bone-3); }
+
+.jb-browse { display: grid; grid-template-columns: 240px 1fr; gap: 28px; align-items: start; }
+.jb-filters { position: sticky; top: calc(var(--navbar-height) + 20px); display: grid; gap: 18px; }
+.jb-search { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 10px; border-radius: var(--r-control); background: var(--ink-2); border: 1px solid var(--line-2); color: var(--bone-3); }
+.jb-search:focus-within { border-color: var(--gilt); }
+.jb-search input { flex: 1; min-width: 0; border: 0; background: none; outline: none; font-size: var(--fs-sm); }
+.jb-search button { border: 0; background: none; color: var(--bone-3); display: grid; }
+.jb-radio { border: 0; padding: 0; margin: 0; display: grid; gap: 6px; }
+.jb-radio legend { font-size: var(--fs-sm); color: var(--bone-2); font-weight: 500; margin-bottom: 4px; }
+.jb-radio label { display: flex; align-items: center; gap: 8px; font-size: var(--fs-sm); color: var(--bone-2); cursor: pointer; }
+.jb-radio input { accent-color: var(--gilt); }
+.jb-inline { grid-auto-flow: column; justify-content: start; gap: 18px; }
+
+.jb-results { min-width: 0; border-top: 3px double var(--gilt-line); }
+.jb-results-head { display: flex; justify-content: space-between; align-items: center; padding: 10px 2px; font-size: var(--fs-sm); color: var(--bone-3); border-bottom: 1px solid var(--line); }
+.jb-results-head select { margin-left: 8px; background: var(--ink-2); border: 1px solid var(--line-2); border-radius: var(--r-control); padding: 4px 8px; }
+
+.jb-row { display: grid; grid-template-columns: 1fr 180px; gap: 24px; padding: 20px 2px; border-bottom: 1px solid var(--line); }
+.jb-row h3 { font-size: var(--fs-xl); font-weight: 500; line-height: 1.25; }
+.jb-row h3 a { color: var(--bone); }
+.jb-row h3 a:hover { color: var(--gilt-hi); }
+.jb-row-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 6px; font-size: var(--fs-xs); color: var(--bone-3); }
+.jb-row-meta span { display: inline-flex; align-items: center; gap: 4px; }
+.jb-row-desc { margin-top: 10px; color: var(--bone-2); font-size: var(--fs-sm); line-height: 1.6; max-width: 72ch; }
+.jb-row-by { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; margin-top: 12px; font-size: var(--fs-sm); color: var(--bone-2); }
+.jb-row-by .avatar { margin-right: -4px; }
+.jb-skills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.jb-skills span { padding: 2px 9px; border-radius: var(--r-pill); border: 1px solid var(--line-2); font-size: var(--fs-xs); color: var(--bone-2); }
+.jb-row-side { display: grid; align-content: start; justify-items: end; gap: 6px; text-align: right; }
+.jb-budget { font-family: var(--serif); font-size: var(--fs-xl); color: var(--bone); line-height: 1.1; }
+.jb-save { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; padding: 5px 10px; border-radius: var(--r-control); border: 1px solid var(--line-2); background: none; color: var(--bone-2); font-size: var(--fs-xs); font-weight: 600; }
+.jb-save:hover { color: var(--bone); border-color: var(--ink-4); }
+.jb-save.is-on { color: var(--gilt-hi); border-color: var(--gilt-line); background: var(--gilt-wash); }
+.jb-more { margin-top: 16px; }
+.jb-empty { padding: 40px 4px; display: grid; gap: 8px; justify-items: start; max-width: 52ch; }
+.jb-empty h3 { font-size: var(--fs-xl); font-weight: 400; }
+.jb-empty p { color: var(--bone-2); }
+
+/* Form */
+.jb-form-wrap { max-width: 860px; }
+.jb-form { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 20px; }
+.jb-span { grid-column: 1 / -1; }
+.jb-form .field small { color: var(--bone-3); font-weight: 400; margin-left: 6px; }
+.jb-desc { min-height: 220px !important; }
+.jb-budget-row { display: grid; grid-template-columns: 110px 1fr 1fr; gap: 12px; }
+.jb-form-foot { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding-top: 16px; border-top: 1px solid var(--line); flex-wrap: wrap; }
+
+/* Detail */
+.jb-detail-grid { display: grid; grid-template-columns: 1fr 340px; gap: 32px; align-items: start; }
+.jb-post .ledger-title h1 { font-size: clamp(1.7rem, 3vw, 2.3rem); margin: 8px 0 4px; }
+.jb-facts { display: grid; grid-template-columns: repeat(3, 1fr); margin: 0 0 24px; border: 1px solid var(--line); border-radius: var(--r-panel); }
+.jb-facts div { padding: 14px 16px; }
+.jb-facts div + div { border-left: 1px solid var(--line); }
+.jb-facts dt { font-size: var(--fs-xs); color: var(--bone-3); }
+.jb-facts dd { margin: 4px 0 0; font-family: var(--serif); font-size: var(--fs-xl); }
+.jb-body { display: grid; gap: 14px; max-width: 72ch; }
+.jb-body p { color: var(--bone-2); line-height: 1.75; font-size: 1rem; white-space: pre-wrap; }
+
+.jb-side { position: sticky; top: calc(var(--navbar-height) + 20px); display: grid; gap: 14px; }
+.jb-side .panel { padding: 18px; display: grid; gap: 12px; }
+.jb-side h2 { font-size: var(--fs-lg); }
+.jb-apply textarea { min-height: 150px; }
+.jb-caution { font-size: var(--fs-xs); color: var(--ochre); line-height: 1.5; }
+.jb-app-person { display: flex; align-items: center; gap: 10px; color: var(--bone); min-width: 0; }
+.jb-app-person:hover { color: var(--bone); }
+.jb-app-person > span { display: grid; min-width: 0; }
+.jb-app-person strong { font-weight: 600; }
+.jb-app-person small { color: var(--bone-3); font-size: var(--fs-xs); }
+
+.jb-applicants { margin-top: 40px; padding-top: 18px; border-top: 3px double var(--gilt-line); }
+.jb-applicants-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.jb-applicants h2 { font-size: var(--fs-2xl); }
+.jb-pills { display: flex; gap: 4px; flex-wrap: wrap; }
+.jb-pills button { padding: 5px 10px; border-radius: var(--r-pill); border: 1px solid var(--line-2); background: none; color: var(--bone-2); font-size: var(--fs-xs); font-weight: 600; }
+.jb-pills button.is-on { background: var(--ink-2); color: var(--bone); border-color: var(--ink-4); }
+.jb-app { padding: 18px 0; border-bottom: 1px solid var(--line); display: grid; gap: 10px; }
+.jb-app header { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+.jb-app-bid { font-family: var(--serif); font-size: var(--fs-xl); text-align: right; display: grid; }
+.jb-app-bid small { font-family: var(--sans); font-size: var(--fs-xs); color: var(--bone-3); }
+.jb-app-letter { color: var(--bone-2); white-space: pre-wrap; line-height: 1.65; max-width: 72ch; }
+.jb-app-links { display: flex; flex-wrap: wrap; gap: 10px; font-size: var(--fs-sm); }
+.jb-app-links a { display: inline-flex; align-items: center; gap: 4px; }
+.jb-app footer { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.jb-app-actions { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+
+@media (max-width: 980px) {
+  .jb-browse, .jb-detail-grid { grid-template-columns: 1fr; }
+  .jb-filters, .jb-side { position: static; }
+  .jb-filters { grid-template-columns: 1fr 1fr; }
+  .jb-filters .jb-search { grid-column: 1 / -1; }
+}
+@media (max-width: 640px) {
+  .jb-row { grid-template-columns: 1fr; gap: 10px; }
+  .jb-row-side { justify-items: start; text-align: left; grid-auto-flow: column; justify-content: start; align-items: center; }
+  .jb-form, .jb-budget-row { grid-template-columns: 1fr; }
+  .jb-facts { grid-template-columns: 1fr; }
+  .jb-facts div + div { border-left: 0; border-top: 1px solid var(--line); }
+  .jb-limits { margin-left: 0; width: 100%; }
+}

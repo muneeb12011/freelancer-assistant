@@ -15,35 +15,14 @@ import {
 import { useAuth } from '../context/AuthContext';
 import '../styles/Support.css';
 
+import api, { askAI, errorMessage } from '../services/api';
 /* ── API ─────────────────────────────────────────────────── */
-const BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-const tok  = () => localStorage.getItem('authToken');
-const hdrs = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${tok()}` });
-const api  = {
-  get:  url      => fetch(`${BASE}${url}`, { headers: hdrs() }).then(r => r.json()),
-  post: (url, b) => fetch(`${BASE}${url}`, { method:'POST', headers: hdrs(), body: JSON.stringify(b) }).then(r => r.json()),
-};
 
-/* ── AI chat (real Anthropic API) ────────────────────────── */
-const SYSTEM_PROMPT = `You are the Aurelance Support AI — a concise, knowledgeable assistant for Aurelance, a freelancer management platform.
-You help with: invoicing, client management, Kanban tasks, Atelier Studio tools, billing & Premium, Connections network, account settings, and technical issues.
-Keep answers under 150 words. Be direct and practical. If you cannot resolve something specific to the user's account, recommend they submit a support ticket.
-Never invent data or make promises about pricing or features you are uncertain about.`;
 
-const askClaude = async (messages) => {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model:      'claude-sonnet-4-6',
-      max_tokens: 600,
-      system:     SYSTEM_PROMPT,
-      messages,
-    }),
-  });
-  const d = await res.json();
-  return d.content?.map(b => b.text || '').join('') || 'Sorry, I could not process that. Please try again.';
-};
+/* ── AI chat runs server-side: POST /api/ai/support-chat ── */
+
+
+
 
 /* ── Helpers ─────────────────────────────────────────────── */
 const arr     = v => Array.isArray(v) ? v : [];
@@ -51,34 +30,22 @@ const fmtDate = d => d ? new Date(d).toLocaleDateString('en-US', { month:'short'
 
 /* ── Status config ───────────────────────────────────────── */
 const STATUS_CFG = {
-  operational: { label:'Operational', color:'#4caf82', bg:'rgba(76,175,130,0.1)',  icon:<FiCheckCircle size={12}/> },
-  degraded:    { label:'Degraded',    color:'#e8a030', bg:'rgba(232,160,48,0.1)',  icon:<FiAlertCircle size={12}/> },
-  down:        { label:'Down',        color:'#e05c5c', bg:'rgba(224,92,92,0.1)',   icon:<FiAlertTriangle size={12}/> },
-  maintenance: { label:'Maintenance', color:'#4a90d9', bg:'rgba(74,144,217,0.1)',  icon:<FiClock size={12}/> },
+  operational: { label:'Operational', color:'#7DC39A', bg:'rgba(125,195,154,0.1)',  icon:<FiCheckCircle size={12}/> },
+  degraded:    { label:'Degraded',    color:'#E3A64B', bg:'rgba(227,166,75,0.1)',  icon:<FiAlertCircle size={12}/> },
+  down:        { label:'Down',        color:'#D9605A', bg:'rgba(217,96,90,0.1)',   icon:<FiAlertTriangle size={12}/> },
+  maintenance: { label:'Maintenance', color:'#7FA6CF', bg:'rgba(127,166,207,0.1)',  icon:<FiClock size={12}/> },
 };
 
 const TICKET_STATUS = {
-  open:       { label:'Open',        color:'#4a90d9', bg:'rgba(74,144,217,0.1)'  },
-  inprogress: { label:'In Progress', color:'#e8a030', bg:'rgba(232,160,48,0.1)'  },
-  resolved:   { label:'Resolved',    color:'#4caf82', bg:'rgba(76,175,130,0.1)'  },
-  closed:     { label:'Closed',      color:'#5a5650', bg:'rgba(90,86,80,0.1)'    },
+  open:       { label:'Open',        color:'#7FA6CF', bg:'rgba(127,166,207,0.1)'  },
+  inprogress: { label:'In Progress', color:'#E3A64B', bg:'rgba(227,166,75,0.1)'  },
+  resolved:   { label:'Resolved',    color:'#7DC39A', bg:'rgba(125,195,154,0.1)'  },
+  closed:     { label:'Closed',      color:'#6C776F', bg:'rgba(108,119,111,0.1)'    },
 };
 
 /* ── Fallback FAQs (shown instantly before API returns) ─── */
-const FALLBACK_FAQS = [
-  { id:1,  category:'Getting Started', question:'How do I create my first invoice?',       answer:'Go to Invoices → New Invoice, fill in client details and line items, then Save. It auto-links to the client and updates their revenue when marked paid.' },
-  { id:2,  category:'Getting Started', question:'How do I add a client?',                   answer:'Go to Clients → Add Client. Fill in name, email, company, and status. Set hourly rate, budget, and tags. Clients appear automatically when creating invoices.' },
-  { id:3,  category:'Getting Started', question:'What is Atelier Studio?',                  answer:'Atelier is 11 freelance tools in one page — Rate Calculator, Time Tracker, Expense Tracker, Brand Kit, Project Estimator, 14 Email Templates, plus 4 Premium tools (Earnings Analytics, Smart Contracts, Proposal Builder, Tax Summary).' },
-  { id:4,  category:'Billing',         question:'What is in the free plan?',                answer:'Tasks (Kanban), Client CRM, Invoices, Connections, and 7 Atelier tools — all free with no limits. No credit card, no trial period.' },
-  { id:5,  category:'Billing',         question:'What does Premium include?',                answer:'$19/month. Adds Earnings Analytics with goal tracking, Smart Contracts (4 templates with signing), Proposal Builder with win-rate, and Tax Summary with quarterly breakdown.' },
-  { id:6,  category:'Billing',         question:'Is there a refund policy?',                 answer:'Yes — 7-day money-back guarantee on all paid plans. Email aurelance454@gmail.com within 7 days of payment.' },
-  { id:7,  category:'Account',         question:'How do I change my password?',              answer:'Settings → Account → Change Password. Enter your current password and new password (min. 6 characters).' },
-  { id:8,  category:'Tasks',           question:'How does the Kanban board work?',           answer:'Four columns: To Do, In Progress, Review, Done. Drag tasks between columns, set deadlines and priorities, and track time with the built-in timer.' },
-  { id:9,  category:'Connections',     question:'What are Connections?',                     answer:'Your professional network — collaborators, mentors, partners. Chat, send collab requests, tag by relationship type, and track connection strength.' },
-  { id:10, category:'Technical',       question:'My page is not loading correctly.',         answer:'Hard refresh: Ctrl+Shift+R (Windows) or Cmd+Shift+R (Mac). Clear browser cache if that fails. Submit a ticket with a screenshot if the issue persists.' },
-  { id:11, category:'AI Chat',         question:'How accurate is the AI support chat?',      answer:'The AI uses Claude and is trained with Aurelance context. For account-specific issues (billing, data), submit a ticket so our team can review your actual account.' },
-  { id:12, category:'Technical',       question:'Why is my data not saving?',                answer:'Make sure you are logged in and your session has not expired. Check the backend server is running on port 5000. Submit a ticket if the issue continues.' },
-];
+// FAQs come from the API (/support/faqs) — one source of truth shared with the server.
+const FALLBACK_FAQS = [];
 
 /* ── Tab config ──────────────────────────────────────────── */
 const TABS = [
@@ -92,7 +59,7 @@ const TABS = [
 
 const SUGGESTIONS = [
   'How do I create an invoice?',
-  'What is Atelier Studio?',
+  'What is Atelier?',
   'How do I add a client?',
   'I cannot log in to my account',
   'How do Smart Contracts work?',
@@ -101,12 +68,12 @@ const SUGGESTIONS = [
 
 /* ── Quick nav links (shown in Help tab) ─────────────────── */
 const QUICK_LINKS = [
-  { label:'Create Invoice',    path:'/invoices',    color:'#c9a84c', desc:'New invoice in 60 seconds'         },
-  { label:'Add a Client',      path:'/clients',     color:'#4a90d9', desc:'Open your client CRM'              },
-  { label:'Atelier Studio',    path:'/atelier',     color:'#9b72e8', desc:'11 freelance tools in one page'    },
-  { label:'Account Settings',  path:'/settings',    color:'#4caf82', desc:'Password, plan, notifications'     },
-  { label:'Task Board',        path:'/tasks',       color:'#e8a030', desc:'Kanban board and deadlines'         },
-  { label:'Upgrade to Premium',path:'/atelier',     color:'#c9a84c', desc:'Earnings, Contracts, Proposals'    },
+  { label:'Create Invoice',    path:'/invoices',    color:'#CFA75A', desc:'New invoice in 60 seconds'         },
+  { label:'Add a Client',      path:'/clients',     color:'#7FA6CF', desc:'Open your client CRM'              },
+  { label:'Atelier',           path:'/atelier',     color:'#A99BD6', desc:'Rate calculator, estimator, notes and more' },
+  { label:'Account Settings',  path:'/settings',    color:'#7DC39A', desc:'Password, security, notifications' },
+  { label:'Task Board',        path:'/tasks',       color:'#E3A64B', desc:'Kanban board and deadlines'         },
+  { label:'Plan & billing',    path:'/billing',     color:'#CFA75A', desc:'Your plan, receipts and renewal'   },
 ];
 
 /* ════════════════════════════════════════════════════════════
@@ -263,10 +230,11 @@ export default function Support() {
       const allMsgs = [...chatMsgs, userMsg].map(m => ({ role:m.role, content:m.content }));
       const firstUser = allMsgs.findIndex(m => m.role === 'user');
       const history   = (firstUser >= 0 ? allMsgs.slice(firstUser) : allMsgs).slice(-20);
-      const reply   = await askClaude(history);
+      const prior   = history.slice(0, -1);
+      const reply   = await askAI('support-chat', text, { history: prior });
       setChatMsgs(p => [...p, { role:'assistant', content:reply, ts:new Date() }]);
-    } catch {
-      setChatMsgs(p => [...p, { role:'assistant', content:"I'm having trouble connecting right now. Please try again or submit a support ticket.", ts:new Date() }]);
+    } catch (e) {
+      setChatMsgs(p => [...p, { role:'assistant', content: e?.status === 429 || e?.status === 503 ? errorMessage(e) : "I can't answer right now. Try again in a moment, or open a ticket below and a person will reply.", ts:new Date() }]);
     }
     setChatBusy(false);
   };
@@ -351,7 +319,7 @@ export default function Support() {
           <a href="mailto:aurelance454@gmail.com" className="sp-contact-pill">
             <FiMail size={12}/> aurelance454@gmail.com
           </a>
-          <span className="sp-eta"><FiClock size={11}/> Average response: 4 hrs</span>
+          <span className="sp-eta"><FiClock size={11}/> Replies within one business day</span>
         </div>
       </div>
 
@@ -438,7 +406,7 @@ export default function Support() {
               <FiHelpCircle size={20} style={{color:'var(--gold)',flexShrink:0}}/>
               <div>
                 <strong>Still need help?</strong>
-                <p>Our team replies within 4 hours on business days.</p>
+                <p>A person replies within one business day.</p>
               </div>
               <div className="sp-stuck-btns">
                 <button className="sp-btn-primary" onClick={() => setTab('contact')}>Submit a Ticket</button>
@@ -454,10 +422,10 @@ export default function Support() {
 
             {createdTicket && (
               <div className="sp-ticket-confirm">
-                <FiCheckCircle size={18} style={{color:'#4caf82',flexShrink:0}}/>
+                <FiCheckCircle size={18} style={{color:'#7DC39A',flexShrink:0}}/>
                 <div>
                   <strong>Ticket submitted!</strong>
-                  <p>Ticket ID: <code>{createdTicket.ticketId || createdTicket._id || 'submitted'}</code> — We'll reply within 4 hours.</p>
+                  <p>Ticket ID: <code>{createdTicket.ticketId || createdTicket._id || 'submitted'}</code> — we reply within one business day.</p>
                 </div>
                 <button className="sp-btn-secondary" onClick={() => { setCreatedTicket(null); setTab('tickets'); }}>
                   View Tickets
@@ -548,7 +516,7 @@ export default function Support() {
 
                 {user && (
                   <div className="sp-submitter">
-                    <FiCheckCircle size={11} style={{color:'#4caf82'}}/>
+                    <FiCheckCircle size={11} style={{color:'#7DC39A'}}/>
                     Submitting as <strong>{user.name}</strong> ({user.email})
                   </div>
                 )}
@@ -569,12 +537,12 @@ export default function Support() {
             <div className="sp-card">
               <div className="sp-card-hdr"><h2>Direct Contact</h2></div>
               <a href="mailto:aurelance454@gmail.com" className="sp-direct-opt">
-                <span className="sp-do-icon" style={{color:'#4a90d9',background:'rgba(74,144,217,0.1)'}}>
+                <span className="sp-do-icon" style={{color:'#7FA6CF',background:'rgba(127,166,207,0.1)'}}>
                   <FiMail size={16}/>
                 </span>
                 <div>
                   <strong>Email Support</strong>
-                  <span>aurelance454@gmail.com · We reply within 24 hours</span>
+                  <span>aurelance454@gmail.com — replies within one business day</span>
                 </div>
                 <FiExternalLink size={11} style={{color:'var(--text-muted)',marginLeft:'auto'}}/>
               </a>
@@ -780,7 +748,7 @@ export default function Support() {
                       <h3>Active Incidents</h3>
                       {arr(statusData.incidents).map((inc,i) => (
                         <div key={i} className="sp-incident">
-                          <FiAlertTriangle size={13} style={{color:'#e8a030',flexShrink:0}}/>
+                          <FiAlertTriangle size={13} style={{color:'#E3A64B',flexShrink:0}}/>
                           <div>
                             <strong>{inc.title}</strong>
                             <p>{inc.description}</p>
@@ -794,7 +762,7 @@ export default function Support() {
               ) : null}
             </div>
             <div className="sp-card sp-uptime-note">
-              <FiActivity size={14} style={{color:'#4caf82',flexShrink:0}}/>
+              <FiActivity size={14} style={{color:'#7DC39A',flexShrink:0}}/>
               <p>Aurelance targets 99.9% uptime. If you see issues not shown here,{' '}
                 <button className="sp-link-btn" onClick={() => setTab('contact')}>submit a ticket</button>.
               </p>
@@ -807,7 +775,7 @@ export default function Support() {
           <div className="sp-tab-body">
             {feedbackDone ? (
               <div className="sp-card sp-feedback-done">
-                <FiCheckCircle size={38} style={{color:'#4caf82'}}/>
+                <FiCheckCircle size={38} style={{color:'#7DC39A'}}/>
                 <h2>Thank you for your feedback!</h2>
                 <p>We use every response to make Aurelance better.</p>
                 <button className="sp-btn-primary" onClick={() => {

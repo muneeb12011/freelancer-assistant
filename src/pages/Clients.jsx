@@ -43,16 +43,10 @@ import {
 import { useAuth } from '../context/AuthContext';
 import '../styles/Clients.css';
 
+import api, { askAI, errorMessage } from '../services/api';
+import PremiumLock from '../components/PremiumLock';
 /* ── API ─────────────────────────────────────────────────────── */
-const BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-const tok  = () => localStorage.getItem('authToken');
-const hdrs = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${tok()}` });
-const api  = {
-  get:    url      => fetch(`${BASE}${url}`, { headers: hdrs() }).then(r => r.json()),
-  post:   (url, b) => fetch(`${BASE}${url}`, { method: 'POST',   headers: hdrs(), body: JSON.stringify(b) }).then(r => r.json()),
-  patch:  (url, b) => fetch(`${BASE}${url}`, { method: 'PATCH',  headers: hdrs(), body: JSON.stringify(b) }).then(r => r.json()),
-  delete: url      => fetch(`${BASE}${url}`, { method: 'DELETE', headers: hdrs() }).then(r => r.json()),
-};
+
 
 /* ── Security: sanitize text before storing/displaying ───────── */
 const sanitize = str => String(str || '').replace(/[<>]/g, c => c === '<' ? '&lt;' : '&gt;').trim().slice(0, 2000);
@@ -108,10 +102,10 @@ const clientTier = c => {
 };
 
 const TIER_CFG = {
-  A: { label: 'VIP',      color: '#c9a84c', bg: 'rgba(201,168,76,.12)',  desc: 'High revenue, healthy relationship' },
-  B: { label: 'Growth',   color: '#4a90d9', bg: 'rgba(74,144,217,.1)',   desc: 'Active, growing revenue'            },
-  C: { label: 'Standard', color: '#8e8a82', bg: 'rgba(142,138,130,.1)',  desc: 'Active but lower engagement'        },
-  D: { label: 'At-Risk',  color: '#e05c5c', bg: 'rgba(224,92,92,.1)',    desc: 'Inactive or low health score'       },
+  A: { label: 'VIP',      color: '#CFA75A', bg: 'rgba(207,167,90,.12)',  desc: 'High revenue, healthy relationship' },
+  B: { label: 'Growth',   color: '#7FA6CF', bg: 'rgba(127,166,207,.1)',   desc: 'Active, growing revenue'            },
+  C: { label: 'Standard', color: '#A9B1A3', bg: 'rgba(169,177,163,.1)',  desc: 'Active but lower engagement'        },
+  D: { label: 'At-Risk',  color: '#D9605A', bg: 'rgba(217,96,90,.1)',    desc: 'Inactive or low health score'       },
 };
 
 /* ── Revenue forecast: simple linear from monthly invoices ───── */
@@ -147,50 +141,35 @@ const exportCSV = clients => {
   }).click();
 };
 
-/* ── Anthropic AI (premium) ──────────────────────────────────── */
-const askClaude = async (prompt) => {
-  const r = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514', max_tokens: 600,
-      system: 'You are a senior business consultant analysing freelancer-client relationships. Be direct, specific, and actionable. Respond in JSON only.',
-      messages: [{ role: 'user', content: prompt }],
-    }),
-  });
-  const d = await r.json();
-  const text = d.content?.map(b => b.text || '').join('') || '{}';
-  try { return JSON.parse(text.replace(/```json|```/g, '').trim()); }
-  catch { return { summary: text, risks: [], actions: [] }; }
-};
+
 
 /* ── Constants ───────────────────────────────────────────────── */
 const STATUS = {
-  Active:        { c: '#4caf82', bg: 'rgba(76,175,130,.12)',  bd: 'rgba(76,175,130,.3)'  },
-  'In Progress': { c: '#4a90d9', bg: 'rgba(74,144,217,.12)',  bd: 'rgba(74,144,217,.3)'  },
-  Lead:          { c: '#9b72e8', bg: 'rgba(155,114,232,.12)', bd: 'rgba(155,114,232,.3)' },
-  'On Hold':     { c: '#e8a030', bg: 'rgba(232,160,48,.12)',  bd: 'rgba(232,160,48,.3)'  },
-  Completed:     { c: '#5a5650', bg: 'rgba(90,86,80,.15)',    bd: 'rgba(90,86,80,.3)'    },
-  Archived:      { c: '#3a3835', bg: 'rgba(58,56,53,.2)',     bd: 'rgba(58,56,53,.4)'    },
+  Active:        { c: '#7DC39A', bg: 'rgba(125,195,154,.12)',  bd: 'rgba(125,195,154,.3)'  },
+  'In Progress': { c: '#7FA6CF', bg: 'rgba(127,166,207,.12)',  bd: 'rgba(127,166,207,.3)'  },
+  Lead:          { c: '#A99BD6', bg: 'rgba(169,155,214,.12)', bd: 'rgba(169,155,214,.3)' },
+  'On Hold':     { c: '#E3A64B', bg: 'rgba(227,166,75,.12)',  bd: 'rgba(227,166,75,.3)'  },
+  Completed:     { c: '#6C776F', bg: 'rgba(108,119,111,.15)',    bd: 'rgba(108,119,111,.3)'    },
+  Archived:      { c: '#3E4B44', bg: 'rgba(62,75,68,.2)',     bd: 'rgba(62,75,68,.4)'    },
 };
 
 const CONTRACT_STATUS = {
-  Active:  { c: '#4caf82', bg: 'rgba(76,175,130,.1)'  },
-  Pending: { c: '#e8a030', bg: 'rgba(232,160,48,.1)'  },
-  Expired: { c: '#e05c5c', bg: 'rgba(224,92,92,.1)'   },
-  None:    { c: '#4a4843', bg: 'rgba(255,255,255,.04)' },
+  Active:  { c: '#7DC39A', bg: 'rgba(125,195,154,.1)'  },
+  Pending: { c: '#E3A64B', bg: 'rgba(227,166,75,.1)'  },
+  Expired: { c: '#D9605A', bg: 'rgba(217,96,90,.1)'   },
+  None:    { c: '#5F6B63', bg: 'rgba(222,232,216,.04)' },
 };
 
 const COMM_TYPES = [
-  { id: 'call',    label: 'Call',    icon: '📞', color: '#4caf82'  },
-  { id: 'email',   label: 'Email',   icon: '✉️', color: '#4a90d9'  },
-  { id: 'meeting', label: 'Meeting', icon: '🤝', color: '#9b72e8'  },
-  { id: 'note',    label: 'Note',    icon: '📝', color: '#e8a030'  },
+  { id: 'call',    label: 'Call',    icon: '📞', color: '#7DC39A'  },
+  { id: 'email',   label: 'Email',   icon: '✉️', color: '#7FA6CF'  },
+  { id: 'meeting', label: 'Meeting', icon: '🤝', color: '#A99BD6'  },
+  { id: 'note',    label: 'Note',    icon: '📝', color: '#E3A64B'  },
 ];
 
 const AVATAR_PAL = [
-  ['#c9a84c','#6b4514'],['#4a90d9','#0f2d4a'],['#4caf82','#0f3d28'],
-  ['#9b72e8','#2d1460'],['#e05c5c','#4a1010'],['#38bdf8','#083250'],
+  ['#CFA75A','#6B4A1E'],['#7FA6CF','#1B2E40'],['#7DC39A','#14392A'],
+  ['#A99BD6','#2B2546'],['#D9605A','#4A1E1B'],['#79B8C9','#1A3040'],
 ];
 const avatarGrad = name => AVATAR_PAL[(name || '').charCodeAt(0) % AVATAR_PAL.length];
 
@@ -250,7 +229,7 @@ function TierBadge({ tier }) {
 function HealthBar({ paid = 0, total = 0 }) {
   if (!total) return <span className="cl-dash">—</span>;
   const pct   = Math.round((paid / total) * 100);
-  const color = pct >= 80 ? '#4caf82' : pct >= 40 ? '#e8a030' : '#e05c5c';
+  const color = pct >= 80 ? '#7DC39A' : pct >= 40 ? '#E3A64B' : '#D9605A';
   return (
     <div className="cl-hbar-wrap" title={`${paid}/${total} invoices paid`}>
       <div className="cl-hbar-track">
@@ -262,7 +241,7 @@ function HealthBar({ paid = 0, total = 0 }) {
 }
 
 function HealthScore({ score }) {
-  const color = score >= 70 ? '#4caf82' : score >= 40 ? '#e8a030' : '#e05c5c';
+  const color = score >= 70 ? '#7DC39A' : score >= 40 ? '#E3A64B' : '#D9605A';
   const label = score >= 70 ? 'Healthy' : score >= 40 ? 'At Risk' : 'Inactive';
   return (
     <div className="cl-score-wrap" title={`Health: ${score}/100`}>
@@ -285,7 +264,7 @@ function Recency({ date }) {
 }
 
 /* ── Sparkline SVG ───────────────────────────────────────────── */
-function Sparkline({ values = [], color = '#c9a84c', width = 60, height = 22 }) {
+function Sparkline({ values = [], color = '#CFA75A', width = 60, height = 22 }) {
   if (values.length < 2) return null;
   const max = Math.max(...values, 1);
   const pts = values.map((v, i) => {
@@ -766,9 +745,9 @@ export default function Clients() {
       last_active="${daysAgo(detail.updatedAt||detail.lastActivity)} days ago",
       contract="${detail.contractStatus||'None'}", notes="${(detail.notes||'').slice(0,200)}".`;
     try {
-      const res = await askClaude(prompt);
+      const res = (await askAI('client-insight', prompt)) || { summary: 'The analysis came back incomplete. Try again.', risks: [], actions: [] };
       setAiInsight(res);
-    } catch { setAiError('AI unavailable — check your connection.'); }
+    } catch (e) { setAiError(errorMessage(e, 'The AI is unavailable right now. Try again.')); }
     setAiLoading(false);
   };
 
@@ -820,7 +799,7 @@ export default function Clients() {
         <div className="cl-contract-alert">
           <FiAlertCircle size={13}/> {expiringContracts.length} contract{expiringContracts.length > 1 ? 's' : ''} expiring soon:
           {expiringContracts.map(c => (
-            <button key={c._id} className="cl-reminder-pill" style={{ borderColor: 'rgba(224,92,92,.4)', color: '#e05c5c' }}
+            <button key={c._id} className="cl-reminder-pill" style={{ borderColor: 'rgba(217,96,90,.4)', color: '#D9605A' }}
               onClick={() => { setDetail(c); setDetailTab('profile'); }}>
               {c.name} — {dLeft(c.contractExpiry)}d
             </button>
@@ -861,11 +840,11 @@ export default function Clients() {
       <div className="cl-kpi-strip">
         {[
           { label: 'Total Clients',  value: kpi.total,              icon: <FiUsers size={14}/>,      color: 'var(--cl-gold)',  sub: 'in your CRM'        },
-          { label: 'Active',         value: kpi.activeCount,         icon: <FiZap size={14}/>,         color: '#4caf82',        sub: 'working now'        },
-          { label: 'VIP (A-Tier)',   value: kpi.vip,                 icon: <FiStar size={14}/>,        color: '#c9a84c',        sub: 'top revenue clients' },
-          { label: 'Leads',          value: kpi.leads,               icon: <FiTrendingUp size={14}/>,  color: '#9b72e8',        sub: 'in pipeline'        },
+          { label: 'Active',         value: kpi.activeCount,         icon: <FiZap size={14}/>,         color: '#7DC39A',        sub: 'working now'        },
+          { label: 'VIP (A-Tier)',   value: kpi.vip,                 icon: <FiStar size={14}/>,        color: '#CFA75A',        sub: 'top revenue clients' },
+          { label: 'Leads',          value: kpi.leads,               icon: <FiTrendingUp size={14}/>,  color: '#A99BD6',        sub: 'in pipeline'        },
           { label: 'Total Revenue',  value: fmt$(kpi.revenue),       icon: <FiDollarSign size={14}/>, color: 'var(--cl-gold)', sub: 'all time earned'    },
-          { label: 'Outstanding',    value: fmt$(kpi.outstanding),   icon: <FiAlertCircle size={14}/>, color: '#e8a030',        sub: 'unpaid invoices'    },
+          { label: 'Outstanding',    value: fmt$(kpi.outstanding),   icon: <FiAlertCircle size={14}/>, color: '#E3A64B',        sub: 'unpaid invoices'    },
         ].map(({ label, value, icon, color, sub }) => (
           <div className="cl-kpi" key={label}>
             <div className="cl-kpi-icon" style={{ color, background: `${color}18` }}>{icon}</div>
@@ -1262,14 +1241,14 @@ export default function Clients() {
             <div className="cl-detail-health">
               <div className="cl-dhealth-labels">
                 <span>Health Score</span>
-                <span style={{ color: healthScore(detail) >= 70 ? '#4caf82' : healthScore(detail) >= 40 ? '#e8a030' : '#e05c5c', fontWeight: 700 }}>
+                <span style={{ color: healthScore(detail) >= 70 ? '#7DC39A' : healthScore(detail) >= 40 ? '#E3A64B' : '#D9605A', fontWeight: 700 }}>
                   {healthScore(detail)}/100
                 </span>
               </div>
               <div className="cl-dhealth-track">
                 <div className="cl-dhealth-fill" style={{
                   width: `${healthScore(detail)}%`,
-                  background: healthScore(detail) >= 70 ? '#4caf82' : healthScore(detail) >= 40 ? '#e8a030' : '#e05c5c',
+                  background: healthScore(detail) >= 70 ? '#7DC39A' : healthScore(detail) >= 40 ? '#E3A64B' : '#D9605A',
                 }}/>
               </div>
             </div>
@@ -1368,7 +1347,7 @@ export default function Clients() {
                           {detail.contractStatus}
                         </span>
                         {detail.contractExpiry && (
-                          <span style={{ fontSize: 12, color: dLeft(detail.contractExpiry) < 14 ? '#e05c5c' : 'var(--cl-ts)' }}>
+                          <span style={{ fontSize: 12, color: dLeft(detail.contractExpiry) < 14 ? '#D9605A' : 'var(--cl-ts)' }}>
                             <FiCalendar size={11}/> Expires {fmtDate(detail.contractExpiry)}
                             {dLeft(detail.contractExpiry) < 14 && dLeft(detail.contractExpiry) >= 0 && (
                               <span className="cl-expiry-warn"> · Expiring soon!</span>
@@ -1442,7 +1421,7 @@ export default function Clients() {
                       {isPremium && (
                         <div className="cl-sparkline-row">
                           <span style={{ fontSize: 11, color: 'var(--cl-tm)' }}>Revenue trend</span>
-                          <Sparkline values={clientSparkline(detail)} color="#c9a84c" width={80} height={26}/>
+                          <Sparkline values={clientSparkline(detail)} color="#CFA75A" width={80} height={26}/>
                         </div>
                       )}
                       {detailInv.map(inv => {
@@ -1519,7 +1498,7 @@ export default function Clients() {
                         ))}
                       </div>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center', margin: '8px 0' }}>
-                        <label style={{ fontSize: 10.5, color: 'var(--cl-tm)', fontWeight: 700, letterSpacing: '.07em', textTransform: 'uppercase' }}>Date</label>
+                        <label style={{ fontSize: 10.5, color: 'var(--cl-tm)', fontWeight: 700, letterSpacing:'0', textTransform:'none' }}>Date</label>
                         <input type="date" value={newComm.date}
                           onChange={e => setNewComm(c => ({ ...c, date: e.target.value }))}
                           style={{ background: 'var(--cl-raised)', border: '1px solid var(--cl-border)', borderRadius: 6, padding: '5px 9px', color: 'var(--cl-text)', fontFamily: 'inherit', fontSize: 12, outline: 'none' }}/>
@@ -1592,28 +1571,21 @@ export default function Clients() {
               {!detailLoad && detailTab === 'ai' && (
                 <div className="cl-ai-tab">
                   <div className="cl-ai-header">
-                    <FiZap size={14} style={{ color: '#c9a84c' }}/>
+                    <FiZap size={14} style={{ color: '#CFA75A' }}/>
                     <span className="cl-ai-title">AI Client Intelligence</span>
                     <span className="cl-ai-badge">Premium</span>
                   </div>
                   {!isPremium ? (
-                    <div className="cl-ai-locked">
-                      <FiLock size={24}/>
-                      <strong>Premium Feature</strong>
-                      <p>Get an AI-powered analysis of your client relationship — health summary, risk flags, and specific next actions. Powered by Claude.</p>
-                      <button className="cl-btn-gold" onClick={() => navigate('/atelier')}>
-                        <FiStar size={12}/> Upgrade to Premium
-                      </button>
-                    </div>
+                    <PremiumLock feature="Client insights" description="A relationship summary, risk flags and next actions for this client, based on their invoices and activity." />
                   ) : !aiInsight && !aiLoading ? (
                     <div className="cl-ai-idle">
                       <p style={{ fontSize: 13, color: 'var(--cl-ts)', marginBottom: 14 }}>
-                        Analyse <strong>{detail.name}</strong>'s relationship health, payment patterns, and get specific recommended actions — powered by Claude AI.
+                        Analyse <strong>{detail.name}</strong>'s relationship health, payment patterns, and get specific recommended actions — from their invoices and activity.
                       </p>
                       <button className="cl-btn-gold" onClick={generateInsight}>
                         <FiZap size={12}/> Analyse This Client
                       </button>
-                      {aiError && <p style={{ fontSize: 12, color: '#e05c5c', marginTop: 10 }}>{aiError}</p>}
+                      {aiError && <p style={{ fontSize: 12, color: '#D9605A', marginTop: 10 }}>{aiError}</p>}
                     </div>
                   ) : aiLoading ? (
                     <div className="cl-ai-loading">
@@ -1625,8 +1597,8 @@ export default function Clients() {
                       {/* Sentiment badge */}
                       {aiInsight.sentiment && (
                         <div className="cl-ai-sentiment" style={{
-                          color: aiInsight.sentiment === 'positive' ? '#4caf82' : aiInsight.sentiment === 'negative' ? '#e05c5c' : '#e8a030',
-                          background: aiInsight.sentiment === 'positive' ? 'rgba(76,175,130,.1)' : aiInsight.sentiment === 'negative' ? 'rgba(224,92,92,.1)' : 'rgba(232,160,48,.1)',
+                          color: aiInsight.sentiment === 'positive' ? '#7DC39A' : aiInsight.sentiment === 'negative' ? '#D9605A' : '#E3A64B',
+                          background: aiInsight.sentiment === 'positive' ? 'rgba(125,195,154,.1)' : aiInsight.sentiment === 'negative' ? 'rgba(217,96,90,.1)' : 'rgba(227,166,75,.1)',
                         }}>
                           {aiInsight.sentiment === 'positive' ? '▲ Positive relationship' : aiInsight.sentiment === 'negative' ? '▼ Needs attention' : '● Neutral relationship'}
                         </div>
@@ -1643,7 +1615,7 @@ export default function Clients() {
                       {/* Risks */}
                       {arr(aiInsight.risks).length > 0 && (
                         <div className="cl-ai-section">
-                          <h5><FiAlertCircle size={12} style={{ color: '#e8a030' }}/> Risk Flags</h5>
+                          <h5><FiAlertCircle size={12} style={{ color: '#E3A64B' }}/> Risk Flags</h5>
                           <ul className="cl-ai-list risks">
                             {arr(aiInsight.risks).map((r, i) => <li key={i}>{r}</li>)}
                           </ul>
@@ -1653,7 +1625,7 @@ export default function Clients() {
                       {/* Actions */}
                       {arr(aiInsight.actions).length > 0 && (
                         <div className="cl-ai-section">
-                          <h5><FiCheckCircle size={12} style={{ color: '#4caf82' }}/> Recommended Actions</h5>
+                          <h5><FiCheckCircle size={12} style={{ color: '#7DC39A' }}/> Recommended Actions</h5>
                           <ul className="cl-ai-list actions">
                             {arr(aiInsight.actions).map((a, i) => <li key={i}>{a}</li>)}
                           </ul>
@@ -1676,10 +1648,10 @@ export default function Clients() {
                     Complete interaction history — invoices, tasks, notes, and logged communications.
                   </p>
                   {[
-                    ...detailInv.map(i => ({ type: 'invoice', date: i.createdAt, label: `Invoice #${i.invoiceNumber || i._id?.slice(-5)}`, sub: fmt$(i.total || 0) + ' · ' + (i.status || 'pending'), color: '#4a90d9' })),
-                    ...detailTasks.map(t => ({ type: 'task', date: t.createdAt, label: t.title || 'Task', sub: t.status || 'open', color: t.status === 'done' ? '#4caf82' : '#9b72e8' })),
+                    ...detailInv.map(i => ({ type: 'invoice', date: i.createdAt, label: `Invoice #${i.invoiceNumber || i._id?.slice(-5)}`, sub: fmt$(i.total || 0) + ' · ' + (i.status || 'pending'), color: '#7FA6CF' })),
+                    ...detailTasks.map(t => ({ type: 'task', date: t.createdAt, label: t.title || 'Task', sub: t.status || 'open', color: t.status === 'done' ? '#7DC39A' : '#A99BD6' })),
                     ...commLog.map(e => { const ct = COMM_TYPES.find(t => t.id === e.type) || COMM_TYPES[0]; return { type: 'comm', date: e.date || e.ts, label: `${ct.icon} ${ct.label}`, sub: e.note.slice(0, 60) + (e.note.length > 60 ? '…' : ''), color: ct.color }; }),
-                    ...(detail.notes ? [{ type: 'note', date: detail.updatedAt, label: 'Notes updated', sub: detail.notes.slice(0, 50) + '…', color: '#e8a030' }] : []),
+                    ...(detail.notes ? [{ type: 'note', date: detail.updatedAt, label: 'Notes updated', sub: detail.notes.slice(0, 50) + '…', color: '#E3A64B' }] : []),
                   ].sort((a, b) => new Date(b.date) - new Date(a.date)).map((item, i) => (
                     <div key={i} className="cl-tl-item">
                       <div className="cl-tl-dot" style={{ background: item.color }}/>
@@ -1721,7 +1693,7 @@ export default function Clients() {
               </div>
             )}
 
-            <form className="cl-drawer-form" onSubmit={save}>
+            <form id="cl-client-form" className="cl-drawer-form" onSubmit={save}>
               <div className="cl-f2">
                 <div className="cl-field"><label>Name *</label><input autoFocus required value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="Full name or business name" maxLength={200}/></div>
                 <div className="cl-field"><label>Company</label><input value={form.company} onChange={e=>setForm(f=>({...f,company:e.target.value}))} placeholder="Organisation name" maxLength={200}/></div>
@@ -1770,13 +1742,13 @@ export default function Clients() {
                 <label>Notes <span className="cl-hint">(private — not shared with client)</span></label>
                 <textarea rows={4} value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} maxLength={2000} placeholder="Project context, preferences, how you met, next steps…"/>
               </div>
-              <div className="cl-drawer-foot">
-                <button type="button" className="cl-btn-ghost" onClick={() => setDrawer(false)}>Cancel</button>
-                <button type="submit" className="cl-btn-gold" disabled={saving}>
-                  {saving ? 'Saving…' : editing ? 'Save Changes' : 'Create Client'}
-                </button>
-              </div>
             </form>
+            <div className="cl-drawer-foot">
+              <button type="button" className="cl-btn-ghost" onClick={() => setDrawer(false)}>Cancel</button>
+              <button type="submit" form="cl-client-form" className="cl-btn-gold" disabled={saving}>
+                {saving ? 'Saving…' : editing ? 'Save Changes' : 'Create Client'}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1851,7 +1823,7 @@ export default function Clients() {
                   </div>
                   <Sparkline
                     values={arr(forecastModal.invoices.filter(i => i.status === 'paid')).slice(-6).map(i => i.total || 0)}
-                    color="#c9a84c" width={320} height={60}/>
+                    color="#CFA75A" width={320} height={60}/>
                   <p style={{ fontSize: 12, color: 'var(--cl-tm)', marginTop: 12, lineHeight: 1.6 }}>
                     Based on {forecastModal.invoices.filter(i => i.status === 'paid').length} paid invoices. Projection uses linear trend from monthly revenue averages. Actual results may vary.
                   </p>

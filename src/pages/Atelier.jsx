@@ -34,17 +34,11 @@ import {
 import { useAuth } from "../context/AuthContext";
 import '../styles/Atelier.css';
 
+import api, { errorMessage } from '../services/api';
+import PremiumLock from '../components/PremiumLock';
+import useCloudState from '../lib/useCloudState';
 /* ── API ─────────────────────────────────────────────────── */
-const BASE = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
-const tok  = () => localStorage.getItem("authToken");
-const hdrs = () => ({ "Content-Type": "application/json", Authorization: `Bearer ${tok()}` });
-const api  = {
-  get:    url      => fetch(`${BASE}${url}`, { headers: hdrs() }).then(r => r.json()),
-  post:   (url, b) => fetch(`${BASE}${url}`, { method:"POST",   headers: hdrs(), body: JSON.stringify(b) }).then(r => r.json()),
-  put:    (url, b) => fetch(`${BASE}${url}`, { method:"PUT",    headers: hdrs(), body: JSON.stringify(b) }).then(r => r.json()),
-  patch:  (url, b) => fetch(`${BASE}${url}`, { method:"PATCH",  headers: hdrs(), body: JSON.stringify(b) }).then(r => r.json()),
-  delete: url      => fetch(`${BASE}${url}`, { method:"DELETE", headers: hdrs() }).then(r => r.json()),
-};
+
 
 /* ── localStorage helpers ────────────────────────────────── */
 const ls = {
@@ -78,24 +72,10 @@ function Toast({ toast }) {
   );
 }
 
-/* ── Premium Lock ────────────────────────────────────────── */
-const PremiumLock = ({ onUpgrade }) => (
-  <div className="at-lock">
-    <div className="at-lock-icon"><FiLock size={28}/></div>
-    <h3>Premium Feature</h3>
-    <p>Upgrade to Premium to unlock this tool and all advanced features.</p>
-    <button className="at-btn gold" onClick={onUpgrade}><FiZap size={13}/> Upgrade to Premium</button>
-  </div>
-);
-
-/* ══════════════════════════════════════════════════════════
-   FREE TOOLS
-══════════════════════════════════════════════════════════ */
-
 /* ── Quick Notes ─────────────────────────────────────────── */
 const QuickNote = () => {
   const [toast, notify] = useToast();
-  const [notes,   setNotes]   = useState(() => ls.get("at_notes", []));
+  const [notes,   setNotes]   = useState([]);
   const [input,   setInput]   = useState("");
   const [search,  setSearch]  = useState("");
   const [cat,     setCat]     = useState("All");
@@ -104,17 +84,47 @@ const QuickNote = () => {
 
   const CATS = ["All","General","Client","Idea","Task","Finance"];
 
-  const save = ns => { setNotes(ns); ls.set("at_notes", ns); };
+  // Notes live in your account (/api/notes). Older browser-only notes are uploaded once.
+  const norm = n => ({ ...n, id: n._id || n.id, ts: n.ts || new Date(n.createdAt).toLocaleString() });
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const legacy = ls.get("at_notes", []);
+        if (legacy.length) {
+          await Promise.all(legacy.slice(0, 100).map(n => api.post("/notes", { text: n.text, cat: n.cat, pinned: n.pinned }).catch(() => {})));
+          localStorage.removeItem("at_notes");
+        }
+        const r = await api.get("/notes?limit=100");
+        if (alive) setNotes(arr(r.notes).map(norm));
+      } catch (e) { if (alive) notify(errorMessage(e, "Could not load notes."), true); }
+    })();
+    return () => { alive = false; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const add = () => {
+  const add = async () => {
     const t = input.trim(); if (!t) return;
-    save([{ id:Date.now(), text:t, cat: cat==="All"?"General":cat, ts:new Date().toLocaleString(), pinned:false }, ...notes].slice(0,100));
-    setInput(""); notify("Note added.");
+    try {
+      const r = await api.post("/notes", { text: t, cat: cat==="All"?"General":cat });
+      setNotes(ns => [norm(r.note), ...ns]); setInput(""); notify("Note added.");
+    } catch (e) { notify(errorMessage(e), true); }
   };
 
-  const del = id => { save(notes.filter(n=>n.id!==id)); notify("Note deleted."); };
-  const pin = id => save([...notes.map(n=>n.id===id?{...n,pinned:!n.pinned}:n)].sort((a,b)=>b.pinned-a.pinned));
-  const saveEdit = id => { save(notes.map(n=>n.id===id?{...n,text:editTxt}:n)); setEditing(null); notify("Note saved."); };
+  const del = async id => {
+    const prev = notes; setNotes(ns => ns.filter(n=>n.id!==id));
+    try { await api.delete(`/notes/${id}`); notify("Note deleted."); } catch (e) { setNotes(prev); notify(errorMessage(e), true); }
+  };
+  const pin = async id => {
+    const n = notes.find(x=>x.id===id); if (!n) return;
+    setNotes(ns => ns.map(x=>x.id===id?{...x,pinned:!x.pinned}:x).sort((a,b)=>b.pinned-a.pinned));
+    try { await api.patch(`/notes/${id}`, { pinned: !n.pinned }); } catch (e) { notify(errorMessage(e), true); }
+  };
+  const saveEdit = async id => {
+    try {
+      const r = await api.patch(`/notes/${id}`, { text: editTxt });
+      setNotes(ns => ns.map(n=>n.id===id?norm(r.note):n)); setEditing(null); notify("Note saved.");
+    } catch (e) { notify(errorMessage(e), true); }
+  };
 
   const exportTxt = () => {
     const txt = notes.map(n=>`[${n.cat}] ${n.text}\n${n.ts}`).join("\n\n---\n\n");
@@ -266,7 +276,7 @@ const TimeTracker = () => {
   const [elapsed, setElapsed] = useState(0);
   const [label,   setLabel]   = useState("");
   const [rate,    setRate]    = useState("");
-  const [sessions, setSessions] = useState(()=>ls.get("at_sessions",[]));
+  const [sessions, setSessions] = useCloudState("timeSessions", [], { legacyKey: "at_sessions" });
   const ref = useRef(null);
 
   useEffect(()=>{
@@ -285,11 +295,11 @@ const TimeTracker = () => {
     const earned = rate ? (hrs * parseFloat(rate)).toFixed(2) : null;
     const sn = { id:Date.now(), label:label||"Untitled", duration:fmt(elapsed), mins:Math.ceil(elapsed/60), hrs:hrs.toFixed(2), earned, date:new Date().toLocaleDateString() };
     const u = [sn,...sessions].slice(0,50);
-    setSessions(u); ls.set("at_sessions",u);
+    setSessions(u);
     setElapsed(0); setLabel(""); notify(`Session saved: ${fmtH(elapsed)}`);
   };
 
-  const del = id => { const u=sessions.filter(s=>s.id!==id); setSessions(u); ls.set("at_sessions",u); };
+  const del = id => { setSessions(sessions.filter(s=>s.id!==id)); };
 
   const exportCSV = ()=>{
     const csv = ["Label,Duration,Hours,Earned,Date",...sessions.map(s=>`"${s.label}","${s.duration}",${s.hrs},${s.earned||""},"${s.date}"`)].join("\n");
@@ -357,7 +367,7 @@ const ExpenseTracker = () => {
     api.get("/earnings").then(d=>{
       const all = arr(d?.earnings||d);
       setExpenses(all.filter(e=>e.type==="expense"||e.amount<0));
-    }).catch(()=>setExpenses(ls.get("at_expenses",[])))
+    }).catch(e=>notify(errorMessage(e,"Could not load expenses."),true))
       .finally(()=>setLoading(false));
   },[]);
 
@@ -367,10 +377,7 @@ const ExpenseTracker = () => {
     if (!f.name.trim()||!f.amount) { notify("Fill name and amount.",true); return; }
     const entry = {...f, amount:parseFloat(f.amount), type:"expense"};
     try { await api.post("/earnings",entry); load(); notify("Expense added."); }
-    catch {
-      const u = [{id:Date.now(),...entry},...expenses];
-      setExpenses(u); ls.set("at_expenses",u); notify("Expense saved locally.");
-    }
+    catch (e) { notify(errorMessage(e,"Could not save the expense."),true); return; }
     setF({name:"",amount:"",category:"Software",date:today(),note:""});
   };
 
@@ -456,10 +463,12 @@ const ExpenseTracker = () => {
 /* ── Brand Kit ───────────────────────────────────────────── */
 const BrandKit = () => {
   const [toast, notify] = useToast();
-  const [kit, setKit] = useState(()=>ls.get("at_brand",{}));
+  const [savedKit, saveKit] = useCloudState("brandKit", {}, { legacyKey: "at_brand" });
+  const [kit, setKit] = useState(savedKit);
+  useEffect(() => { setKit(savedKit); }, [savedKit]);
   const upd = (k,v) => setKit(p=>({...p,[k]:v}));
 
-  const save = ()=>{ ls.set("at_brand",kit); notify("Brand kit saved!"); };
+  const save = ()=>{ saveKit(kit); notify("Brand kit saved to your account."); };
 
   const FONTS = ["DM Sans","DM Serif Display","Inter","Playfair Display","Montserrat","Raleway","Poppins","Lato","Space Grotesk","Sora"];
   const COLORS = [["primary","Primary Brand"],["secondary","Secondary"],["accent","Accent"],["bg","Background"],["text","Body Text"]];
@@ -491,8 +500,8 @@ const BrandKit = () => {
             <div className="at-color-row" key={k}>
               <label>{label}</label>
               <div className="at-color-pick">
-                <input type="color" className="at-color-swatch-input" value={kit[k]||"#c9a84c"} onChange={e=>upd(k,e.target.value)}/>
-                <input className="at-input at-input-sm" value={kit[k]||"#c9a84c"} onChange={e=>upd(k,e.target.value)} placeholder="#c9a84c"/>
+                <input type="color" className="at-color-swatch-input" value={kit[k]||"#CFA75A"} onChange={e=>upd(k,e.target.value)}/>
+                <input className="at-input at-input-sm" value={kit[k]||"#CFA75A"} onChange={e=>upd(k,e.target.value)} placeholder="#CFA75A"/>
               </div>
             </div>
           ))}
@@ -500,9 +509,9 @@ const BrandKit = () => {
       </div>
 
       {kit.name&&(
-        <div className="at-brand-preview" style={{fontFamily:kit.font||"inherit",borderColor:(kit.primary||"#c9a84c")+"40"}}>
-          <div className="at-brand-preview-name" style={{color:kit.primary||"#c9a84c"}}>{kit.name}</div>
-          {kit.tagline&&<div className="at-brand-preview-tag" style={{color:kit.secondary||"#8e8a82"}}>{kit.tagline}</div>}
+        <div className="at-brand-preview" style={{fontFamily:kit.font||"inherit",borderColor:(kit.primary||"#CFA75A")+"40"}}>
+          <div className="at-brand-preview-name" style={{color:kit.primary||"#CFA75A"}}>{kit.name}</div>
+          {kit.tagline&&<div className="at-brand-preview-tag" style={{color:kit.secondary||"#A9B1A3"}}>{kit.tagline}</div>}
           <div className="at-brand-swatches">
             {["primary","secondary","accent","bg","text"].map(k=>kit[k]&&<div key={k} className="at-swatch" style={{background:kit[k]}} title={`${k}: ${kit[k]}`}/>)}
           </div>
@@ -523,7 +532,7 @@ const ProjectEstimator = () => {
   const [toast, notify] = useToast();
   const [items, setItems] = useState([{id:1,task:"",hrs:"",rate:"",desc:""}]);
   const [meta, setMeta] = useState({client:"",project:"",margin:"20",currency:"USD"});
-  const [saved, setSaved] = useState(()=>ls.get("at_estimates",[]));
+  const [saved, setSaved] = useCloudState("estimates", [], { legacyKey: "at_estimates" });
 
   const addItem = ()=>setItems(p=>[...p,{id:Date.now(),task:"",hrs:"",rate:"",desc:""}]);
   const updItem = (id,k,v)=>setItems(p=>p.map(i=>i.id===id?{...i,[k]:v}:i));
@@ -537,7 +546,7 @@ const ProjectEstimator = () => {
     if (!meta.project.trim()) { notify("Enter a project name.",true); return; }
     const est = { id:Date.now(), ...meta, items, subtotal, margin:margin, total, date:today() };
     const u = [est,...saved].slice(0,20);
-    setSaved(u); ls.set("at_estimates",u);
+    setSaved(u);
     notify("Estimate saved!");
   };
 
@@ -593,7 +602,7 @@ const ProjectEstimator = () => {
             <div key={e.id} className="at-saved-row">
               <div><div className="at-saved-title">{e.project}</div><div className="at-saved-meta">{e.client||"No client"} · {e.date}</div></div>
               <strong className="at-saved-total">{fmt$(e.total)}</strong>
-              <button className="at-icon-btn red" onClick={()=>{const u=saved.filter(s=>s.id!==e.id);setSaved(u);ls.set("at_estimates",u);}}><FiTrash2 size={11}/></button>
+              <button className="at-icon-btn red" onClick={()=>{setSaved(saved.filter(s=>s.id!==e.id));}}><FiTrash2 size={11}/></button>
             </div>
           ))}
         </div>
@@ -611,7 +620,7 @@ const EarningsAnalytics = () => {
   const [data,    setData]    = useState({ invoices:[], expenses:[] });
   const [loading, setLoading] = useState(true);
   const [period,  setPeriod]  = useState("6m");
-  const [goal,    setGoal]    = useState(() => ls.get("at_revenue_goal", 0));
+  const [goal,    setGoal]    = useCloudState("revenueGoal", 0, { legacyKey: "at_revenue_goal" });
   const [editGoal,setEditGoal]= useState(false);
   const [goalInput,setGoalInput] = useState("");
 
@@ -651,7 +660,7 @@ const EarningsAnalytics = () => {
 
   const saveGoal = () => {
     const g = parseFloat(goalInput)||0;
-    setGoal(g); ls.set("at_revenue_goal",g); setEditGoal(false);
+    setGoal(g); setEditGoal(false);
   };
 
   if (loading) return <div className="at-tool"><p className="at-empty">Loading analytics…</p></div>;
@@ -678,7 +687,7 @@ const EarningsAnalytics = () => {
             <FiTarget size={13} style={{color:"var(--at-gold)"}}/>
             <span style={{fontSize:12,fontWeight:600,color:"var(--at-ts)"}}>Annual Revenue Goal</span>
             {goal>0&&growth!==null&&(
-              <span style={{fontSize:11,color:parseFloat(growth)>=0?"#4caf82":"#e05c5c"}}>
+              <span style={{fontSize:11,color:parseFloat(growth)>=0?"#7DC39A":"#D9605A"}}>
                 {parseFloat(growth)>=0?"↑":"↓"} {Math.abs(growth)}% vs last month
               </span>
             )}
@@ -700,7 +709,7 @@ const EarningsAnalytics = () => {
               <span>{Math.min(100,((earned/goal)*100)).toFixed(1)}% of {fmt$(goal)} goal</span>
             </div>
             <div className="at-breakdown-bar-wrap" style={{height:6}}>
-              <div className="at-breakdown-bar" style={{width:`${Math.min(100,(earned/goal)*100)}%`,background:earned>=goal?"#4caf82":"var(--at-gold)"}}/>
+              <div className="at-breakdown-bar" style={{width:`${Math.min(100,(earned/goal)*100)}%`,background:earned>=goal?"#7DC39A":"var(--at-gold)"}}/>
             </div>
           </div>
         )}
@@ -748,148 +757,6 @@ const EarningsAnalytics = () => {
   );
 };
 
-/* ── Invoice Generator — REMOVED (use dedicated Invoices page) */
-const InvoiceGenerator = () => {
-  const { user } = useAuth();
-  const [toast, notify] = useToast();
-  const [invoices, setInvoices] = useState([]);
-  const [clients,  setClients]  = useState([]);
-  const [loading,  setLoading]  = useState(true);
-  const [view, setView] = useState("list");
-
-  const blank = ()=>({ clientId:"", clientName:"", clientEmail:"", invoiceNumber:`INV-${Date.now().toString().slice(-5)}`, issueDate:today(), dueDate:"", items:[{desc:"",qty:1,rate:""}], notes:"", taxRate:"0" });
-  const [f, setF] = useState(blank);
-
-  const load = useCallback(()=>{
-    Promise.all([api.get("/invoices"),api.get("/clients")]).then(([inv,cli])=>{
-      setInvoices(arr(inv?.invoices||inv)); setClients(arr(cli?.clients||cli));
-    }).finally(()=>setLoading(false));
-  },[]);
-
-  useEffect(()=>{load();},[load]);
-
-  const updItem = (i,k,v)=>setF(p=>{const items=[...p.items];items[i]={...items[i],[k]:v};return{...p,items};});
-  const sub = f.items.reduce((s,i)=>s+(parseFloat(i.qty)||0)*(parseFloat(i.rate)||0),0);
-  const tax = sub*((parseFloat(f.taxRate)||0)/100);
-  const total = sub+tax;
-
-  const save = async()=>{
-    if (!f.clientName.trim()) { notify("Enter a client name.",true); return; }
-    if (f.items.every(i=>!i.desc.trim())) { notify("Add at least one line item.",true); return; }
-    try {
-      await api.post("/invoices",{...f,subtotal:sub,taxAmount:tax,total,status:"draft"});
-      notify("Invoice saved!"); load(); setView("list"); setF(blank());
-    } catch { notify("Failed to save invoice.",true); }
-  };
-
-  const updateStatus = async(id,status)=>{ try { await api.put(`/invoices/${id}`,{status}); load(); } catch { notify("Failed.",true); } };
-
-  const del = async id=>{ try { await api.delete(`/invoices/${id}`); load(); notify("Deleted."); } catch { notify("Failed.",true); } };
-
-  const downloadTxt = inv=>{
-    const txt=[`INVOICE ${inv.invoiceNumber}`,`From: ${user?.name||"Your Business"}`,`To: ${inv.clientName} ${inv.clientEmail||""}`,`Date: ${inv.issueDate}  Due: ${inv.dueDate||"N/A"}`,``,`ITEMS:`,
-      ...(inv.items||[]).map(i=>`  ${i.desc||i.description}  ×${i.qty||i.quantity}  @$${i.rate}  = $${((parseFloat(i.qty||i.quantity)||0)*(parseFloat(i.rate)||0)).toFixed(2)}`),
-      ``,`Subtotal: $${(inv.subtotal||0).toFixed(2)}`,
-      inv.taxRate>0?`Tax (${inv.taxRate}%): $${(inv.taxAmount||0).toFixed(2)}`:"",
-      `TOTAL: $${(inv.total||0).toFixed(2)}`,
-      inv.notes?`\nNotes: ${inv.notes}`:"",
-    ].filter(Boolean);
-    Object.assign(document.createElement("a"),{href:URL.createObjectURL(new Blob([txt.join("\n")],{type:"text/plain"})),download:`${inv.invoiceNumber}.txt`}).click();
-  };
-
-  const earned  = invoices.filter(i=>i.status==="paid").reduce((s,i)=>s+(i.total||0),0);
-  const pending = invoices.filter(i=>i.status!=="paid").reduce((s,i)=>s+(i.total||0),0);
-  const overdue = invoices.filter(i=>i.status!=="paid"&&i.dueDate&&new Date(i.dueDate)<new Date()).length;
-
-  if (loading) return <div className="at-tool"><p className="at-empty">Loading invoices…</p></div>;
-
-  if (view==="create") return (
-    <div className="at-tool">
-      <Toast toast={toast}/>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-        <h3 className="at-panel-title">New Invoice</h3>
-        <button className="at-btn ghost sm" onClick={()=>setView("list")}><FiX size={11}/> Cancel</button>
-      </div>
-      {clients.length>0&&<div className="at-field"><label>Select Client</label>
-        <select className="at-select" value={f.clientId} onChange={e=>{const c=clients.find(c=>c._id===e.target.value);if(c)setF(p=>({...p,clientId:e.target.value,clientName:c.name,clientEmail:c.email||""}));else setF(p=>({...p,clientId:""}));}}>
-          <option value="">— Select or enter manually —</option>
-          {clients.map(c=><option key={c._id} value={c._id}>{c.name}</option>)}
-        </select>
-      </div>}
-      <div className="at-calc-grid">
-        <div className="at-field"><label>Invoice #</label><input className="at-input" value={f.invoiceNumber} onChange={e=>setF(p=>({...p,invoiceNumber:e.target.value}))}/></div>
-        <div className="at-field"><label>Issue Date</label><input className="at-input" type="date" value={f.issueDate} onChange={e=>setF(p=>({...p,issueDate:e.target.value}))}/></div>
-        <div className="at-field"><label>Due Date</label><input className="at-input" type="date" value={f.dueDate} onChange={e=>setF(p=>({...p,dueDate:e.target.value}))}/></div>
-        <div className="at-field"><label>Tax Rate (%)</label><input className="at-input" type="number" placeholder="0" value={f.taxRate} onChange={e=>setF(p=>({...p,taxRate:e.target.value}))}/></div>
-      </div>
-      <div className="at-field"><label>Bill To (Name)</label><input className="at-input" placeholder="Client or Company" value={f.clientName} onChange={e=>setF(p=>({...p,clientName:e.target.value}))}/></div>
-      <div className="at-field"><label>Client Email</label><input className="at-input" type="email" placeholder="client@example.com" value={f.clientEmail} onChange={e=>setF(p=>({...p,clientEmail:e.target.value}))}/></div>
-      <div className="at-items-table" style={{marginTop:10}}>
-        <div className="at-items-head"><span>Description</span><span>Qty</span><span>Rate ($)</span><span>Total</span><span/></div>
-        {f.items.map((item,i)=>(
-          <div key={i} className="at-item-row">
-            <input className="at-input" placeholder="Service or deliverable…" value={item.desc} onChange={e=>updItem(i,"desc",e.target.value)}/>
-            <input className="at-input" type="number" placeholder="1" value={item.qty} onChange={e=>updItem(i,"qty",e.target.value)} style={{maxWidth:70}}/>
-            <input className="at-input" type="number" placeholder="0.00" value={item.rate} onChange={e=>updItem(i,"rate",e.target.value)} style={{maxWidth:90}}/>
-            <span className="at-item-total">{fmt$((parseFloat(item.qty)||0)*(parseFloat(item.rate)||0))}</span>
-            {f.items.length>1&&<button className="at-icon-btn red" onClick={()=>setF(p=>({...p,items:p.items.filter((_,idx)=>idx!==i)}))}><FiX size={11}/></button>}
-          </div>
-        ))}
-      </div>
-      <button className="at-btn ghost sm" onClick={()=>setF(p=>({...p,items:[...p.items,{desc:"",qty:1,rate:""}]}))}><FiPlus size={11}/> Add Line</button>
-      <div className="at-estimate-totals">
-        <div className="at-total-row"><span>Subtotal</span><span>{fmt$(sub)}</span></div>
-        {parseFloat(f.taxRate)>0&&<div className="at-total-row"><span>Tax ({f.taxRate}%)</span><span>{fmt$(tax)}</span></div>}
-        <div className="at-total-row grand"><span>Total</span><strong>{fmt$(total)}</strong></div>
-      </div>
-      <textarea className="at-input at-ta-sm" placeholder="Notes / payment terms…" value={f.notes} onChange={e=>setF(p=>({...p,notes:e.target.value}))} rows={2}/>
-      <button className="at-btn gold" onClick={save}><FiSave size={12}/> Save Invoice</button>
-    </div>
-  );
-
-  return (
-    <div className="at-tool">
-      <Toast toast={toast}/>
-      <div className="at-analytics-kpis" style={{marginBottom:14}}>
-        <div className="at-kpi-chip gold"><span>{fmt$(earned)}</span><label>Earned</label></div>
-        <div className="at-kpi-chip blue"><span>{fmt$(pending)}</span><label>Pending</label></div>
-        {overdue>0&&<div className="at-kpi-chip red"><span>{overdue}</span><label>Overdue</label></div>}
-        <div className="at-kpi-chip"><span>{invoices.length}</span><label>Total</label></div>
-      </div>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-        <h3 className="at-panel-title">Invoices</h3>
-        <button className="at-btn gold sm" onClick={()=>setView("create")}><FiPlus size={11}/> New Invoice</button>
-      </div>
-      {invoices.length===0&&<p className="at-empty">No invoices yet. Create your first one.</p>}
-      <ul className="at-invoice-list">
-        {invoices.map(inv=>{
-          const isOverdue = inv.status!=="paid"&&inv.dueDate&&new Date(inv.dueDate)<new Date();
-          return (
-            <li key={inv._id} className={`at-invoice-item${isOverdue?" overdue":""}`}>
-              <div className="at-inv-left">
-                <strong className="at-inv-num">{inv.invoiceNumber}</strong>
-                <span className="at-inv-client">{inv.clientName||"No client"}</span>
-                <span className="at-inv-date">{inv.issueDate}</span>
-                {isOverdue&&<span className="at-overdue-badge">Overdue</span>}
-              </div>
-              <div className="at-inv-right">
-                <span className="at-inv-amount">{fmt$(inv.total||0)}</span>
-                <span className={`at-status-chip ${inv.status}`}>{inv.status}</span>
-                <div className="at-inv-acts">
-                  {inv.status==="draft"&&<button className="at-btn ghost sm" onClick={()=>updateStatus(inv._id,"sent")}>Send</button>}
-                  {inv.status!=="paid"&&<button className="at-btn ghost sm" onClick={()=>updateStatus(inv._id,"paid")}><FiCheck size={10}/> Paid</button>}
-                  <button className="at-icon-btn" onClick={()=>downloadTxt(inv)}><FiDownload size={11}/></button>
-                  <button className="at-icon-btn red" onClick={()=>del(inv._id)}><FiTrash2 size={11}/></button>
-                </div>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
-  );
-};
-
 /* ── Smart Contracts ─────────────────────────────────────── */
 const SmartContracts = () => {
   const { user } = useAuth();
@@ -911,7 +778,7 @@ const SmartContracts = () => {
 
   const load = useCallback(()=>{
     api.get("/contracts").then(d=>setContracts(arr(d?.contracts||d)))
-      .catch(()=>setContracts(ls.get("at_contracts",[])))
+      .catch(e=>notify(errorMessage(e,"Could not load contracts."),true))
       .finally(()=>setLoading(false));
   },[]);
 
@@ -921,10 +788,7 @@ const SmartContracts = () => {
     if (!f.title.trim()) { notify("Enter a contract title.",true); return; }
     const entry = { title:f.title, content:f.content, status:"draft", signed:false, createdAt:new Date().toISOString() };
     try { await api.post("/contracts",entry); load(); }
-    catch {
-      const u = [{id:Date.now(),...entry},...contracts];
-      setContracts(u); ls.set("at_contracts",u);
-    }
+    catch (e) { notify(errorMessage(e,"Could not save the contract."),true); return; }
     notify("Contract saved."); setView("list"); setF({title:"",content:""});
   };
 
@@ -1018,7 +882,7 @@ const ProposalBuilder = () => {
 
   const load = useCallback(()=>{
     api.get("/proposals").then(d=>setProposals(arr(d?.proposals||d)))
-      .catch(()=>setProposals(ls.get("at_proposals",[])))
+      .catch(e=>notify(errorMessage(e,"Could not load proposals."),true))
       .finally(()=>setLoading(false));
   },[]);
 
@@ -1028,7 +892,7 @@ const ProposalBuilder = () => {
     if (!f.title.trim()) { notify("Enter a proposal title.",true); return; }
     const entry = {...f, createdAt:new Date().toISOString(), status:"draft"};
     try { await api.post("/proposals",entry); load(); }
-    catch { const u=[{id:Date.now(),...entry},...proposals]; setProposals(u); ls.set("at_proposals",u); }
+    catch (e) { notify(errorMessage(e,"Could not save the proposal."),true); return; }
     notify("Proposal saved."); setView("list");
   };
 
@@ -1232,10 +1096,10 @@ const TaxSummary = () => {
           ))}
         </>)}
 
-        <div className="at-tax-row"><span>Total Deductions</span><strong style={{color:"#e08888"}}>{fmt$(totalExp)}</strong></div>
+        <div className="at-tax-row"><span>Total Deductions</span><strong style={{color:"#E89590"}}>{fmt$(totalExp)}</strong></div>
         <div className="at-tax-row divider"><span>Taxable Income</span><strong style={{color:"var(--at-gold)"}}>{fmt$(taxable)}</strong></div>
-        <div className="at-tax-row"><span>Estimated Tax ({taxRate}%)</span><strong style={{color:"#e08888"}}>{fmt$(estTax)}</strong></div>
-        <div className="at-tax-row grand"><span>Net After Tax</span><strong style={{color:"#7fcfaa"}}>{fmt$(taxable-estTax)}</strong></div>
+        <div className="at-tax-row"><span>Estimated Tax ({taxRate}%)</span><strong style={{color:"#E89590"}}>{fmt$(estTax)}</strong></div>
+        <div className="at-tax-row grand"><span>Net After Tax</span><strong style={{color:"#A3D9B8"}}>{fmt$(taxable-estTax)}</strong></div>
       </div>
 
       <p className="at-warning-hint"><FiAlertCircle size={11}/> Estimate only. Consult a certified tax professional for accurate filing.</p>
@@ -1255,18 +1119,12 @@ const TOOLS = [
   { id:"brand",     tier:"free",    icon:<FiGrid size={14}/>,       title:"Brand Kit",          desc:"Store your colours, fonts and business identity.",       C:BrandKit        },
   { id:"estimator", tier:"free",    icon:<FiPackage size={14}/>,    title:"Project Estimator",  desc:"Build project quotes with task breakdown and margin.",   C:ProjectEstimator},
   { id:"analytics", tier:"premium", icon:<FiBarChart2 size={14}/>,  title:"Earnings Analytics", desc:"Revenue charts, client breakdown and profit tracking.",  C:EarningsAnalytics},
-  { id:"invoice",   tier:"premium", icon:<FiFileText size={14}/>,   title:"Invoice Generator",  desc:"Create, manage and download professional invoices.",     C:InvoiceGenerator},
   { id:"contracts", tier:"premium", icon:<FiPaperclip size={14}/>,  title:"Smart Contracts",    desc:"4 contract templates — create, sign and download.",      C:SmartContracts  },
   { id:"proposals", tier:"premium", icon:<FiSend size={14}/>,       title:"Proposal Builder",   desc:"Build and export structured client proposals.",          C:ProposalBuilder },
   { id:"tax",       tier:"premium", icon:<FiShield size={14}/>,     title:"Tax Summary",        desc:"Annual tax report with deductions and estimate.",        C:TaxSummary      },
 ];
 
-const PLANS = [
-  { id:"free",    name:"Free",    price:"$0",  period:"forever",  color:"#4caf82",
-    perks:["Quick Notes","Rate Calculator","Time Tracker","Expense Tracker","Brand Kit","Project Estimator","Unlimited tasks & clients"] },
-  { id:"premium", name:"Premium",price:"$19", period:"/ month",  color:"#c9a84c", popular:true,
-    perks:["Everything in Free","Earnings Analytics","Invoice Generator","Smart Contracts","Proposal Builder","Tax Summary Export","Priority support"] },
-];
+
 
 /* ══════════════════════════════════════════════════════════
    MAIN PAGE
@@ -1276,17 +1134,14 @@ export default function Atelier() {
   const isPremium    = user?.plan==="premium";
   const [activeTab,  setActiveTab]  = useState("workspace");
   const [activeId,   setActiveId]   = useState("notes");
-  const [showUpgrade,setShowUpgrade]= useState(false);
   const [sideSearch, setSideSearch] = useState("");
 
   const access  = t => canAccess(t.tier, user?.plan);
   const active  = TOOLS.find(t=>t.id===activeId);
   const unlocked= TOOLS.filter(t=>access(t)).length;
 
-  const openTool = t => {
-    if (!access(t)) { setShowUpgrade(true); return; }
-    setActiveId(t.id); setActiveTab("workspace");
-  };
+  // Locked tools still open — the panel shows what the tool does and a link to Billing.
+  const openTool = t => { setActiveId(t.id); setActiveTab("workspace"); };
 
   const visibleTools = TOOLS.filter(t=>!sideSearch||t.title.toLowerCase().includes(sideSearch.toLowerCase()));
 
@@ -1306,15 +1161,12 @@ export default function Atelier() {
           <div className={`at-tier-badge${isPremium?" pro":""}`}>
             {isPremium ? <><FiStar size={11}/> Premium</> : <><FiZap size={11}/> Free Plan</>}
           </div>
-          {!isPremium&&(
-            <button className="at-btn gold" onClick={()=>setShowUpgrade(true)}><FiArrowRight size={12}/> Upgrade</button>
-          )}
         </div>
       </div>
 
       {/* ── Tabs ───────────────────────────────────────── */}
       <div className="at-tabs">
-        {[{id:"workspace",label:"Workspace",icon:<FiList size={12}/>},{id:"tools",label:"All Tools",icon:<FiGrid size={12}/>},{id:"plans",label:"Plans",icon:<FiStar size={12}/>}].map(t=>(
+        {[{id:"workspace",label:"Workspace",icon:<FiList size={12}/>},{id:"tools",label:"All Tools",icon:<FiGrid size={12}/>}].map(t=>(
           <button key={t.id} className={`at-tab${activeTab===t.id?" active":""}`} onClick={()=>setActiveTab(t.id)}>
             {t.icon} {t.label}
           </button>
@@ -1355,17 +1207,17 @@ export default function Atelier() {
               <>
                 <div className="at-panel-header">
                   <div className="at-panel-header-left">
-                    <span className="at-panel-icon" style={{color:active.tier==="premium"?"var(--at-gold)":"#4caf82"}}>{active.icon}</span>
+                    <span className="at-panel-icon" style={{color:active.tier==="premium"?"var(--at-gold)":"#7DC39A"}}>{active.icon}</span>
                     <div>
                       <h2 className="at-panel-title">{active.title}</h2>
                       <p className="at-panel-desc">{active.desc}</p>
                     </div>
                   </div>
-                  <span className="at-tier-chip" style={{color:active.tier==="premium"?"var(--at-gold)":"#4caf82",borderColor:(active.tier==="premium"?"var(--at-gold)":"#4caf82")+"40",background:(active.tier==="premium"?"var(--at-gold)":"#4caf82")+"12"}}>
-                    {active.tier.toUpperCase()}
+                  <span className="at-tier-chip" style={{color:active.tier==="premium"?"var(--at-gold)":"#7DC39A",borderColor:(active.tier==="premium"?"var(--at-gold)":"#7DC39A")+"40",background:(active.tier==="premium"?"var(--at-gold)":"#7DC39A")+"12"}}>
+                    {active.tier === 'premium' ? 'Premium' : 'Free'}
                   </span>
                 </div>
-                {access(active) ? <active.C/> : <PremiumLock onUpgrade={()=>setShowUpgrade(true)}/>}
+                {access(active) ? <active.C/> : <PremiumLock feature={active.title} description={active.desc}/>}
               </>
             )}
           </div>
@@ -1379,21 +1231,21 @@ export default function Atelier() {
             <div key={tier} className="at-tools-section">
               <div className="at-tools-section-label">
                 {tier==="free"
-                  ? <><FiCheckCircle size={13} style={{color:"#4caf82"}}/> Free — Always Available</>
-                  : <><FiStar size={13} style={{color:"var(--at-gold)"}}/> Premium Plan — $19/mo</>}
+                  ? <><FiCheckCircle size={13} style={{color:"#7DC39A"}}/> Free — Always Available</>
+                  : <><FiStar size={13} style={{color:"var(--at-gold)"}}/> Premium tools</>}
               </div>
               <div className="at-tools-grid">
                 {TOOLS.filter(t=>t.tier===tier).map(t=>(
                   <div key={t.id} className={`at-tool-card${access(t)?" unlocked":" locked"}`} onClick={()=>openTool(t)}>
                     <div className="at-tool-card-top">
-                      <span className="at-tool-card-icon" style={{color:access(t)?(tier==="premium"?"var(--at-gold)":"#4caf82"):"var(--at-tm)"}}>{t.icon}</span>
+                      <span className="at-tool-card-icon" style={{color:access(t)?(tier==="premium"?"var(--at-gold)":"#7DC39A"):"var(--at-tm)"}}>{t.icon}</span>
                       {access(t)
                         ? <span className="at-unlocked-badge"><FiCheckCircle size={10}/> Open</span>
                         : <span className="at-locked-badge"><FiLock size={10}/> Premium</span>}
                     </div>
                     <h3 className="at-tool-card-title">{t.title}</h3>
                     <p className="at-tool-card-desc">{t.desc}</p>
-                    <div className="at-tool-card-cta">{access(t)?"Open tool":"Upgrade to unlock"} <FiChevronRight size={11}/></div>
+                    <div className="at-tool-card-cta">{access(t)?"Open tool":"See what it does"} <FiChevronRight size={11}/></div>
                   </div>
                 ))}
               </div>
@@ -1402,49 +1254,6 @@ export default function Atelier() {
         </div>
       )}
 
-      {/* ══ PLANS ══════════════════════════════════════ */}
-      {activeTab==="plans"&&(
-        <div className="at-plans-page">
-          <div className="at-plans-intro">
-            <h2 className="at-plans-heading">Simple, honest pricing.</h2>
-            <p className="at-plans-sub">Start free forever. Upgrade when you need the full toolkit.</p>
-          </div>
-          <div className="at-plans-grid">
-            {PLANS.map(plan=>(
-              <div key={plan.id} className={`at-plan-card${plan.popular?" popular":""}${user?.plan===plan.id?" current":""}`} style={{"--plan-color":plan.color}}>
-                {plan.popular&&<div className="at-popular-badge"><FiStar size={10}/> Most Popular</div>}
-                <h3 className="at-plan-name" style={{color:plan.color}}>{plan.name}</h3>
-                <div className="at-plan-price"><span className="at-plan-amount">{plan.price}</span><span className="at-plan-period">{plan.period}</span></div>
-                <ul className="at-plan-perks">
-                  {plan.perks.map(p=><li key={p}><FiCheckCircle size={11} style={{color:plan.color}}/>{p}</li>)}
-                </ul>
-                <button className="at-plan-cta" style={{background:user?.plan===plan.id?"transparent":plan.color,color:user?.plan===plan.id?plan.color:"#0a0a0c",borderColor:plan.color}}
-                  disabled={user?.plan===plan.id} onClick={()=>user?.plan!==plan.id&&setShowUpgrade(true)}>
-                  {user?.plan===plan.id?<><FiCheck size={12}/> Current Plan</>:<><FiZap size={12}/> Get {plan.name}</>}
-                </button>
-              </div>
-            ))}
-          </div>
-          <p className="at-plans-note"><FiAlertCircle size={11}/> Stripe integration coming soon. Contact support to upgrade manually.</p>
-        </div>
-      )}
-
-      {/* ── Upgrade Modal ───────────────────────────── */}
-      {showUpgrade&&(
-        <div className="at-overlay" onClick={()=>setShowUpgrade(false)}>
-          <div className="at-modal" onClick={e=>e.stopPropagation()}>
-            <button className="at-modal-close" onClick={()=>setShowUpgrade(false)}><FiX size={14}/></button>
-            <div className="at-modal-icon"><FiStar size={26}/></div>
-            <h2 className="at-modal-title">Unlock Premium</h2>
-            <p className="at-modal-sub">Get access to Earnings Analytics, Invoice Generator, Smart Contracts, Proposal Builder, and Tax Summary.</p>
-            <div className="at-modal-price"><span className="at-modal-amount">$19</span><span className="at-modal-period">per month · cancel anytime</span></div>
-            <button className="at-btn gold" style={{width:"100%",justifyContent:"center",padding:"12px"}} onClick={()=>{setShowUpgrade(false);setActiveTab("plans");}}>
-              <FiArrowRight size={13}/> View Plans & Upgrade
-            </button>
-            <p className="at-modal-note">Stripe integration coming soon. Contact support to upgrade manually.</p>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

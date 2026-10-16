@@ -10,19 +10,17 @@
 //                          tasks, overdue invoices) — orientation only
 //   3. ONBOARDING        – 4-step setup checklist (real API checks)
 //                          hides once all 4 complete
-//   4. UPGRADE BANNER    – free users · dismissible · localStorage
-//   5. AI DAILY FOCUS    – [PREMIUM] personalised one-click brief
-//   6. QUICK LAUNCH      – 6 nav cards with live badges
-//   7. RECENT ACTIVITY   – last 3 invoices + tasks (not a full feed)
-//   8. WHAT'S NEW        – curated feature updates (static, accurate)
-//   9. REFERRAL          – copy invite link
-//  10. UPGRADE CTA       – free users only
+//   4. QUICK LAUNCH      – nav cards with live badges
+//   5. RECENT ACTIVITY   – last 3 invoices + tasks (not a full feed)
+//   6. WHAT'S NEW        – curated feature updates
+//   7. REFERRAL          – copy invite link
+//  Plans/upgrading live on /billing only. AI briefing lives on the Dashboard.
 // ─────────────────────────────────────────────────────────────
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FiUsers, FiDollarSign, FiCheckCircle, FiCalendar,
-  FiActivity, FiFileText, FiStar, FiZap, FiTool,
+  FiActivity, FiBriefcase, FiFileText, FiStar, FiZap, FiTool,
   FiCopy, FiCheck, FiArrowRight, FiTrendingUp, FiLock,
   FiSettings, FiGift, FiUser, FiShield, FiGrid,
   FiMessageSquare, FiBarChart2, FiCpu, FiRefreshCw,
@@ -31,29 +29,12 @@ import {
 import { useAuth } from '../context/AuthContext';
 import '../styles/Home.css';
 
+import api from '../services/api';
+import { useUnread } from '../context/UnreadContext';
 /* ── API ───────────────────────────────────────────────────── */
-const BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-const tok  = () => localStorage.getItem('authToken');
-const hdrs = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${tok()}` });
-const api  = {
-  get:  url => fetch(`${BASE}${url}`, { headers: hdrs() }).then(r => r.json()),
-};
 
-/* ── Anthropic AI (no API key needed — proxied) ────────────── */
-const askClaude = async (system, msg) => {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model:      'claude-sonnet-4-20250514',
-      max_tokens: 500,
-      system,
-      messages: [{ role: 'user', content: msg }],
-    }),
-  });
-  const d = await res.json();
-  return d.content?.map(b => b.text || '').join('') || '';
-};
+
+
 
 /* ── Helpers ───────────────────────────────────────────────── */
 const arr  = v => Array.isArray(v) ? v : [];
@@ -63,31 +44,31 @@ const fmtDate = d => d ? new Date(d).toLocaleDateString('en-US', { month: 'short
 /* ── What's New (static — update manually per release) ──────── */
 const WHATS_NEW = [
   {
-    tag: 'New',      tagColor: '#4caf82', path: '/atelier',
+    tag: 'New',      tagColor: '#7DC39A', path: '/atelier',
     title: 'Atelier Studio v2',
     desc:  '11 freelance tools in one page — Rate Calc, Time Tracker, Smart Contracts, Proposal Builder, Tax Summary, and more.',
     icon:  <FiTool size={15} />,
   },
   {
-    tag: 'Improved', tagColor: '#4a90d9', path: '/atelier',
+    tag: 'Improved', tagColor: '#7FA6CF', path: '/atelier',
     title: 'Proposal Builder — Win Rate',
     desc:  'Track sent/accepted/declined with live win rate %. Status progression built in.',
     icon:  <FiTrendingUp size={15} />,
   },
   {
-    tag: 'Improved', tagColor: '#4a90d9', path: '/atelier',
+    tag: 'Improved', tagColor: '#7FA6CF', path: '/atelier',
     title: 'Smart Contracts — Sign Flow',
     desc:  'Contracts now require a confirm step before signing. Signed date shown on every contract.',
     icon:  <FiShield size={15} />,
   },
   {
-    tag: 'New',      tagColor: '#4caf82', path: '/atelier',
+    tag: 'New',      tagColor: '#7DC39A', path: '/atelier',
     title: 'Quarterly Tax Breakdown',
     desc:  'Tax Summary now shows Q1–Q4 revenue chips and includes quarterly data in the exported report.',
     icon:  <FiBarChart2 size={15} />,
   },
   {
-    tag: 'Premium',  tagColor: '#c9a84c', path: '/atelier',
+    tag: 'Premium',  tagColor: '#CFA75A', path: '/atelier',
     title: 'Earnings Analytics — Goals',
     desc:  'Set an annual revenue goal and track your month-over-month growth % in real time.',
     icon:  <FiZap size={15} />,
@@ -95,13 +76,14 @@ const WHATS_NEW = [
 ];
 
 /* ── Spinner (replaces @mui/material CircularProgress) ──────── */
-const Spinner = ({ size = 16, color = '#c9a84c' }) => (
+const Spinner = ({ size = 16, color = 'var(--gilt)' }) => (
   <div className="hm-spinner" style={{ width: size, height: size, borderTopColor: color }} />
 );
 
 /* ── Main component ────────────────────────────────────────── */
 export default function Home() {
   const { user } = useAuth();
+  const { unread } = useUnread();
   const navigate = useNavigate();
 
   /* state */
@@ -110,12 +92,8 @@ export default function Home() {
   const [counts,     setCounts]     = useState({ clients: 0, tasks: 0, invoices: 0, connections: 0 });
   const [hasProfile, setHasProfile] = useState(false);
 
-  const [focus,      setFocus]      = useState('');
-  const [focusLoad,  setFocusLoad]  = useState(false);
-  const [focusDone,  setFocusDone]  = useState(false);
 
   const [copied,     setCopied]     = useState(false);
-  const [bannerOff,  setBannerOff]  = useState(() => !!localStorage.getItem('hm_banner_off'));
 
   /* derived */
   const isPremium = user?.plan === 'premium';
@@ -143,11 +121,14 @@ export default function Home() {
 
       if (countRes.status === 'fulfilled') {
         const c = countRes.value?.counts || countRes.value || {};
+        // /dashboard/counts returns { clients:{total}, tasks:{total,completed}, invoices:{total}, connections:{total} }
+        const num = v => (typeof v === 'number' ? v : v?.total || 0);
         setCounts({
-          clients:     c.clients     || 0,
-          tasks:       c.tasks       || 0,
-          invoices:    c.invoices    || 0,
-          connections: c.connections || 0,
+          clients:     num(c.clients),
+          tasks:       typeof c.tasks === 'number' ? c.tasks : Math.max(0, (c.tasks?.total || 0) - (c.tasks?.completed || 0)),
+          tasksTotal:  num(c.tasks),
+          invoices:    num(c.invoices),
+          connections: num(c.connections),
         });
       }
 
@@ -178,7 +159,7 @@ export default function Home() {
       id: 'task',    icon: <FiCheckCircle size={15} />, path: '/tasks',
       label: 'Create a task',
       desc:  'Start tracking your work.',
-      done:  counts.tasks > 0,
+      done:  (counts.tasksTotal ?? counts.tasks) > 0,
     },
     {
       id: 'invoice', icon: <FiFileText size={15} />, path: '/invoices',
@@ -190,43 +171,24 @@ export default function Home() {
   const checkDone  = checklist.filter(c => c.done).length;
   const allChecked = checkDone === checklist.length;
 
-  /* ── AI Daily Focus ────────────────────────────────────── */
-  const generateFocus = async () => {
-    setFocusLoad(true);
-    const system = `You are a freelance productivity coach. Give a crisp, personalised daily focus in exactly 2 sentences. Be direct, specific, and cite their actual numbers. No generic advice.`;
-    const msg    = `Freelancer workspace: ${dash.activeClients || 0} active clients, ${dash.taskCount || counts.tasks} pending tasks, ${fmt$(dash.monthRevenue || 0)} earned this month, ${dash.overdueCount || 0} overdue invoices worth ${fmt$(dash.overdueRevenue || 0)}. What single thing should they focus on right now for maximum impact today?`;
-    try {
-      const text = await askClaude(system, msg);
-      setFocus(text.trim());
-    } catch {
-      setFocus('Could not reach AI — check your connection and try again.');
-    }
-    setFocusDone(true);
-    setFocusLoad(false);
-  };
-
   /* ── Referral copy ─────────────────────────────────────── */
   const copyLink = () => {
-    const link = `${window.location.origin}/register?ref=${user?._id?.slice(-8) || 'aurelance'}`;
+    const link = `${window.location.origin}/register?ref=${user?._id || ''}`;
     navigator.clipboard?.writeText(link).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     });
   };
 
-  const dismissBanner = () => {
-    setBannerOff(true);
-    localStorage.setItem('hm_banner_off', '1');
-  };
 
   /* ── Quick launch cards ────────────────────────────────── */
   const quickCards = [
-    { label: 'Dashboard',   sub: 'Analytics & AI',      icon: <FiBarChart2 size={20} />,   color: '#c9a84c', path: '/dashboard',   badge: null },
-    { label: 'Clients',     sub: 'Manage relationships', icon: <FiUsers size={20} />,       color: '#4a90d9', path: '/clients',     badge: counts.clients     || null },
-    { label: 'Tasks',       sub: 'Track your work',      icon: <FiCheckCircle size={20} />, color: '#4caf82', path: '/tasks',       badge: dash.overdueTasks  || null },
-    { label: 'Invoices',    sub: 'Billing & payments',   icon: <FiFileText size={20} />,    color: '#e8a030', path: '/invoices',    badge: dash.overdueCount  || null },
-    { label: 'Atelier',     sub: 'Freelance tools',      icon: <FiTool size={20} />,        color: '#9b72e8', path: '/atelier',     badge: null },
-    { label: 'Connections', sub: 'Your network',         icon: <FiActivity size={20} />,    color: '#38bdf8', path: '/connections', badge: null },
+    { label: 'Jobs',        sub: 'Find work or hire',    icon: <FiBriefcase size={20} />,   color: '#CFA75A', path: '/jobs',        badge: null },
+    { label: 'Messages',    sub: 'Your conversations',   icon: <FiMessageSquare size={20} />, color: '#79B8C9', path: '/messages',  badge: unread || null },
+    { label: 'Clients',     sub: 'Manage relationships', icon: <FiUsers size={20} />,       color: '#7FA6CF', path: '/clients',     badge: counts.clients     || null },
+    { label: 'Tasks',       sub: 'Track your work',      icon: <FiCheckCircle size={20} />, color: '#7DC39A', path: '/tasks',       badge: dash.overdueTasks  || null },
+    { label: 'Invoices',    sub: 'Billing & payments',   icon: <FiFileText size={20} />,    color: '#E3A64B', path: '/invoices',    badge: dash.overdueCount  || null },
+    { label: 'Atelier',     sub: 'Freelance tools',      icon: <FiTool size={20} />,        color: '#A99BD6', path: '/atelier',     badge: null },
   ];
 
   /* ── Recent activity — last 3 invoices + 3 tasks ──────── */
@@ -241,28 +203,28 @@ export default function Home() {
       label: 'This Month',
       value: loading ? '—' : fmt$(dash.monthRevenue || 0),
       sub:   'revenue',
-      color: '#c9a84c',
+      color: '#CFA75A',
     },
     {
       icon:  <FiCheckCircle size={16} />,
       label: 'Pending Tasks',
       value: loading ? '—' : String(counts.tasks || 0),
       sub:   dash.overdueTasks > 0 ? `${dash.overdueTasks} overdue` : 'all on track',
-      color: dash.overdueTasks > 0 ? '#e05c5c' : '#4caf82',
+      color: dash.overdueTasks > 0 ? '#D9605A' : '#7DC39A',
     },
     {
       icon:  <FiFileText size={16} />,
       label: 'Overdue Invoices',
       value: loading ? '—' : String(dash.overdueCount || 0),
       sub:   dash.overdueCount > 0 ? fmt$(dash.overdueRevenue || 0) + ' outstanding' : 'all paid',
-      color: dash.overdueCount > 0 ? '#e8a030' : '#4caf82',
+      color: dash.overdueCount > 0 ? '#E3A64B' : '#7DC39A',
     },
     {
       icon:  <FiUsers size={16} />,
       label: 'Active Clients',
       value: loading ? '—' : String(dash.activeClients || counts.clients || 0),
       sub:   `of ${dash.totalClients || counts.clients || 0} total`,
-      color: '#4a90d9',
+      color: '#7FA6CF',
     },
   ];
 
@@ -346,7 +308,7 @@ export default function Home() {
                   <div className={`hm-ob-check${item.done ? ' checked' : ''}`}>
                     {item.done ? <FiCheck size={12} /> : <span className="hm-ob-num">{i + 1}</span>}
                   </div>
-                  <span className="hm-ob-icon" style={{ color: item.done ? '#4caf82' : '#5a5650' }}>
+                  <span className="hm-ob-icon" style={{ color: item.done ? '#7DC39A' : '#6C776F' }}>
                     {item.icon}
                   </span>
                   <div className="hm-ob-text">
@@ -361,75 +323,6 @@ export default function Home() {
             </div>
           </section>
         )}
-
-        {/* ─── 4. UPGRADE BANNER ───────────────────────── */}
-        {!isPremium && !bannerOff && (
-          <div className="hm-banner">
-            <div className="hm-banner-left">
-              <FiStar size={15} className="hm-banner-star" />
-              <div>
-                <strong>Unlock Aurelance Premium</strong>
-                <span>Earnings Analytics · Smart Contracts · Proposal Builder · Tax Summary · AI Daily Focus</span>
-              </div>
-            </div>
-            <div className="hm-banner-right">
-              <button className="hm-banner-btn" onClick={() => navigate('/atelier')}>
-                Upgrade — $19/mo
-              </button>
-              <button className="hm-banner-close" onClick={dismissBanner} aria-label="Dismiss">✕</button>
-            </div>
-          </div>
-        )}
-
-        {/* ─── 5. AI DAILY FOCUS ───────────────────────── */}
-        <section className="hm-focus-wrap">
-          <div className="hm-focus-card">
-            <div className="hm-focus-hdr">
-              <div className="hm-focus-hdr-left">
-                <FiZap size={14} className="hm-focus-zap" />
-                <span className="hm-focus-title">AI Daily Focus</span>
-                <span className={`hm-badge${isPremium ? ' teal' : ' locked'}`}>
-                  {isPremium ? '✦ Premium' : '✦ Locked'}
-                </span>
-              </div>
-              <span className="hm-focus-date">
-                {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-              </span>
-            </div>
-
-            {!isPremium ? (
-              <div className="hm-focus-locked">
-                <FiLock size={18} />
-                <div>
-                  <strong>Premium feature</strong>
-                  <p>Get a sharp AI recommendation on exactly what to focus on today — based on your live workspace data. Which client to contact, which task to tackle first, which financial risk to address.</p>
-                </div>
-                <button className="hm-upgrade-pill" onClick={() => navigate('/atelier')}>
-                  Upgrade <FiArrowRight size={11} />
-                </button>
-              </div>
-            ) : !focusDone && !focusLoad ? (
-              <div className="hm-focus-idle">
-                <p>One click to get a sharp recommendation on what to focus on today — powered by your live data.</p>
-                <button className="hm-focus-btn" onClick={generateFocus}>
-                  <FiZap size={12} /> Generate My Focus
-                </button>
-              </div>
-            ) : focusLoad ? (
-              <div className="hm-focus-loading">
-                <Spinner size={16} color="#38bdf8" />
-                <span>Reading your workspace data…</span>
-              </div>
-            ) : (
-              <div className="hm-focus-result">
-                <p className="hm-focus-text">{focus}</p>
-                <button className="hm-focus-regen" onClick={() => { setFocusDone(false); setFocus(''); }}>
-                  <FiRefreshCw size={11} /> Regenerate
-                </button>
-              </div>
-            )}
-          </div>
-        </section>
 
         {/* ─── 6. QUICK LAUNCH ─────────────────────────── */}
         <section className="hm-section">
@@ -536,7 +429,7 @@ export default function Home() {
           </div>
           <div className="hm-ref-right">
             <div className="hm-ref-link">
-              <span>{window.location.origin}/register?ref={user?._id?.slice(-8) || 'aurelance'}</span>
+              <span>{window.location.origin}/register?ref={user?._id || ''}</span>
             </div>
             <button className="hm-ref-btn" onClick={copyLink}>
               {copied
@@ -546,37 +439,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ─── 10. UPGRADE CTA ─────────────────────────── */}
-        {!isPremium && (
-          <section className="hm-upgrade-cta">
-            <div className="hm-ucta-glow" />
-            <div className="hm-ucta-body">
-              <div className="hm-ucta-crown">✦</div>
-              <h2 className="hm-ucta-title">Unlock the full power of Aurelance</h2>
-              <p className="hm-ucta-sub">
-                Premium tools that actively help you grow — not just track.
-              </p>
-              <div className="hm-ucta-features">
-                {[
-                  { icon: <FiBarChart2 size={13} />, label: 'Earnings Analytics' },
-                  { icon: <FiShield size={13} />,    label: 'Smart Contracts'    },
-                  { icon: <FiTrendingUp size={13} />,label: 'Proposal Builder'   },
-                  { icon: <FiZap size={13} />,       label: 'AI Daily Focus'     },
-                  { icon: <FiBarChart2 size={13} />, label: 'Tax Summary'        },
-                ].map((f, i) => (
-                  <div className="hm-ucta-feat" key={i}>
-                    <span className="hm-ucta-feat-ico">{f.icon}</span>
-                    {f.label}
-                  </div>
-                ))}
-              </div>
-              <button className="hm-ucta-btn" onClick={() => navigate('/atelier')}>
-                <FiStar size={13} /> Upgrade to Premium — $19/mo
-              </button>
-              <p className="hm-ucta-note">Cancel any time · No contracts</p>
-            </div>
-          </section>
-        )}
 
       </div>
     </div>

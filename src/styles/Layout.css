@@ -1,147 +1,21 @@
-/* ============================================================
-   LAYOUT — Obsidian Luxury Theme
-   ============================================================ */
+/* App shell — fixed top bar, fixed sidebar, scrolling main. */
+.shell { min-height: 100vh; background: var(--ink-0); }
 
-/* ─────────────────────────────────────
-   Root Layout Shell
-───────────────────────────────────── */
-.layout {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  background-color: var(--bg-base);
-  background-image:
-    radial-gradient(ellipse 800px 600px at 0%   0%,   rgba(201, 168, 76, 0.05)  0%, transparent 60%),
-    radial-gradient(ellipse 600px 500px at 100% 30%,  rgba(99, 102, 241, 0.03)  0%, transparent 60%),
-    radial-gradient(ellipse 500px 400px at 40%  100%, rgba(59, 130, 246, 0.03)  0%, transparent 55%);
-  font-family: var(--font-body);
-  color: var(--text-primary);
-  position: relative;
-  overflow-x: hidden;
-}
-
-/* Grain overlay */
-.layout::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.55;
-}
-
-/* ─────────────────────────────────────
-   Inner wrapper (sits below fixed Navbar)
-───────────────────────────────────── */
-.layout-body {
-  display: flex;
-  flex: 1;
-  position: relative;
-  z-index: 1;
-  padding-top: var(--navbar-height); /* always matches the current navbar height */
-}
-
-/* ─────────────────────────────────────
-   Main Content Area
-───────────────────────────────────── */
-.layout-content {
-  flex: 1;
-  min-width: 0;
-  min-height: calc(100vh - var(--navbar-height));
-  position: relative;
-  z-index: 1;
-  padding: 36px 36px 80px;
-  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-
-  /* Desktop: sidebar is always visible — offset content */
+.shell-main {
   margin-left: var(--sidebar-width);
+  padding: calc(var(--navbar-height) + 28px) clamp(16px, 3vw, 40px) 64px;
+  min-height: 100vh;
+  min-width: 0;
 }
 
-/* ─────────────────────────────────────
-   Sidebar Overlay (mobile backdrop)
-───────────────────────────────────── */
-.layout-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  top: var(--navbar-height); /* starts below navbar */
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
-  z-index: 999;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  cursor: pointer;
-  pointer-events: none;
+.skip-link { position: absolute; left: 12px; top: -40px; z-index: 2000; padding: 8px 12px; background: var(--gilt); color: var(--on-gilt); border-radius: var(--r-control); font-weight: 600; }
+.skip-link:focus { top: 10px; color: var(--on-gilt); }
+
+.shell-scrim { display: none; }
+
+@media (max-width: 960px) {
+  .shell-main { margin-left: 0; padding-top: calc(var(--navbar-height) + 20px); }
+  .shell-open .shell-scrim { display: block; position: fixed; inset: 0; z-index: 900; background: var(--veil); }
 }
 
-.sidebar-open .layout-overlay {
-  opacity: 1;
-  pointer-events: all;
-}
-
-/* ─────────────────────────────────────
-   Page transition animation
-───────────────────────────────────── */
-.layout-content > * {
-  animation: pageReveal 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
-}
-
-@keyframes pageReveal {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* ─────────────────────────────────────
-   Scrollbar
-───────────────────────────────────── */
-.layout-content::-webkit-scrollbar { width: 5px; }
-.layout-content::-webkit-scrollbar-track { background: transparent; }
-.layout-content::-webkit-scrollbar-thumb {
-  background: rgba(201, 168, 76, 0.2);
-  border-radius: 10px;
-}
-.layout-content::-webkit-scrollbar-thumb:hover {
-  background: rgba(201, 168, 76, 0.4);
-}
-
-/* ─────────────────────────────────────
-   Collapsed sidebar variant (desktop)
-───────────────────────────────────── */
-.layout--sidebar-collapsed .layout-content {
-  margin-left: 72px;
-}
-
-/* ─────────────────────────────────────
-   Tablet (1024px)
-───────────────────────────────────── */
-@media (max-width: 1024px) {
-  .layout-content {
-    margin-left: 0; /* sidebar becomes a drawer — no content shift */
-    padding: 28px 24px 64px;
-  }
-
-  .layout-overlay {
-    display: block;
-  }
-}
-
-/* ─────────────────────────────────────
-   Mobile (768px)
-───────────────────────────────────── */
-@media (max-width: 768px) {
-  .layout-content {
-    margin-left: 0 !important; /* ensure no shift on mobile */
-    padding: 20px 16px 60px;
-  }
-}
-
-/* ─────────────────────────────────────
-   Small mobile (480px)
-───────────────────────────────────── */
-@media (max-width: 480px) {
-  .layout-content {
-    padding: 16px 12px 56px;
-  }
-}
+.auth-loading-screen { min-height: 100vh; display: grid; place-items: center; }

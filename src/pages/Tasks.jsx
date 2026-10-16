@@ -17,6 +17,7 @@ import React, {
 import { useAuth }    from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import '../styles/Tasks.css';
+import api from '../services/api';
 import {
   FiPlus, FiSearch, FiX, FiCheck, FiCheckCircle,
   FiClock, FiAlertCircle, FiCalendar, FiList,
@@ -28,29 +29,21 @@ import {
 } from 'react-icons/fi';
 
 /* ── API ───────────────────────────────────────────────────── */
-const BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-const tok  = () => localStorage.getItem('authToken');
-const hdrs = () => ({ 'Content-Type':'application/json', Authorization:`Bearer ${tok()}` });
-const api  = {
-  get:    url      => fetch(`${BASE}${url}`,  { headers:hdrs() }).then(r => r.json()),
-  post:   (url,b)  => fetch(`${BASE}${url}`,  { method:'POST',  headers:hdrs(), body:JSON.stringify(b) }).then(r => r.json()),
-  patch:  (url,b)  => fetch(`${BASE}${url}`,  { method:'PATCH', headers:hdrs(), body:JSON.stringify(b) }).then(r => r.json()),
-  delete: url      => fetch(`${BASE}${url}`,  { method:'DELETE',headers:hdrs() }).then(r => r.json()),
-};
+
 
 /* ── Constants ─────────────────────────────────────────────── */
 const STATUSES = [
-  { id:'todo',        label:'To Do',       color:'#8e8a82', bg:'rgba(142,138,130,.14)', wip: 0 },
-  { id:'in-progress', label:'In Progress', color:'#4a90d9', bg:'rgba(74,144,217,.14)',  wip: 5 },
-  { id:'review',      label:'Review',      color:'#9b72e8', bg:'rgba(155,114,232,.14)', wip: 3 },
-  { id:'done',        label:'Done',        color:'#4caf82', bg:'rgba(76,175,130,.14)',  wip: 0 },
+  { id:'todo',        label:'To Do',       color:'#A9B1A3', bg:'rgba(169,177,163,.14)', wip: 0 },
+  { id:'in-progress', label:'In Progress', color:'#7FA6CF', bg:'rgba(127,166,207,.14)',  wip: 5 },
+  { id:'review',      label:'Review',      color:'#A99BD6', bg:'rgba(169,155,214,.14)', wip: 3 },
+  { id:'done',        label:'Done',        color:'#7DC39A', bg:'rgba(125,195,154,.14)',  wip: 0 },
 ];
 
 const PRIORITIES = [
-  { id:'Low',    label:'Low',    color:'#38bdf8', icon:'↓', order:0 },
-  { id:'Medium', label:'Medium', color:'#e8a030', icon:'→', order:1 },
-  { id:'High',   label:'High',   color:'#e05c5c', icon:'↑', order:2 },
-  { id:'Urgent', label:'Urgent', color:'#c0392b', icon:'⚡', order:3 },
+  { id:'Low',    label:'Low',    color:'#79B8C9', icon:'↓', order:0 },
+  { id:'Medium', label:'Medium', color:'#E3A64B', icon:'→', order:1 },
+  { id:'High',   label:'High',   color:'#D9605A', icon:'↑', order:2 },
+  { id:'Urgent', label:'Urgent', color:'#C2524C', icon:'⚡', order:3 },
 ];
 
 const CATEGORIES = ['General','Development','Design','Marketing','Finance','Client Work','Admin','Research'];
@@ -460,11 +453,11 @@ export default function Tasks() {
       <div className="tk-stats-bar">
         {[
           { label:'Total',       val:s.tasks.length, color:'var(--text-secondary)', action:null },
-          { label:'To Do',       val:stats.todo||0,    color:'#8e8a82', action:()=>d({type:'SET_FILTER',k:'status',v:'todo'}) },
-          { label:'In Progress', val:stats.inProgress||0, color:'#4a90d9', action:()=>d({type:'SET_FILTER',k:'status',v:'in-progress'}) },
-          { label:'Review',      val:stats.review||0,  color:'#9b72e8', action:()=>d({type:'SET_FILTER',k:'status',v:'review'}) },
-          { label:'Done',        val:stats.done||0,    color:'#4caf82', action:()=>d({type:'SET_FILTER',k:'status',v:'done'}) },
-          { label:'Overdue',     val:stats.overdue||0, color:'#e05c5c', action:()=>d({type:'SET_QUICK',id:'overdue',overrides:{overdue:true}}) },
+          { label:'To Do',       val:stats.todo||0,    color:'#A9B1A3', action:()=>d({type:'SET_FILTER',k:'status',v:'todo'}) },
+          { label:'In Progress', val:stats.inProgress||0, color:'#7FA6CF', action:()=>d({type:'SET_FILTER',k:'status',v:'in-progress'}) },
+          { label:'Review',      val:stats.review||0,  color:'#A99BD6', action:()=>d({type:'SET_FILTER',k:'status',v:'review'}) },
+          { label:'Done',        val:stats.done||0,    color:'#7DC39A', action:()=>d({type:'SET_FILTER',k:'status',v:'done'}) },
+          { label:'Overdue',     val:stats.overdue||0, color:'#D9605A', action:()=>d({type:'SET_QUICK',id:'overdue',overrides:{overdue:true}}) },
           { label:'Hours Logged',val:s.stats?.time?.totalHours||'0', color:'var(--gold)', action:null, suffix:'h' },
         ].map((st,i)=>(
           <div key={i} className="tk-stat" onClick={st.action} style={{cursor:st.action?'pointer':'default'}}>
@@ -810,13 +803,13 @@ function KanbanCard({ task, isSel, isDragTarget, isTimerOn, onDragStart, onDragO
         <span className="tk-card-pri" style={{color:pri.color,background:pri.color+'14'}}>{pri.icon} {pri.label}</span>
         <span className="tk-card-cat-chip">{task.category||'General'}</span>
         {(task.deadline||task.dueDate) && (
-          <span className="tk-card-dl" style={{color:isOver?'var(--red)':dl===0?'#e8a030':'var(--text-muted)'}}>
+          <span className="tk-card-dl" style={{color:isOver?'var(--red)':dl===0?'#E3A64B':'var(--text-muted)'}}>
             <FiCalendar size={8}/>
             {isOver?`${Math.abs(dl)}d late`:dl===0?'Today':`${dl}d`}
           </span>
         )}
         {(task.trackedMinutes>0||isTimerOn) && (
-          <span className="tk-card-time" style={{color:isTimerOn?'#4caf82':'var(--text-muted)'}}>
+          <span className="tk-card-time" style={{color:isTimerOn?'#7DC39A':'var(--text-muted)'}}>
             <FiClock size={8}/>{fmtMins(task.trackedMinutes||0)}
           </span>
         )}
@@ -973,7 +966,7 @@ function ListView({ tasks, selected, dispatch, onUpdate, onDelete, onDuplicate, 
                     <td>
                       {(task.deadline||task.dueDate) ? (
                         <div className="tk-dl-cell">
-                          <span style={{fontSize:12,color:isOv?'var(--red)':dl===0?'#e8a030':'var(--text-muted)',fontWeight:600}}>
+                          <span style={{fontSize:12,color:isOv?'var(--red)':dl===0?'#E3A64B':'var(--text-muted)',fontWeight:600}}>
                             {fmtDate(task.deadline||task.dueDate)}
                           </span>
                           {isOv && <span className="tk-overdue-badge">{Math.abs(dl)}d late</span>}
@@ -1146,8 +1139,8 @@ function TimelineView({ tasks, onOpen, onUpdate }) {
                     top:  `${44+i*44}px`,
                     left: `${Math.max(0,left)}%`,
                     width:`${Math.max(w,1.5)}%`,
-                    background: over ? 'rgba(224,92,92,.25)' : sc.bg,
-                    borderColor: over ? '#e05c5c' : sc.color,
+                    background: over ? 'rgba(217,96,90,.25)' : sc.bg,
+                    borderColor: over ? '#D9605A' : sc.color,
                   }}
                   onClick={()=>onOpen(t)}
                   title={`${t.title} — Due ${fmtFull(t.deadline||t.dueDate)}`}>
@@ -1228,7 +1221,7 @@ function CalendarView({ tasks, onOpen, onNew }) {
               {d&&<span className="tk-cal-day">{d}</span>}
               {dt.slice(0,3).map(t=>(
                 <div key={t._id} className="tk-cal-task"
-                  style={{borderLeftColor:stCfg(t.status).color,background:t.status==='done'?'rgba(76,175,130,.07)':'rgba(255,255,255,.04)'}}
+                  style={{borderLeftColor:stCfg(t.status).color,background:t.status==='done'?'rgba(125,195,154,.07)':'rgba(222,232,216,.04)'}}
                   onClick={e=>{e.stopPropagation();onOpen(t);}}>
                   <span style={{color:priCfg(t.priority).color,fontSize:8,marginRight:2}}>{priCfg(t.priority).icon}</span>
                   {t.title}
@@ -1464,7 +1457,7 @@ function TaskDrawer({ task, onClose, onUpdate, onDelete, onDuplicate, onTimer, s
                   ) : (
                     <div style={{display:'flex',gap:8}}>
                       <button className="tk-tracker-start" onClick={()=>onTimer(task._id)}><FiPlay size={12}/> Start Timer</button>
-                      <button className="tk-tracker-start" onClick={()=>onTimeLog(task)} style={{background:'rgba(74,144,217,.1)',borderColor:'rgba(74,144,217,.3)',color:'#4a90d9'}}><FiEdit3 size={12}/> Log Manually</button>
+                      <button className="tk-tracker-start" onClick={()=>onTimeLog(task)} style={{background:'rgba(127,166,207,.1)',borderColor:'rgba(127,166,207,.3)',color:'#7FA6CF'}}><FiEdit3 size={12}/> Log Manually</button>
                     </div>
                   )}
                   {(task.trackedMinutes||0)>0&&(

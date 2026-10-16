@@ -108,10 +108,10 @@
   align-items:    center;
   gap:            8px;
   padding:        12px 24px;
-  background:     linear-gradient(135deg, var(--gold), #a8802a);
+  background:     linear-gradient(135deg, var(--gold), #A8833A);
   border:         1px solid var(--gold);
   border-radius:  20px;
-  color:          #0a0a0c;
+  color:          #0C1612;
   font-family:    var(--font-body);
   font-size:      13px;
   font-weight:    700;
@@ -119,14 +119,14 @@
   text-decoration:none;
   cursor:         pointer;
   transition:     all 0.2s ease;
-  box-shadow:     0 4px 16px rgba(201,168,76,.25);
+  box-shadow:     0 4px 16px rgba(207,167,90,.25);
 }
 
 .abt-btn-primary:hover {
   background:  linear-gradient(135deg, var(--gold-light), var(--gold));
   transform:   translateY(-1px);
-  box-shadow:  0 6px 24px rgba(201,168,76,.4);
-  color:       #0a0a0c;
+  box-shadow:  0 6px 24px rgba(207,167,90,.4);
+  color:       #0C1612;
 }
 
 .abt-btn-ghost {
@@ -134,7 +134,7 @@
   align-items:    center;
   gap:            8px;
   padding:        12px 24px;
-  background:     rgba(255,255,255,.04);
+  background:     rgba(222,232,216,.04);
   border:         1px solid var(--border);
   border-radius:  20px;
   color:          var(--text-secondary);
@@ -173,7 +173,7 @@
 }
 
 .abt-stat-card:hover {
-  border-color: rgba(255,255,255,.12);
+  border-color: rgba(222,232,216,.12);
   transform:    translateY(-2px);
   box-shadow:   0 8px 24px rgba(0,0,0,.5);
 }
@@ -238,7 +238,7 @@
 }
 
 .abt-card:hover {
-  border-color: rgba(255,255,255,.1);
+  border-color: rgba(222,232,216,.1);
   box-shadow:   0 8px 28px rgba(0,0,0,.5);
 }
 
@@ -289,7 +289,7 @@
 }
 
 .abt-feature-card:hover {
-  border-color: rgba(255,255,255,.1);
+  border-color: rgba(222,232,216,.1);
   transform:    translateY(-1px);
 }
 
@@ -345,7 +345,7 @@
 }
 
 .abt-team-card:hover {
-  border-color: rgba(255,255,255,.1);
+  border-color: rgba(222,232,216,.1);
   transform:    translateY(-2px);
   box-shadow:   0 8px 28px rgba(0,0,0,.5);
 }
@@ -398,7 +398,7 @@
   display:         flex;
   align-items:     center;
   justify-content: center;
-  background:      rgba(255,255,255,.04);
+  background:      rgba(222,232,216,.04);
   border:          1px solid var(--border);
   border-radius:   6px;
   color:           var(--text-muted);
@@ -430,7 +430,7 @@
   top:        8px;
   bottom:     8px;
   width:      2px;
-  background: linear-gradient(to bottom, var(--gold), rgba(201,168,76,.1));
+  background: linear-gradient(to bottom, var(--gold), rgba(207,167,90,.1));
   border-radius: 2px;
 }
 
@@ -450,7 +450,7 @@
   background: var(--gold);
   border:     2px solid var(--bg-base);
   border-radius:50%;
-  box-shadow: 0 0 8px rgba(201,168,76,.4);
+  box-shadow: 0 0 8px rgba(207,167,90,.4);
   flex-shrink:0;
 }
 
@@ -492,7 +492,7 @@
 }
 
 .abt-testimonial-card:hover {
-  border-color: rgba(255,255,255,.1);
+  border-color: rgba(222,232,216,.1);
   transform:    translateY(-2px);
 }
 
@@ -559,7 +559,7 @@
 .abt-faq-item:hover,
 .abt-faq-item.open {
   border-color: var(--border-gold);
-  background:   rgba(201,168,76,.03);
+  background:   rgba(207,167,90,.03);
 }
 
 .abt-faq-question {
@@ -612,7 +612,7 @@
 
 .abt-pricing-premium {
   border-color: var(--border-gold);
-  box-shadow:   0 0 30px rgba(201,168,76,.08);
+  box-shadow:   0 0 30px rgba(207,167,90,.08);
 }
 
 .abt-pricing-badge {
@@ -694,26 +694,26 @@
 }
 
 .abt-pricing-btn.free {
-  border-color: rgba(76,175,130,.4);
-  color:        #7fcfaa;
-  background:   rgba(76,175,130,.08);
+  border-color: rgba(125,195,154,.4);
+  color:        #A3D9B8;
+  background:   rgba(125,195,154,.08);
 }
 
 .abt-pricing-btn.free:hover {
-  background:  rgba(76,175,130,.15);
+  background:  rgba(125,195,154,.15);
   transform:   translateY(-1px);
 }
 
 .abt-pricing-btn.premium {
-  background:  linear-gradient(135deg, var(--gold), #a8802a);
+  background:  linear-gradient(135deg, var(--gold), #A8833A);
   border-color:var(--gold);
-  color:       #0a0a0c;
+  color:       #0C1612;
 }
 
 .abt-pricing-btn.premium:hover {
   background:  linear-gradient(135deg, var(--gold-light), var(--gold));
   transform:   translateY(-1px);
-  box-shadow:  0 6px 20px rgba(201,168,76,.3);
+  box-shadow:  0 6px 20px rgba(207,167,90,.3);
 }
 
 /* ── Newsletter ────────────────────────────────────────────── */
@@ -786,8 +786,8 @@
   margin:     0;
 }
 
-.abt-sub-msg.success { color: #7fcfaa; }
-.abt-sub-msg.error   { color: #e08888; }
+.abt-sub-msg.success { color: #A3D9B8; }
+.abt-sub-msg.error   { color: #E89590; }
 
 /* ── Contact ───────────────────────────────────────────────── */
 .abt-contact { border-bottom: none; }

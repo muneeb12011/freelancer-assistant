@@ -8,14 +8,9 @@ import {
 } from "react-icons/fa";
 import '../styles/Contact.css';
 
+import api from '../services/api';
 /* ── API ───────────────────────────────────────────────────── */
-const BASE    = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
-const postJSON = (url, body) =>
-  fetch(`${BASE}${url}`, {
-    method:  "POST",
-    headers: { "Content-Type": "application/json" },
-    body:    JSON.stringify(body),
-  }).then(r => r.json());
+const postJSON = (url, body) => api.post(url, body);
 
 /* ── Constants ─────────────────────────────────────────────── */
 const MAX_MSG = 2000;
@@ -38,15 +33,15 @@ const FAQS = [
   },
   {
     q: "How do I upgrade or cancel my Premium plan?",
-    a: "Plan management is in your Settings page inside the dashboard. Cancellations take effect at the end of your billing cycle — no hidden fees, no lock-in.",
+    a: "Everything about your plan is on the Billing page (sidebar → Plan & billing). Premium is prepaid and never renews automatically, so there's nothing to cancel — choose \"Don't renew\" to stop reminders and keep Premium until the period ends.",
   },
   {
     q: "Do you offer a refund?",
-    a: "Yes — we offer a 7-day money-back guarantee on all paid plans. Contact us within 7 days of payment and we'll issue a full refund, no questions asked.",
+    a: "Yes — a full refund within 7 days of your first Premium payment. Details are in the refund policy linked at the bottom of every page.",
   },
   {
     q: "Is my data secure?",
-    a: "All data is encrypted in transit (HTTPS/TLS) and at rest (MongoDB Atlas). We use JWT authentication, never store plain-text passwords, and never sell your data.",
+    a: "Data is encrypted in transit (HTTPS) and stored in MongoDB Atlas, which encrypts at rest. Passwords are stored as one-way hashes, payments are handled by Safepay, and we never sell your data.",
   },
   {
     q: "Do you offer custom or enterprise solutions?",
@@ -54,7 +49,7 @@ const FAQS = [
   },
   {
     q: "Where is Aurelance based?",
-    a: "Aurelance is a fully remote, globally distributed team. Primary support timezone is PKT (Pakistan Standard Time, UTC+5).",
+    a: "Aurelance is built and run from Lahore, Pakistan. Support hours follow Pakistan time (UTC+5).",
   },
 ];
 
@@ -281,7 +276,7 @@ const Contact = () => {
         <div className="con-info">
 
           <div className="con-info-card">
-            <div className="con-info-icon-wrap" style={{ color:"#4a90d9", background:"rgba(74,144,217,.1)", borderColor:"rgba(74,144,217,.25)" }}>
+            <div className="con-info-icon-wrap" style={{ color:"#7FA6CF", background:"rgba(127,166,207,.1)", borderColor:"rgba(127,166,207,.25)" }}>
               <FaEnvelope size={16}/>
             </div>
             <div>
@@ -294,7 +289,7 @@ const Contact = () => {
           </div>
 
           <div className="con-info-card">
-            <div className="con-info-icon-wrap" style={{ color:"#4caf82", background:"rgba(76,175,130,.1)", borderColor:"rgba(76,175,130,.25)" }}>
+            <div className="con-info-icon-wrap" style={{ color:"#7DC39A", background:"rgba(125,195,154,.1)", borderColor:"rgba(125,195,154,.25)" }}>
               <FaClock size={16}/>
             </div>
             <div>
@@ -308,7 +303,7 @@ const Contact = () => {
           </div>
 
           <div className="con-info-card">
-            <div className="con-info-icon-wrap" style={{ color:"#9b72e8", background:"rgba(155,114,232,.1)", borderColor:"rgba(155,114,232,.25)" }}>
+            <div className="con-info-icon-wrap" style={{ color:"#A99BD6", background:"rgba(169,155,214,.1)", borderColor:"rgba(169,155,214,.25)" }}>
               <FaMapMarkerAlt size={16}/>
             </div>
             <div>

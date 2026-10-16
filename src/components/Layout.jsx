@@ -1,38 +1,33 @@
-// src/components/Layout.jsx
-import React, { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+// src/components/Layout.jsx — signed-in app shell: top bar, sidebar, page outlet.
+import React, { useEffect, useState } from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
+import ErrorBoundary from './ErrorBoundary';
 import '../styles/Layout.css';
 
 const Layout = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [open, setOpen] = useState(false);
+  const { pathname } = useLocation();
 
-  const onToggleSidebar = () => setSidebarOpen((prev) => !prev);
-  const onCloseSidebar  = () => setSidebarOpen(false);
+  useEffect(() => { setOpen(false); window.scrollTo(0, 0); }, [pathname]);
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') setOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   return (
-    <div className={`layout ${sidebarOpen ? "sidebar-open" : ""}`}>
-
-      {/* ── Fixed top navbar ── */}
-      <Navbar onToggleSidebar={onToggleSidebar} />
-
-      {/* ── Fixed left sidebar ── */}
-      <Sidebar isOpen={sidebarOpen} onClose={onCloseSidebar} />
-
-      {/* ── Body: sits below navbar, offset from sidebar ── */}
-      <div className="layout-body">
-
-        {/* Mobile overlay — dims content when sidebar is open */}
-        <div className="layout-overlay" onClick={onCloseSidebar} />
-
-        {/* ── Page content ── */}
-        <main className="layout-content">
+    <div className={`shell${open ? ' shell-open' : ''}`}>
+      <a href="#main" className="skip-link">Skip to content</a>
+      <Navbar onToggleSidebar={() => setOpen((v) => !v)} sidebarOpen={open} />
+      <Sidebar isOpen={open} onClose={() => setOpen(false)} />
+      <div className="shell-scrim" onClick={() => setOpen(false)} aria-hidden="true" />
+      <main id="main" className="shell-main">
+        <ErrorBoundary resetKey={pathname}>
           <Outlet />
-        </main>
-
-      </div>
-
+        </ErrorBoundary>
+      </main>
     </div>
   );
 };

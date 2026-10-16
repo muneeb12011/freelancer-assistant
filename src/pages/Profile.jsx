@@ -33,7 +33,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
   FiEdit3, FiSave, FiX, FiCamera, FiMail, FiPhone, FiMapPin,
   FiLinkedin, FiGithub, FiTwitter, FiGlobe, FiPlus, FiTrash2,
@@ -46,29 +46,14 @@ import {
 import { useAuth } from '../context/AuthContext';
 import '../styles/Profile.css';
 
+import api, { askAI, errorMessage } from '../services/api';
+import PremiumLock from '../components/PremiumLock';
+import Badges from '../components/Badges';
 // ── API ───────────────────────────────────────────────────────
-const BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-const tok  = () => localStorage.getItem('authToken');
-const hdrs = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${tok()}` });
-const api  = {
-  get:    url      => fetch(`${BASE}${url}`, { headers: hdrs() }).then(r => r.json()),
-  patch:  (url, b) => fetch(`${BASE}${url}`, { method: 'PATCH',  headers: hdrs(), body: JSON.stringify(b) }).then(r => r.json()),
-  post:   (url, b) => fetch(`${BASE}${url}`, { method: 'POST',   headers: hdrs(), body: JSON.stringify(b) }).then(r => r.json()),
-  delete: url      => fetch(`${BASE}${url}`, { method: 'DELETE', headers: hdrs() }).then(r => r.json()),
-};
+
 
 // ── Anthropic AI ─────────────────────────────────────────────
-const askClaude = async (system, msg) => {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514', max_tokens: 900, system,
-      messages: [{ role: 'user', content: msg }],
-    }),
-  });
-  const d = await res.json();
-  return d.content?.map(b => b.text || '').join('') || '';
-};
+
 
 // ── Helpers ───────────────────────────────────────────────────
 const arr     = v  => Array.isArray(v) ? v : [];
@@ -92,9 +77,9 @@ const completeness = p => {
 
 // ── Availability config ───────────────────────────────────────
 const AVAIL = {
-  available:   { label: 'Available for work', color: '#4caf82', bg: 'rgba(76,175,130,.12)' },
-  busy:        { label: 'Busy',               color: '#e8a030', bg: 'rgba(232,160,48,.12)' },
-  unavailable: { label: 'Not available',      color: '#e05c5c', bg: 'rgba(224,92,92,.12)'  },
+  available:   { label: 'Available for work', color: '#7DC39A', bg: 'rgba(125,195,154,.12)' },
+  busy:        { label: 'Busy',               color: '#E3A64B', bg: 'rgba(227,166,75,.12)' },
+  unavailable: { label: 'Not available',      color: '#D9605A', bg: 'rgba(217,96,90,.12)'  },
 };
 
 // ── Stars ─────────────────────────────────────────────────────
@@ -102,8 +87,8 @@ const Stars = ({ rating = 0, size = 14 }) => (
   <span className="pf-stars">
     {[1,2,3,4,5].map(i => (
       <FiStar key={i} size={size}
-        style={{ fill: i <= Math.round(rating) ? '#c9a84c' : 'none',
-                 color: i <= Math.round(rating) ? '#c9a84c' : '#3a3835' }} />
+        style={{ fill: i <= Math.round(rating) ? '#CFA75A' : 'none',
+                 color: i <= Math.round(rating) ? '#CFA75A' : '#3E4B44' }} />
     ))}
   </span>
 );
@@ -118,7 +103,7 @@ const blankEdu     = () => ({ institution: '', degree: '', year: '', description
 //  MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────
 export default function Profile({ userId: propUserId }) {
-  const { user: authUser } = useAuth();
+  const { user: authUser, setUser: setAuthUser } = useAuth();
   const navigate  = useNavigate();
   const params    = useParams();
   const fileRef   = useRef(null);
@@ -192,6 +177,7 @@ export default function Profile({ userId: propUserId }) {
   // ── OTHER: connection/action state ────────────────────────
   const [isConnected,   setIsConnected]   = useState(false);
   const [connSent,      setConnSent]      = useState(false);
+  const [incomingReq,   setIncomingReq]   = useState(null); // request id when they asked to connect with me
   const [isFav,         setIsFav]         = useState(false);
   const [showChat,      setShowChat]      = useState(false);
   const [chatMsgs,      setChatMsgs]      = useState([]);
@@ -218,13 +204,14 @@ export default function Profile({ userId: propUserId }) {
           setProfile(p);
           if (isOwnProfile) {
             setDraftIdent({ name: p.name||'', title: p.title||'', hourlyRate: p.hourlyRate||'', minProject: p.minProject||'', availability: p.availability||'available' });
-            setDraftContact({ email: p.email||'', phone: p.phone||'', location: p.location||'' });
+            setDraftContact({ phone: p.phone||'', location: p.location||'' });
             setDraftSocial(p.socialLinks || {});
             setDraftBio(p.bio || '');
             if (p.notifPrefs) setNotifPrefs(p.notifPrefs);
           } else {
             setIsConnected(pr.value?.isConnected || false);
             setConnSent(pr.value?.requestSent || false);
+            setIncomingReq(pr.value?.requestReceived ? pr.value.requestId : null);
             setIsFav(pr.value?.isFavorite || false);
           }
         }
@@ -246,6 +233,7 @@ export default function Profile({ userId: propUserId }) {
     try {
       const r = await api.patch('/profile', data);
       setProfile(prev => ({ ...prev, ...(r.profile || r) }));
+      if (r.user) setAuthUser(r.user);
       showToast(msg || 'Saved.');
       return true;
     } catch { showToast('Save failed.', true); return false; }
@@ -272,8 +260,8 @@ export default function Profile({ userId: propUserId }) {
 
   // ── Copy link ─────────────────────────────────────────────
   const copyLink = () => {
-    const id = isOwnProfile ? (authUser?._id?.slice(-8) || 'me') : targetId?.slice(-8);
-    navigator.clipboard.writeText(`${window.location.origin}/u/${id}`);
+    const id = isOwnProfile ? authUser?._id : targetId;
+    navigator.clipboard.writeText(`${window.location.origin}/profile/${id}`);
     setCopied(true); setTimeout(() => setCopied(false), 2200);
   };
 
@@ -392,15 +380,26 @@ export default function Profile({ userId: propUserId }) {
   // ── AI optimizer ──────────────────────────────────────────
   const runAI = async () => {
     setAiLoad(true);
-    const ctx = 'You are a senior freelance career coach. Give 4–5 specific, actionable improvements for this freelancer profile using bullet points (•). Be direct and concrete. Max 200 words.';
     const msg = `Name: ${profile?.name}. Title: ${profile?.title||'none'}. Bio: "${profile?.bio||'none'}". Skills: ${arr(profile?.skills).join(', ')||'none'}. Services: ${arr(profile?.services).map(s=>s.title).join(', ')||'none'}. Projects: ${arr(profile?.projects).length}. Rate: ${profile?.hourlyRate?'$'+profile.hourlyRate+'/hr':'not set'}. Languages: ${arr(profile?.languages).join(', ')||'none'}. Experience: ${arr(profile?.experience).length}. Social: ${Object.entries(profile?.socialLinks||{}).filter(([,v])=>v).map(([k])=>k).join(', ')||'none'}.`;
     try {
-      setAiText(await askClaude(ctx, msg)); setAiDone(true);
-    } catch { showToast('AI request failed.', true); }
+      setAiText(await askAI('profile-review', msg)); setAiDone(true);
+    } catch (e) { showToast(errorMessage(e, 'AI request failed.'), true); }
     setAiLoad(false);
   };
 
   // ── OTHER: connection actions ─────────────────────────────
+  const acceptIncoming = async () => {
+    try {
+      const r = await api.post(`/connections/request/${incomingReq}/accept`);
+      setIsConnected(true); setIncomingReq(null);
+      showToast(`Connected with ${profile?.name}. You can message them now.`);
+      // Contact details unlock once connected.
+      const fresh = await api.get(`/profile/${targetId}`);
+      setProfile(fresh.profile);
+      return r;
+    } catch (e) { showToast(errorMessage(e, 'Could not accept.'), true); }
+  };
+
   const handleConnect = async () => {
     try {
       if (connSent) {
@@ -410,7 +409,7 @@ export default function Profile({ userId: propUserId }) {
         await api.post('/connections/request', { userId: targetId });
         setConnSent(true); showToast(`Request sent to ${profile?.name}!`);
       }
-    } catch { showToast('Action failed.', true); }
+    } catch (e) { showToast(errorMessage(e, 'Action failed.'), true); }
   };
 
   const handleToggleFav = async () => {
@@ -425,14 +424,14 @@ export default function Profile({ userId: propUserId }) {
     } catch { showToast('Action failed.', true); }
   };
 
-  const openChatWithUser = async () => {
-    setShowChat(true);
-    if (!chatMsgs.length) {
-      try {
-        const d = await api.get(`/connections/chat/${targetId}`);
-        setChatMsgs(d?.messages || []);
-      } catch { setChatMsgs([]); }
-    }
+  // Messages live in one inbox (/messages) — no separate profile chat.
+  const openChatWithUser = () => navigate(`/messages?user=${targetId}`);
+
+  // Collaboration proposals and referrals are sent as real messages.
+  const sendAsMessage = async (text) => {
+    const c = await api.post('/messages/conversations', { userId: targetId });
+    await api.post(`/messages/conversations/${c.conversation._id}/messages`, { text });
+    return c.conversation._id;
   };
 
   const sendChatMsg = async () => {
@@ -446,19 +445,19 @@ export default function Profile({ userId: propUserId }) {
   const sendCollab = async () => {
     if (!collabMsg.trim()) return;
     try {
-      await api.post('/connections/collab', { toUserId: targetId, message: collabMsg, skill: collabProject });
-      showToast(`Collaboration request sent to ${profile?.name}!`);
+      await sendAsMessage(`Collaboration proposal${collabProject ? ` — ${collabProject}` : ''}:\n\n${collabMsg.trim()}`);
+      showToast(`Sent to ${profile?.name} in Messages.`);
       setCollabModal(false); setCollabMsg(''); setCollabProject('');
-    } catch { showToast('Failed to send request.', true); }
+    } catch (e) { showToast(errorMessage(e, 'Failed to send.'), true); }
   };
 
   const sendReferral = async () => {
     if (!refMsg.trim()) return;
     try {
-      await api.post('/connections/referral', { toUserId: targetId, message: refMsg });
-      showToast(`Referral sent to ${profile?.name}!`);
+      await sendAsMessage(`Client referral:\n\n${refMsg.trim()}`);
+      showToast(`Referral sent to ${profile?.name} in Messages.`);
       setReferralModal(false); setRefMsg('');
-    } catch { showToast('Failed to send referral.', true); }
+    } catch (e) { showToast(errorMessage(e, 'Failed to send referral.'), true); }
   };
 
   // ── Computed ──────────────────────────────────────────────
@@ -480,7 +479,7 @@ export default function Profile({ userId: propUserId }) {
   if (!profile) return (
     <div className="pf-root">
       <div className="pf-loading">
-        <FiAlertCircle size={26} style={{ color: '#e05c5c' }}/>
+        <FiAlertCircle size={26} style={{ color: '#D9605A' }}/>
         <span>Failed to load profile.</span>
       </div>
     </div>
@@ -528,7 +527,7 @@ export default function Profile({ userId: propUserId }) {
 
             {!editIdent ? (
               <div className="pf-id-info">
-                <h1 className="pf-name">{profile.name || 'Freelancer'}</h1>
+                <h1 className="pf-name">{profile.name || 'Freelancer'}<Badges badges={profile.badges} size={18} /></h1>
                 {profile.title && <p className="pf-title-line">{profile.title}</p>}
                 {profile.location && (
                   <p className="pf-location-line">
@@ -601,10 +600,10 @@ export default function Profile({ userId: propUserId }) {
               <div className="pf-completeness">
                 <div className="pf-comp-row">
                   <span>Profile strength</span>
-                  <span style={{ color: score >= 80 ? '#4caf82' : score >= 50 ? '#e8a030' : '#e05c5c', fontWeight: 700 }}>{score}%</span>
+                  <span style={{ color: score >= 80 ? '#7DC39A' : score >= 50 ? '#E3A64B' : '#D9605A', fontWeight: 700 }}>{score}%</span>
                 </div>
                 <div className="pf-comp-track">
-                  <div className="pf-comp-fill" style={{ width: `${score}%`, background: score >= 80 ? '#4caf82' : score >= 50 ? '#e8a030' : '#e05c5c' }}/>
+                  <div className="pf-comp-fill" style={{ width: `${score}%`, background: score >= 80 ? '#7DC39A' : score >= 50 ? '#E3A64B' : '#D9605A' }}/>
                 </div>
               </div>
             )}
@@ -617,9 +616,14 @@ export default function Profile({ userId: propUserId }) {
             {/* OTHER USER: action buttons */}
             {!isOwnProfile && (
               <div className="pf-other-actions">
+                <button className="pf-action-btn pf-action-connected" onClick={() => openChatWithUser()}>
+                  <FiMessageSquare size={14}/> Message
+                </button>
                 {isConnected ? (
-                  <button className="pf-action-btn pf-action-connected" onClick={() => openChatWithUser()}>
-                    <FiMessageSquare size={14}/> Message
+                  <span className="pf-action-btn pf-action-sent"><FiCheck size={14}/> Connected</span>
+                ) : incomingReq ? (
+                  <button className="pf-action-btn pf-action-connect" onClick={acceptIncoming}>
+                    <FiCheck size={14}/> Accept request
                   </button>
                 ) : connSent ? (
                   <button className="pf-action-btn pf-action-sent" onClick={handleConnect}>
@@ -630,9 +634,6 @@ export default function Profile({ userId: propUserId }) {
                     <FiUserPlus size={14}/> Connect
                   </button>
                 )}
-                <button className={`pf-action-btn pf-action-fav${isFav ? ' active' : ''}`} onClick={handleToggleFav}>
-                  {isFav ? '★' : '☆'} {isFav ? 'Favorited' : 'Favorite'}
-                </button>
                 <button className="pf-action-btn pf-action-collab" onClick={() => setCollabModal(true)}>
                   <FiCode size={14}/> Collaborate
                 </button>
@@ -665,13 +666,13 @@ export default function Profile({ userId: propUserId }) {
                     <Icon size={13} className="pf-ci"/>
                     {k === 'email' && v && !isOwnProfile
                       ? <a href={`mailto:${v}`} className="pf-contact-link">{v}</a>
-                      : <span>{v || <em>Not set</em>}</span>}
+                      : <span>{v || <em>{!isOwnProfile && !isConnected && k !== 'location' ? 'Shared once you connect' : 'Not set'}</em>}</span>}
                   </div>
                 ))}
               </div>
             ) : (
               <div className="pf-form-stack">
-                {[['email','Email','email'], ['phone','Phone','tel'], ['location','Location','text']].map(([k,l,t]) => (
+                {[['phone','Phone','tel'], ['location','Location','text']].map(([k,l,t]) => (
                   <div className="pf-field" key={k}>
                     <label>{l}</label>
                     <input type={t} value={draftContact[k]||''} onChange={e => setDraftContact(d => ({ ...d, [k]: e.target.value }))}/>
@@ -696,9 +697,9 @@ export default function Profile({ userId: propUserId }) {
               <div className="pf-social-rows">
                 {[
                   { k: 'linkedin', I: FiLinkedin, c: '#0a66c2', label: 'LinkedIn' },
-                  { k: 'github',   I: FiGithub,   c: '#c4bfb6', label: 'GitHub'   },
+                  { k: 'github',   I: FiGithub,   c: '#C9CBBF', label: 'GitHub'   },
                   { k: 'twitter',  I: FiTwitter,  c: '#1d9bf0', label: 'Twitter'  },
-                  { k: 'website',  I: FiGlobe,    c: '#9b72e8', label: 'Website'  },
+                  { k: 'website',  I: FiGlobe,    c: '#A99BD6', label: 'Website'  },
                 ].map(({ k, I, c, label }) => {
                   const v = profile.socialLinks?.[k];
                   return (
@@ -741,7 +742,7 @@ export default function Profile({ userId: propUserId }) {
               { id: 'overview',  label: 'Overview',  icon: <FiUser size={14}/> },
               { id: 'portfolio', label: 'Portfolio',  icon: <FiBriefcase size={14}/> },
               { id: 'reviews',   label: 'Reviews',   icon: <FiStar size={14}/>, badge: reviews.length },
-              ...(isOwnProfile ? [{ id: 'account', label: 'Account', icon: <FiShield size={14}/> }] : []),
+              ...(isOwnProfile ? [{ id: 'account', label: 'AI review', icon: <FiShield size={14}/> }] : []),
             ].map(t => (
               <button key={t.id} className={`pf-tab${activeTab === t.id ? ' active' : ''}`} onClick={() => setActiveTab(t.id)}>
                 {t.icon} {t.label}
@@ -987,7 +988,7 @@ export default function Profile({ userId: propUserId }) {
                 </div>
                 {!reviews.length ? (
                   <div className="pf-reviews-empty">
-                    <FiStar size={32} style={{ color: '#3a3835', marginBottom: 10 }}/>
+                    <FiStar size={32} style={{ color: '#3E4B44', marginBottom: 10 }}/>
                     <strong>No reviews yet</strong>
                     <p>Reviews will appear here once clients leave feedback on completed projects.</p>
                   </div>
@@ -1021,71 +1022,18 @@ export default function Profile({ userId: propUserId }) {
           {activeTab === 'account' && isOwnProfile && (
             <div className="pf-tab-body">
 
-              {/* Password */}
-              <div className="pf-card">
-                <div className="pf-card-hdr"><h2>Change Password</h2></div>
-                <form className="pf-pw-form" onSubmit={changePassword}>
-                  {[
-                    ['current', 'Current Password'],
-                    ['next',    'New Password'],
-                    ['confirm', 'Confirm New Password'],
-                  ].map(([k, l]) => (
-                    <div className="pf-field pf-pw-field" key={k}>
-                      <label>{l}</label>
-                      <div className="pf-pw-wrap">
-                        <input type={pwShow[k] ? 'text' : 'password'} value={pwForm[k]}
-                          onChange={e => setPwForm(f => ({ ...f, [k]: e.target.value }))} required
-                          placeholder={k === 'current' ? 'Your current password' : 'Min 8 characters'}/>
-                        <button type="button" className="pf-pw-eye" onClick={() => setPwShow(s => ({ ...s, [k]: !s[k] }))}>
-                          {pwShow[k] ? <FiEyeOff size={14}/> : <FiEye size={14}/>}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                  <button type="submit" className="pf-btn-save" disabled={pwSaving} style={{ marginTop: 8 }}>
-                    {pwSaving ? 'Changing…' : 'Change Password'}
-                  </button>
-                </form>
-              </div>
-
-              {/* Notifications */}
-              <div className="pf-card">
-                <div className="pf-card-hdr"><h2>Notification Preferences</h2></div>
-                <div className="pf-notif-list">
-                  {[
-                    ['email',       'Email notifications',  'Receive weekly digest and important alerts'],
-                    ['tasks',       'Task reminders',       'Get notified when tasks are due soon'],
-                    ['invoices',    'Invoice alerts',       'Alerts for overdue invoices and payments'],
-                    ['connections', 'Connection requests',  'When someone wants to connect with you'],
-                  ].map(([k, title, desc]) => (
-                    <div className="pf-notif-row" key={k}>
-                      <div>
-                        <span className="pf-notif-title">{title}</span>
-                        <span className="pf-notif-desc">{desc}</span>
-                      </div>
-                      <button className={`pf-toggle${notifPrefs[k] ? ' on' : ''}`} onClick={() => toggleNotif(k)}>
-                        <span className="pf-toggle-thumb"/>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <p className="pf-settings-note">
+                Password, sign-in security and email notifications are in <Link to="/settings">Settings</Link>.
+              </p>
 
               {/* AI optimizer */}
               <div className="pf-card pf-ai-card">
                 <div className="pf-card-hdr">
-                  <h2><FiZap size={14} style={{ marginRight: 7, color: '#38bdf8' }}/> AI Profile Optimizer</h2>
-                  <span className={`pf-badge-chip ${isPremium ? 'teal' : 'locked'}`}>{isPremium ? '✦ Premium' : '✦ Locked'}</span>
+                  <h2><FiZap size={14} style={{ marginRight: 7, color: '#79B8C9' }}/> AI Profile Optimizer</h2>
+                  {!isPremium && <PremiumLock inline feature="AI profile review" />}
                 </div>
                 {!isPremium ? (
-                  <div className="pf-ai-lock">
-                    <FiLock size={18}/>
-                    <div>
-                      <strong>Premium feature</strong>
-                      <p>Get personalised AI analysis of your profile with actionable improvements to attract better clients.</p>
-                    </div>
-                    <button className="pf-upgrade-btn" onClick={() => navigate('/settings')}>Upgrade →</button>
-                  </div>
+                  <PremiumLock feature="AI profile review" description="Concrete suggestions on your bio, services, rate and portfolio to win better clients." />
                 ) : !aiDone && !aiLoad ? (
                   <div className="pf-ai-idle">
                     <p>AI analyses your full profile — bio, skills, services, projects, rate — and gives you concrete improvements.</p>
@@ -1106,12 +1054,6 @@ export default function Profile({ userId: propUserId }) {
                 )}
               </div>
 
-              {/* Danger zone */}
-              <div className="pf-card pf-danger-card">
-                <div className="pf-card-hdr"><h2>Danger Zone</h2></div>
-                <p className="pf-danger-txt">Permanently delete your account and all associated data. This action cannot be undone.</p>
-                <button className="pf-danger-btn" onClick={() => navigate('/settings?tab=danger')}>Delete Account</button>
-              </div>
             </div>
           )}
         </main>

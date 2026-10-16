@@ -32,31 +32,12 @@ import {
 import { useAuth }    from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
+import api, { askAI, errorMessage } from '../services/api';
+import PremiumLock from '../components/PremiumLock';
 /* ── API ───────────────────────────────────────────────────── */
-const BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-const tok  = () => localStorage.getItem('authToken');
-const hdrs = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${tok()}` });
-const api  = {
-  get:    url      => fetch(`${BASE}${url}`,  { headers: hdrs() }).then(r => r.json()),
-  post:   (url, b) => fetch(`${BASE}${url}`,  { method: 'POST',  headers: hdrs(), body: JSON.stringify(b) }).then(r => r.json()),
-  patch:  (url, b) => fetch(`${BASE}${url}`,  { method: 'PATCH', headers: hdrs(), body: JSON.stringify(b) }).then(r => r.json()),
-  delete: url      => fetch(`${BASE}${url}`,  { method: 'DELETE', headers: hdrs() }).then(r => r.json()),
-};
 
-/* ── Anthropic ─────────────────────────────────────────────── */
-const askClaude = async (system, userMsg, history = []) => {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model:    'claude-sonnet-4-20250514',
-      max_tokens: 1000,
-      system,
-      messages: [...history, { role: 'user', content: userMsg }],
-    }),
-  });
-  const d = await res.json();
-  return d.content?.map(b => b.text || '').join('') || '';
-};
+
+
 
 /* ── Auth HOC ──────────────────────────────────────────────── */
 const withAuth = C => props => {
@@ -113,14 +94,14 @@ const normalizeStats = d => {
 };
 
 /* ── Spinner (replaces CircularProgress) ───────────────────── */
-const Spinner = ({ size = 18, color = '#c9a84c' }) => (
+const Spinner = ({ size = 18, color = '#CFA75A' }) => (
   <div className="db-spinner" style={{ width: size, height: size, borderTopColor: color }}/>
 );
 
 /* ── Skeleton shimmer ──────────────────────────────────────── */
 const Sk = ({ h = 10, w = '80%', mb = 8, br = 6 }) => (
   <div style={{ height: h, width: w, borderRadius: br, marginBottom: mb,
-    background: 'linear-gradient(90deg,#14141a 25%,#1c1c24 50%,#14141a 75%)',
+    background: 'linear-gradient(90deg,#13201B 25%,#1B2A24 50%,#13201B 75%)',
     backgroundSize: '400px 100%', animation: 'db-shimmer 1.4s infinite' }}/>
 );
 const Skel = ({ n = 4 }) => (
@@ -142,14 +123,7 @@ const Empty = ({ icon, title, msg, action, onAction }) => (
 );
 
 /* ── Premium gate ──────────────────────────────────────────── */
-const PremiumGate = ({ feature, description, onUpgrade }) => (
-  <div className="premium-gate">
-    <div className="pg-icon"><FiLock size={22}/></div>
-    <strong className="pg-title">Premium Feature</strong>
-    <p className="pg-desc">{description || `${feature} is available on the Premium plan.`}</p>
-    <button className="pg-btn" onClick={() => onUpgrade?.('/atelier')}>Upgrade to Premium</button>
-  </div>
-);
+const PremiumGate = ({ feature, description }) => <PremiumLock feature={feature} description={description} />;
 
 /* ── Toast ─────────────────────────────────────────────────── */
 const Toast = ({ msg, onClose }) => msg ? (
@@ -191,26 +165,26 @@ const KPIStrip = ({ stats: s, loading }) => {
   const kpis = [
     { label:'Active Clients',   v: s.activeClients,
       sub: `${s.totalClients} total · ${s.newClients} new this month`,
-      up:  s.activeClients > 0, icon:<FiUsers size={16}/>, c:'#4a90d9' },
+      up:  s.activeClients > 0, icon:<FiUsers size={16}/>, c:'#7FA6CF' },
     { label:'Revenue · Month',  v: fmt$(s.monthRevenue),
       sub: s.revenueChange != null
         ? `${s.revenueChange >= 0 ? '↑' : '↓'} ${Math.abs(s.revenueChange)}% vs last month`
         : 'From paid invoices',
-      up:  (s.revenueChange || 0) >= 0, icon:<FiDollarSign size={16}/>, c:'#c9a84c' },
+      up:  (s.revenueChange || 0) >= 0, icon:<FiDollarSign size={16}/>, c:'#CFA75A' },
     { label:'Avg Project Value', v: fmt$(s.avgProjectValue),
       sub: 'Per active client',
-      up:  s.avgProjectValue > 0, icon:<FiCreditCard size={16}/>, c:'#9b72e8' },
+      up:  s.avgProjectValue > 0, icon:<FiCreditCard size={16}/>, c:'#A99BD6' },
     { label:'Collection Rate',   v: s.collectionRate != null ? `${s.collectionRate}%` : '—',
       sub: s.collectionRate == null ? 'No invoices yet'
          : s.collectionRate >= 80 ? 'Healthy' : 'Needs attention',
       up:  s.collectionRate == null || s.collectionRate >= 80,
-      icon:<FiPercent size={16}/>, c:'#4caf82' },
+      icon:<FiPercent size={16}/>, c:'#7DC39A' },
     { label:'Overdue',           v: fmt$(s.overdueRevenue),
       sub: s.overdueCount > 0 ? `${s.overdueCount} invoice${s.overdueCount > 1 ? 's' : ''}` : 'Nothing overdue',
-      up:  s.overdueCount === 0, icon:<FiAlertCircle size={16}/>, c:'#e05c5c' },
+      up:  s.overdueCount === 0, icon:<FiAlertCircle size={16}/>, c:'#D9605A' },
     { label:'Productivity',      v: s.productivityScore > 0 ? `${s.productivityScore}%` : '—',
       sub: `${s.completedTasks} done · ${s.tasksPending} pending`,
-      up:  s.productivityScore >= 70, icon:<FiTarget size={16}/>, c:'#38bdf8' },
+      up:  s.productivityScore >= 70, icon:<FiTarget size={16}/>, c:'#79B8C9' },
   ];
 
   return (
@@ -233,13 +207,13 @@ const KPIStrip = ({ stats: s, loading }) => {
 /* ── Quick Nav ─────────────────────────────────────────────── */
 const QuickNav = ({ navigate }) => {
   const pills = [
-    { label:'+ Client',  path:'/clients',     c:'#4a90d9' },
-    { label:'+ Invoice', path:'/invoices',    c:'#c9a84c' },
-    { label:'+ Task',    path:'/tasks',       c:'#4caf82' },
-    { label:'Atelier',   path:'/atelier',     c:'#9b72e8' },
-    { label:'Network',   path:'/connections', c:'#38bdf8' },
-    { label:'Profile',   path:'/profile',     c:'#e8a030' },
-    { label:'Settings',  path:'/settings',    c:'#8e8a82' },
+    { label:'+ Client',  path:'/clients',     c:'#7FA6CF' },
+    { label:'+ Invoice', path:'/invoices',    c:'#CFA75A' },
+    { label:'+ Task',    path:'/tasks',       c:'#7DC39A' },
+    { label:'Atelier',   path:'/atelier',     c:'#A99BD6' },
+    { label:'Network',   path:'/connections', c:'#79B8C9' },
+    { label:'Profile',   path:'/profile',     c:'#E3A64B' },
+    { label:'Settings',  path:'/settings',    c:'#A9B1A3' },
   ];
   return (
     <div className="quick-nav">
@@ -265,18 +239,18 @@ const FinancialHealth = ({ stats: s, loading, navigate }) => {
         <div className="fin-title-col">
           <span className="fin-title">Financial Health</span>
           {s.revenueChange != null && (
-            <span className="fin-trend" style={{ color: s.revenueChange >= 0 ? '#4caf82' : '#e05c5c' }}>
+            <span className="fin-trend" style={{ color: s.revenueChange >= 0 ? '#7DC39A' : '#D9605A' }}>
               {s.revenueChange >= 0 ? '↑' : '↓'} {Math.abs(s.revenueChange)}% vs last month
             </span>
           )}
         </div>
         <div className="fin-nums">
           {[
-            { label: 'This Month', val: fmt$(s.monthRevenue),   color: '#c9a84c' },
-            { label: 'Unpaid',     val: fmt$(s.pendingRevenue), color: s.pendingRevenue > 0 ? '#e8a030' : '#4caf82' },
-            { label: 'Overdue',    val: fmt$(s.overdueRevenue), color: s.overdueRevenue > 0 ? '#e05c5c' : '#4caf82' },
-            { label: 'Net Profit', val: fmt$(s.netProfit),      color: s.netProfit >= 0 ? '#4caf82' : '#e05c5c' },
-            { label: 'All-Time',   val: fmt$(s.totalRevenue),   color: '#f0ece4' },
+            { label: 'This Month', val: fmt$(s.monthRevenue),   color: '#CFA75A' },
+            { label: 'Unpaid',     val: fmt$(s.pendingRevenue), color: s.pendingRevenue > 0 ? '#E3A64B' : '#7DC39A' },
+            { label: 'Overdue',    val: fmt$(s.overdueRevenue), color: s.overdueRevenue > 0 ? '#D9605A' : '#7DC39A' },
+            { label: 'Net Profit', val: fmt$(s.netProfit),      color: s.netProfit >= 0 ? '#7DC39A' : '#D9605A' },
+            { label: 'All-Time',   val: fmt$(s.totalRevenue),   color: '#ECE7D9' },
           ].map((n, i) => (
             <div className="fin-num" key={i}>
               <span className="fn-label">{n.label}</span>
@@ -317,7 +291,7 @@ const RevenueChart = ({ data, loading }) => {
   return (
     <div className="db-card revenue-overview">
       <div className="section-hdr">
-        <h4 className="db-card-title"><FiTrendingUp style={{ color:'#c9a84c', marginRight:8 }}/>Revenue vs Expenses</h4>
+        <h4 className="db-card-title"><FiTrendingUp style={{ color:'#CFA75A', marginRight:8 }}/>Revenue vs Expenses</h4>
         <span className="db-badge gold">6 Months</span>
       </div>
       {!hasData ? (
@@ -325,7 +299,7 @@ const RevenueChart = ({ data, loading }) => {
       ) : (
         <>
           <div className="rev-row">
-            {[['Revenue', fmt$(totRev), '#c9a84c'], ['Expenses', fmt$(totExp), '#9b72e8'], ['Net', fmt$(net), net >= 0 ? '#4caf82' : '#e05c5c']].map(([l, v, c], i) => (
+            {[['Revenue', fmt$(totRev), '#CFA75A'], ['Expenses', fmt$(totExp), '#A99BD6'], ['Net', fmt$(net), net >= 0 ? '#7DC39A' : '#D9605A']].map(([l, v, c], i) => (
               <div className="rev-block" key={i}>
                 <span className="rb-label">{l}</span>
                 <span className="rb-val" style={{ color: c }}>{v}</span>
@@ -337,27 +311,27 @@ const RevenueChart = ({ data, loading }) => {
               <AreaChart data={safe} margin={{ top:6, right:10, left:-14, bottom:0 }}>
                 <defs>
                   <linearGradient id="gR" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor="#c9a84c" stopOpacity={0.28}/>
-                    <stop offset="95%" stopColor="#c9a84c" stopOpacity={0}/>
+                    <stop offset="5%"  stopColor="#CFA75A" stopOpacity={0.28}/>
+                    <stop offset="95%" stopColor="#CFA75A" stopOpacity={0}/>
                   </linearGradient>
                   <linearGradient id="gE" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor="#9b72e8" stopOpacity={0.2}/>
-                    <stop offset="95%" stopColor="#9b72e8" stopOpacity={0}/>
+                    <stop offset="5%"  stopColor="#A99BD6" stopOpacity={0.2}/>
+                    <stop offset="95%" stopColor="#A99BD6" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid stroke="rgba(255,255,255,0.035)" vertical={false}/>
-                <XAxis dataKey="month" stroke="#3a3835" tick={{ fill:'#5a5650', fontSize:10 }} tickLine={false} axisLine={false}/>
-                <YAxis stroke="#3a3835" tick={{ fill:'#5a5650', fontSize:10 }} tickLine={false} axisLine={false}/>
-                <RTooltip contentStyle={{ background:'#17171d', border:'1px solid rgba(201,168,76,0.25)', borderRadius:10, fontFamily:'DM Sans', fontSize:12 }}
-                  itemStyle={{ color:'#e8c97a' }} formatter={v => [fmt$(v)]}/>
-                <Area type="monotone" dataKey="revenue"  stroke="#c9a84c" strokeWidth={2}   fill="url(#gR)" dot={{ r:3, fill:'#c9a84c', stroke:'#0a0a0c', strokeWidth:2 }}/>
-                <Area type="monotone" dataKey="expenses" stroke="#9b72e8" strokeWidth={1.5} fill="url(#gE)" dot={{ r:2.5, fill:'#9b72e8', stroke:'#0a0a0c', strokeWidth:2 }}/>
+                <CartesianGrid stroke="rgba(222,232,216,0.035)" vertical={false}/>
+                <XAxis dataKey="month" stroke="#3E4B44" tick={{ fill:'#6C776F', fontSize:10 }} tickLine={false} axisLine={false}/>
+                <YAxis stroke="#3E4B44" tick={{ fill:'#6C776F', fontSize:10 }} tickLine={false} axisLine={false}/>
+                <RTooltip contentStyle={{ background:'#15231D', border:'1px solid rgba(207,167,90,0.25)', borderRadius:10, fontFamily:'var(--sans)', fontSize:12 }}
+                  itemStyle={{ color:'#E6C98D' }} formatter={v => [fmt$(v)]}/>
+                <Area type="monotone" dataKey="revenue"  stroke="#CFA75A" strokeWidth={2}   fill="url(#gR)" dot={{ r:3, fill:'#CFA75A', stroke:'#0C1612', strokeWidth:2 }}/>
+                <Area type="monotone" dataKey="expenses" stroke="#A99BD6" strokeWidth={1.5} fill="url(#gE)" dot={{ r:2.5, fill:'#A99BD6', stroke:'#0C1612', strokeWidth:2 }}/>
               </AreaChart>
             </ResponsiveContainer>
           </div>
           <div className="chart-legend">
-            <span><span className="cl-dot" style={{ background:'#c9a84c' }}/>Revenue</span>
-            <span><span className="cl-dot" style={{ background:'#9b72e8' }}/>Expenses</span>
+            <span><span className="cl-dot" style={{ background:'#CFA75A' }}/>Revenue</span>
+            <span><span className="cl-dot" style={{ background:'#A99BD6' }}/>Expenses</span>
           </div>
         </>
       )}
@@ -370,16 +344,16 @@ const ClientSnapshot = ({ clients, loading, navigate }) => {
   if (loading) return <div className="db-card client-distribution"><Skel/></div>;
   const safe   = arr(clients);
   const slices = [
-    { name:'Active',      value: safe.filter(c => c.status === 'Active').length,      color:'#4a90d9' },
-    { name:'In Progress', value: safe.filter(c => c.status === 'In Progress').length,  color:'#e8a030' },
-    { name:'Completed',   value: safe.filter(c => c.status === 'Completed').length,    color:'#4caf82' },
-    { name:'On Hold',     value: safe.filter(c => c.status === 'On Hold').length,      color:'#4a4843' },
+    { name:'Active',      value: safe.filter(c => c.status === 'Active').length,      color:'#7FA6CF' },
+    { name:'In Progress', value: safe.filter(c => c.status === 'In Progress').length,  color:'#E3A64B' },
+    { name:'Completed',   value: safe.filter(c => c.status === 'Completed').length,    color:'#7DC39A' },
+    { name:'On Hold',     value: safe.filter(c => c.status === 'On Hold').length,      color:'#5F6B63' },
   ].filter(d => d.value > 0);
   const total = slices.reduce((s, d) => s + d.value, 0);
   return (
     <div className="db-card client-distribution">
       <div className="section-hdr">
-        <h4 className="db-card-title"><FiAward style={{ color:'#4caf82', marginRight:8 }}/>Clients</h4>
+        <h4 className="db-card-title"><FiAward style={{ color:'#7DC39A', marginRight:8 }}/>Clients</h4>
         <button className="db-link-btn" onClick={() => navigate('/clients')}>All <FiExternalLink size={11}/></button>
       </div>
       {!total ? (
@@ -394,7 +368,7 @@ const ClientSnapshot = ({ clients, loading, navigate }) => {
                   paddingAngle={3} dataKey="value" startAngle={90} endAngle={-270}>
                   {slices.map((e, i) => <Cell key={i} fill={e.color} stroke="transparent"/>)}
                 </Pie>
-                <RTooltip contentStyle={{ background:'#17171d', border:'1px solid rgba(201,168,76,0.25)', borderRadius:8, fontFamily:'DM Sans', fontSize:12 }} itemStyle={{ color:'#e8c97a' }}/>
+                <RTooltip contentStyle={{ background:'#15231D', border:'1px solid rgba(207,167,90,0.25)', borderRadius:8, fontFamily:'var(--sans)', fontSize:12 }} itemStyle={{ color:'#E6C98D' }}/>
               </PieChart>
             </ResponsiveContainer>
             <div className="donut-center">
@@ -433,11 +407,11 @@ class UpcomingTasks extends React.Component {
   render() {
     const { tasks, loading } = this.state;
     const { navigate } = this.props;
-    const pc = { High: '#e05c5c', Medium: '#e8a030', Low: '#4caf82' };
+    const pc = { High: '#D9605A', Medium: '#E3A64B', Low: '#7DC39A' };
     return (
       <div className="db-card upcoming-tasks">
         <div className="section-hdr">
-          <h4 className="db-card-title"><FiCheckCircle style={{ color:'#4caf82', marginRight:8 }}/>Upcoming Tasks</h4>
+          <h4 className="db-card-title"><FiCheckCircle style={{ color:'#7DC39A', marginRight:8 }}/>Upcoming Tasks</h4>
           <button className="db-link-btn" onClick={() => navigate('/tasks')}>All <FiExternalLink size={11}/></button>
         </div>
         {loading ? <Skel/> : !tasks.length ? (
@@ -456,8 +430,8 @@ class UpcomingTasks extends React.Component {
                   <div className="task-info">
                     <span className="task-name">{t.title || t.name}</span>
                     <div className="task-meta">
-                      {t.priority && <span className="task-pri" style={{ color: pc[t.priority] || '#8e8a82', background: `${pc[t.priority] || '#8e8a82'}12` }}>{t.priority}</span>}
-                      {t.deadline && <span className="task-due" style={{ color: over ? '#e05c5c' : left <= 2 ? '#e8a030' : '#5a5650' }}>
+                      {t.priority && <span className="task-pri" style={{ color: pc[t.priority] || '#A9B1A3', background: `${pc[t.priority] || '#A9B1A3'}12` }}>{t.priority}</span>}
+                      {t.deadline && <span className="task-due" style={{ color: over ? '#D9605A' : left <= 2 ? '#E3A64B' : '#6C776F' }}>
                         <FiCalendar size={9}/>{over ? `${Math.abs(left)}d overdue` : left === 0 ? 'Today' : `${left}d`}
                       </span>}
                     </div>
@@ -488,12 +462,12 @@ class OverdueAlerts extends React.Component {
           type: 'invoice', id: inv._id,
           title: `Invoice #${inv.invoiceNumber || inv._id?.slice(-5)} — ${inv.clientName || 'Client'}`,
           sub:   `${fmt$(inv.total || 0)} · Due ${fmtDate(inv.dueDate)}`,
-          color: '#e8a030', icon: <FiFileText size={13}/>, path: '/invoices',
+          color: '#E3A64B', icon: <FiFileText size={13}/>, path: '/invoices',
         })),
         ...tasks.map(t => ({
           type: 'task', id: t._id, title: t.title || t.name,
           sub:   `${t.priority || '—'} · ${t.deadline ? Math.abs(dLeft(t.deadline)) + 'd overdue' : 'Past due'}`,
-          color: '#e05c5c', icon: <FiCheckCircle size={13}/>, path: '/tasks',
+          color: '#D9605A', icon: <FiCheckCircle size={13}/>, path: '/tasks',
         })),
       ];
       this.setState({ items, loading: false });
@@ -505,7 +479,7 @@ class OverdueAlerts extends React.Component {
     return (
       <div className="db-card overdue-alerts">
         <div className="section-hdr">
-          <h4 className="db-card-title"><FiAlertCircle style={{ color:'#e05c5c', marginRight:8 }}/>Overdue</h4>
+          <h4 className="db-card-title"><FiAlertCircle style={{ color:'#D9605A', marginRight:8 }}/>Overdue</h4>
           {items.length > 0
             ? <span className="overdue-badge">{items.length} item{items.length !== 1 ? 's' : ''}</span>
             : <span className="db-badge green">All Clear ✓</span>}
@@ -548,7 +522,7 @@ const ProductivityChart = ({ data, loading }) => {
   return (
     <div className="db-card chart-section">
       <div className="section-hdr">
-        <h4 className="db-card-title"><FiBarChart2 style={{ color:'#4a90d9', marginRight:8 }}/>Productivity</h4>
+        <h4 className="db-card-title"><FiBarChart2 style={{ color:'#7FA6CF', marginRight:8 }}/>Productivity</h4>
         {hasData && <span className="db-badge blue">Avg {avg}% · {totalDone} done</span>}
       </div>
       {!hasData ? (
@@ -558,22 +532,22 @@ const ProductivityChart = ({ data, loading }) => {
           <div style={{ height: 200, marginTop: 8 }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={safe} margin={{ top:6, right:10, left:-14, bottom:0 }}>
-                <CartesianGrid stroke="rgba(255,255,255,0.035)" vertical={false}/>
-                <XAxis dataKey="name" stroke="#3a3835" tick={{ fill:'#5a5650', fontSize:10 }} tickLine={false} axisLine={false}/>
-                <YAxis stroke="#3a3835" tick={{ fill:'#5a5650', fontSize:10 }} domain={[0, 100]} tickLine={false} axisLine={false}/>
-                <RTooltip contentStyle={{ background:'#17171d', border:'1px solid rgba(201,168,76,0.25)', borderRadius:10, fontFamily:'DM Sans', fontSize:12 }}
-                  itemStyle={{ color:'#e8c97a' }}
+                <CartesianGrid stroke="rgba(222,232,216,0.035)" vertical={false}/>
+                <XAxis dataKey="name" stroke="#3E4B44" tick={{ fill:'#6C776F', fontSize:10 }} tickLine={false} axisLine={false}/>
+                <YAxis stroke="#3E4B44" tick={{ fill:'#6C776F', fontSize:10 }} domain={[0, 100]} tickLine={false} axisLine={false}/>
+                <RTooltip contentStyle={{ background:'#15231D', border:'1px solid rgba(207,167,90,0.25)', borderRadius:10, fontFamily:'var(--sans)', fontSize:12 }}
+                  itemStyle={{ color:'#E6C98D' }}
                   formatter={(v, name) => name === 'productivity' ? [`${v}%`, 'Completion Rate'] : [v, name]}/>
                 <Bar dataKey="productivity" radius={[5,5,0,0]} maxBarSize={44} name="productivity">
-                  {safe.map((e, i) => <Cell key={i} fill={e.productivity >= 90 ? '#e8c97a' : e.productivity >= 70 ? '#c9a84c' : '#7a5e20'}/>)}
+                  {safe.map((e, i) => <Cell key={i} fill={e.productivity >= 90 ? '#E6C98D' : e.productivity >= 70 ? '#CFA75A' : '#7E6330'}/>)}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
           <div className="chart-legend">
-            <span><span className="cl-dot" style={{ background:'#e8c97a' }}/>90%+</span>
-            <span><span className="cl-dot" style={{ background:'#c9a84c' }}/>70–89%</span>
-            <span><span className="cl-dot" style={{ background:'#7a5e20' }}/>Below 70%</span>
+            <span><span className="cl-dot" style={{ background:'#E6C98D' }}/>90%+</span>
+            <span><span className="cl-dot" style={{ background:'#CFA75A' }}/>70–89%</span>
+            <span><span className="cl-dot" style={{ background:'#7E6330' }}/>Below 70%</span>
           </div>
         </>
       )}
@@ -586,15 +560,15 @@ const GoalTracker = ({ stats: s, loading }) => {
   if (loading) return <div className="db-card goal-tracker"><Skel/></div>;
   const fn = n => n > 999 ? n.toLocaleString() : n;
   const goals = [
-    { label:'Revenue',         curr: s.totalRevenue,    tgt: Math.max(Math.round((s.totalRevenue || 1) * 1.3), 1000), c:'#c9a84c', pre:'$' },
-    { label:'Active Clients',  curr: s.activeClients,   tgt: Math.max((s.activeClients || 0) + 3, 5),                c:'#4caf82' },
-    { label:'Tasks Completed', curr: s.completedTasks,  tgt: Math.max((s.completedTasks || 0) + (s.tasksPending || 0), 10), c:'#4a90d9' },
-    { label:'Completion Rate', curr: s.productivityScore, tgt: 100,                                                   c:'#9b72e8', suf:'%' },
+    { label:'Revenue',         curr: s.totalRevenue,    tgt: Math.max(Math.round((s.totalRevenue || 1) * 1.3), 1000), c:'#CFA75A', pre:'$' },
+    { label:'Active Clients',  curr: s.activeClients,   tgt: Math.max((s.activeClients || 0) + 3, 5),                c:'#7DC39A' },
+    { label:'Tasks Completed', curr: s.completedTasks,  tgt: Math.max((s.completedTasks || 0) + (s.tasksPending || 0), 10), c:'#7FA6CF' },
+    { label:'Completion Rate', curr: s.productivityScore, tgt: 100,                                                   c:'#A99BD6', suf:'%' },
   ];
   return (
     <div className="db-card goal-tracker">
       <div className="section-hdr">
-        <h4 className="db-card-title"><FiTarget style={{ color:'#c9a84c', marginRight:8 }}/>Goals</h4>
+        <h4 className="db-card-title"><FiTarget style={{ color:'#CFA75A', marginRight:8 }}/>Goals</h4>
         <span className="db-badge gold">Live</span>
       </div>
       <div className="goals-grid">
@@ -607,10 +581,10 @@ const GoalTracker = ({ stats: s, loading }) => {
                 <span className="goal-pct" style={{ color: g.c }}>{p}%</span>
               </div>
               <div className="goal-vals">
-                <span style={{ color: g.c, fontFamily: 'DM Serif Display', fontSize: 17 }}>
+                <span style={{ color: g.c, fontFamily: 'var(--serif)', fontSize: 17 }}>
                   {g.pre || ''}{fn(g.curr)}{g.suf || ''}
                 </span>
-                <span style={{ color: '#3a3835', fontSize: 10 }}>/{g.pre || ''}{fn(g.tgt)}{g.suf || ''}</span>
+                <span style={{ color: '#3E4B44', fontSize: 10 }}>/{g.pre || ''}{fn(g.tgt)}{g.suf || ''}</span>
               </div>
               <div className="goal-bar-bg">
                 <div className="goal-bar-fill" style={{ width: `${p}%`, background: g.c }}/>
@@ -672,12 +646,12 @@ class DeadlineTracker extends React.Component {
   }
   render() {
     const { deadlines, showForm, newTitle, newDue, newPriority, saving } = this.state;
-    const pc   = { High: '#e05c5c', Medium: '#e8a030', Low: '#4caf82' };
+    const pc   = { High: '#D9605A', Medium: '#E3A64B', Low: '#7DC39A' };
     const done = deadlines.filter(d => d.completed).length;
     return (
       <div className="db-card deadline-tracker">
         <div className="section-hdr">
-          <h4 className="db-card-title"><FiCalendar style={{ color:'#4a90d9', marginRight:8 }}/>Deadlines</h4>
+          <h4 className="db-card-title"><FiCalendar style={{ color:'#7FA6CF', marginRight:8 }}/>Deadlines</h4>
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
             {deadlines.length > 0 && <span className="dl-count">{done}/{deadlines.length}</span>}
             <button className="db-add-btn" onClick={() => this.setState({ showForm: !showForm })}>
@@ -701,7 +675,7 @@ class DeadlineTracker extends React.Component {
         )}
         {deadlines.length > 0 && (
           <div className="dl-progress-bar">
-            <div style={{ width: `${(done/deadlines.length)*100}%`, height: '100%', background: 'linear-gradient(90deg,#4a90d9,#4caf82)', borderRadius: 4, transition: 'width .5s ease' }}/>
+            <div style={{ width: `${(done/deadlines.length)*100}%`, height: '100%', background: 'linear-gradient(90deg,#7FA6CF,#7DC39A)', borderRadius: 4, transition: 'width .5s ease' }}/>
           </div>
         )}
         <div className="deadline-list">
@@ -712,7 +686,7 @@ class DeadlineTracker extends React.Component {
             return (
               <div key={dl._id} className={`dl-item${dl.completed ? ' dl-done' : ''}${left < 0 && !dl.completed ? ' dl-overdue' : ''}`}>
                 <button className="dl-toggle" onClick={() => this.toggle(dl)}>
-                  {dl.completed ? <FiCheckCircle size={16} color="#4caf82"/> : <div className="dl-circle"/>}
+                  {dl.completed ? <FiCheckCircle size={16} color="#7DC39A"/> : <div className="dl-circle"/>}
                 </button>
                 <div className="dl-body" onClick={() => this.toggle(dl)}>
                   <span className="dl-title">{dl.title}</span>
@@ -725,7 +699,7 @@ class DeadlineTracker extends React.Component {
                 <div className="dl-right">
                   {dl.completed ? <span className="dl-tag done">Done</span>
                   : left < 0   ? <span className="dl-tag overdue">Overdue</span>
-                  : <span className="dl-days" style={{ color: left <= 2 ? '#e05c5c' : left <= 5 ? '#e8a030' : '#4a4843' }}>{left}d</span>}
+                  : <span className="dl-days" style={{ color: left <= 2 ? '#D9605A' : left <= 5 ? '#E3A64B' : '#5F6B63' }}>{left}d</span>}
                 </div>
                 {dl.source === 'manual' && <button className="dl-del" onClick={() => this.del(dl)}><FiX size={11}/></button>}
               </div>
@@ -749,16 +723,16 @@ class ActivityFeed extends React.Component {
     } catch { this.setState({ loading: false }); }
   }
   iconFor(type) {
-    return { task:{i:<FiCheckCircle size={13}/>,c:'#4caf82'}, invoice:{i:<FiDollarSign size={13}/>,c:'#c9a84c'},
-      client:{i:<FiUsers size={13}/>,c:'#4a90d9'}, deadline:{i:<FiCalendar size={13}/>,c:'#e8a030'},
-      alert:{i:<FiAlertCircle size={13}/>,c:'#e05c5c'} }[type] || { i:<FiBell size={13}/>, c:'#9b72e8' };
+    return { task:{i:<FiCheckCircle size={13}/>,c:'#7DC39A'}, invoice:{i:<FiDollarSign size={13}/>,c:'#CFA75A'},
+      client:{i:<FiUsers size={13}/>,c:'#7FA6CF'}, deadline:{i:<FiCalendar size={13}/>,c:'#E3A64B'},
+      alert:{i:<FiAlertCircle size={13}/>,c:'#D9605A'} }[type] || { i:<FiBell size={13}/>, c:'#A99BD6' };
   }
   render() {
     const { activities, loading } = this.state;
     return (
       <div className="db-card activity-feed">
         <div className="section-hdr">
-          <h4 className="db-card-title"><FiActivity style={{ color:'#9b72e8', marginRight:8 }}/>Activity</h4>
+          <h4 className="db-card-title"><FiActivity style={{ color:'#A99BD6', marginRight:8 }}/>Activity</h4>
           <button className="db-icon-btn" onClick={() => this.load()} title="Refresh"><FiRefreshCw size={13}/></button>
         </div>
         {loading ? <Skel n={5}/> : !activities.length ? (
@@ -804,7 +778,7 @@ class NotesPad extends React.Component {
     return (
       <div className="db-card notes-pad">
         <div className="section-hdr">
-          <h4 className="db-card-title"><FiEdit3 style={{ color:'#e8a030', marginRight:8 }}/>Quick Notes</h4>
+          <h4 className="db-card-title"><FiEdit3 style={{ color:'#E3A64B', marginRight:8 }}/>Quick Notes</h4>
           {saved && <span className="db-badge green" style={{ fontSize:9 }}>Saved</span>}
         </div>
         <textarea className="notes-area" placeholder="Jot down anything — client info, ideas, follow-up reminders…"
@@ -840,9 +814,9 @@ class TimeToPayTracker extends React.Component {
     return (
       <div className="db-card time-to-pay">
         <div className="section-hdr">
-          <h4 className="db-card-title"><FiClock style={{ color:'#38bdf8', marginRight:8 }}/>Time to Pay</h4>
+          <h4 className="db-card-title"><FiClock style={{ color:'#79B8C9', marginRight:8 }}/>Time to Pay</h4>
           {avg != null && (
-            <span className="db-badge" style={{ color: good ? '#4caf82' : '#e8a030', background: good ? 'rgba(76,175,130,0.1)' : 'rgba(232,160,48,0.1)', borderColor: good ? 'rgba(76,175,130,0.28)' : 'rgba(232,160,48,0.28)' }}>
+            <span className="db-badge" style={{ color: good ? '#7DC39A' : '#E3A64B', background: good ? 'rgba(125,195,154,0.1)' : 'rgba(227,166,75,0.1)', borderColor: good ? 'rgba(125,195,154,0.28)' : 'rgba(227,166,75,0.28)' }}>
               Avg {avg}d
             </span>
           )}
@@ -855,9 +829,9 @@ class TimeToPayTracker extends React.Component {
               <div className="ttp-row" key={i}>
                 <span className="ttp-name">{d.name}</span>
                 <div className="ttp-bar-bg">
-                  <div className="ttp-bar" style={{ width: `${clamp((d.days/60)*100, 2, 100)}%`, background: d.days <= 15 ? '#4caf82' : d.days <= 30 ? '#c9a84c' : '#e05c5c' }}/>
+                  <div className="ttp-bar" style={{ width: `${clamp((d.days/60)*100, 2, 100)}%`, background: d.days <= 15 ? '#7DC39A' : d.days <= 30 ? '#CFA75A' : '#D9605A' }}/>
                 </div>
-                <span className="ttp-days" style={{ color: d.days <= 15 ? '#4caf82' : d.days <= 30 ? '#c9a84c' : '#e05c5c' }}>{d.days}d</span>
+                <span className="ttp-days" style={{ color: d.days <= 15 ? '#7DC39A' : d.days <= 30 ? '#CFA75A' : '#D9605A' }}>{d.days}d</span>
               </div>
             ))}
             {avg != null && (
@@ -882,36 +856,36 @@ const AIInsights = ({ stats: s, deadlines }) => {
   const insights = [];
 
   if (s.overdueCount > 0)
-    insights.push({ w:'alert', c:'#e05c5c',
+    insights.push({ w:'alert', c:'#D9605A',
       msg:`${s.overdueCount} overdue invoice${s.overdueCount > 1 ? 's' : ''} totalling ${fmt$(s.overdueRevenue)}. Follow up within 72 hours — freelancers who do recover payment 78% of the time.` });
   if (overDL > 0)
-    insights.push({ w:'alert', c:'#e05c5c',
+    insights.push({ w:'alert', c:'#D9605A',
       msg:`${overDL} deadline${overDL > 1 ? 's' : ''} past due. Contact affected clients now — transparency builds trust even when timelines slip.` });
   if (s.pendingRevenue > 0 && s.overdueCount === 0)
-    insights.push({ w:'warn', c:'#e8a030',
+    insights.push({ w:'warn', c:'#E3A64B',
       msg:`${fmt$(s.pendingRevenue)} in open invoices. Switching to Net 14 instead of Net 30 reduces average collection time by 42%.` });
   if (pendDL > 3)
-    insights.push({ w:'warn', c:'#e8a030',
+    insights.push({ w:'warn', c:'#E3A64B',
       msg:`${pendDL} upcoming deadlines. Block focus time now — front-loading deep work before 10 AM yields 38% better output.` });
   if (s.productivityScore > 0 && s.productivityScore < 60)
-    insights.push({ w:'warn', c:'#e8a030',
+    insights.push({ w:'warn', c:'#E3A64B',
       msg:`Completion rate at ${s.productivityScore}%. Break tasks into 25-min focused blocks — smaller steps boost completion by 52%.` });
   if (s.productivityScore >= 85)
-    insights.push({ w:'success', c:'#c9a84c',
+    insights.push({ w:'success', c:'#CFA75A',
       msg:`${s.productivityScore}% productivity — exceptional. Top performers raise rates 15–20% annually. Your output metrics suggest you could command higher rates now.` });
   if (s.revenueChange != null) {
     if (s.revenueChange > 10)
-      insights.push({ w:'success', c:'#4caf82',
+      insights.push({ w:'success', c:'#7DC39A',
         msg:`Revenue up ${s.revenueChange}% vs last month (${fmt$(s.monthRevenue)} this period). Consider reinvesting 10% into tools or skills that compound your hourly output.` });
     if (s.revenueChange < -10)
-      insights.push({ w:'tip', c:'#9b72e8',
+      insights.push({ w:'tip', c:'#A99BD6',
         msg:`Revenue down ${Math.abs(s.revenueChange)}% vs last month. Reach out to 2–3 past clients — they convert at 5× the rate of cold outreach.` });
   }
   if (s.activeClients >= 5)
-    insights.push({ w:'tip', c:'#4a90d9',
+    insights.push({ w:'tip', c:'#7FA6CF',
       msg:`${s.activeClients} active clients is a healthy portfolio. Send each an unprompted status update this week — proactive communication builds long-term retainers.` });
   if (!insights.length)
-    insights.push({ w:'info', c:'#38bdf8',
+    insights.push({ w:'info', c:'#79B8C9',
       msg:`Add clients, tasks, and invoices to unlock personalised insights. The more data you add, the more specific and actionable this panel becomes.` });
 
   const iconFor = w => ({ alert:<FiAlertCircle size={13}/>, warn:<FiClock size={13}/>,
@@ -920,7 +894,7 @@ const AIInsights = ({ stats: s, deadlines }) => {
   return (
     <div className="db-card ai-insights">
       <div className="section-hdr">
-        <h4 className="db-card-title"><FiZap style={{ color:'#38bdf8', marginRight:8 }}/>AI Insights</h4>
+        <h4 className="db-card-title"><FiZap style={{ color:'#79B8C9', marginRight:8 }}/>AI Insights</h4>
         <span className="db-badge teal">✦ Instant · Zero credits</span>
       </div>
       <div className="insights-grid">
@@ -956,10 +930,10 @@ class AIAssistant extends React.Component {
       'Give direct, specific advice in 2–4 sentences. Cite their actual numbers. No filler.',
     ].join(' ');
     try {
-      const text = await askClaude(ctx, input, history.slice(-8).slice(0, -1));
+      const text = await askAI('advisor-chat', input, { history: history.slice(-8).slice(0, -1), context: ctx });
       this.setState({ messages: [...history, { role: 'assistant', content: text }], loading: false });
       setTimeout(() => this.bottom.current?.scrollIntoView({ behavior: 'smooth' }), 60);
-    } catch { this.setState({ loading: false, error: 'Could not reach AI. Check your connection.' }); }
+    } catch (e) { this.setState({ loading: false, error: errorMessage(e, 'Could not reach the AI. Try again.') }); }
   }
 
   render() {
@@ -973,7 +947,7 @@ class AIAssistant extends React.Component {
     return (
       <div className="db-card ai-assistant">
         <div className="section-hdr">
-          <h4 className="db-card-title"><FiMessageSquare style={{ color:'#9b72e8', marginRight:8 }}/>AI Assistant</h4>
+          <h4 className="db-card-title"><FiMessageSquare style={{ color:'#A99BD6', marginRight:8 }}/>AI Assistant</h4>
           <span className="db-badge purple">✦ Live AI</span>
         </div>
         {!messages.length && (
@@ -1009,7 +983,7 @@ class AIAssistant extends React.Component {
             value={input} onChange={e => this.setState({ input: e.target.value })}
             onKeyDown={e => e.key === 'Enter' && !e.shiftKey && this.send()} disabled={loading}/>
           <button className="chat-send-btn" onClick={() => this.send()} disabled={loading || !input.trim()}>
-            {loading ? <Spinner size={13} color="#0a0a0c"/> : <FiSend size={13}/>}
+            {loading ? <Spinner size={13} color="#0C1612"/> : <FiSend size={13}/>}
           </button>
         </div>
         {messages.length > 0 && (
@@ -1031,34 +1005,33 @@ class AIBriefing extends React.Component {
     const overDL = dls.filter(d => !d.completed && d.dueDate && new Date(d.dueDate) < new Date()).length;
     const soonDL = dls.filter(d => !d.completed && d.dueDate && dLeft(d.dueDate) <= 3 && dLeft(d.dueDate) >= 0).length;
     const today  = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-    const ctx = `You are a sharp freelance business coach. Write a crisp daily briefing for ${today}. Be motivating and specific. One greeting sentence, then 3–5 bullet points using • covering: top priority action, biggest financial risk, key deadlines, one growth action. Max 110 words.`;
-    const msg = `Data: ${s?.activeClients||0} clients, ${s?.tasksPending||0} pending tasks, ${fmt$(s?.monthRevenue)} this month, ${s?.overdueCount||0} overdue invoices (${fmt$(s?.overdueRevenue)}), ${fmt$(s?.pendingRevenue)} unpaid, ${overDL} overdue deadlines, ${soonDL} due in ≤3 days, ${s?.productivityScore||0}% productivity.`;
+    const msg = `Today is ${today}. Data: ${s?.activeClients||0} clients, ${s?.tasksPending||0} pending tasks, ${fmt$(s?.monthRevenue)} this month, ${s?.overdueCount||0} overdue invoices (${fmt$(s?.overdueRevenue)}), ${fmt$(s?.pendingRevenue)} unpaid, ${overDL} overdue deadlines, ${soonDL} due in ≤3 days, ${s?.productivityScore||0}% productivity.`;
     this.setState({ loading: true, error: '', done: false });
     try {
-      const text = await askClaude(ctx, msg);
+      const text = await askAI('daily-briefing', msg);
       this.setState({ brief: text, loading: false, done: true });
-    } catch { this.setState({ loading: false, error: 'Could not generate briefing. Please try again.' }); }
+    } catch (e) { this.setState({ loading: false, error: errorMessage(e, 'Could not generate the briefing. Try again.') }); }
   }
   render() {
     const { brief, loading, error, done } = this.state;
     return (
       <div className="db-card ai-briefing">
         <div className="section-hdr">
-          <h4 className="db-card-title"><FiStar style={{ color:'#c9a84c', marginRight:8 }}/>Daily Briefing</h4>
+          <h4 className="db-card-title"><FiStar style={{ color:'#CFA75A', marginRight:8 }}/>Daily Briefing</h4>
           <span className="db-badge gold">✦ AI</span>
         </div>
         <p className="ai-sub">{new Date().toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' })}</p>
         {!done && !loading && (
           <>
-            <p style={{ fontSize: 13, color: '#5a5650', lineHeight: 1.6, marginBottom: 14 }}>
+            <p style={{ fontSize: 13, color: '#6C776F', lineHeight: 1.6, marginBottom: 14 }}>
               One click to get a personalised AI summary — priorities, risks, and one action to move the needle.
             </p>
             <DbBtn onClick={() => this.generate()}><FiZap size={12} style={{ marginRight: 6 }}/>Generate Briefing</DbBtn>
           </>
         )}
         {loading && (
-          <div style={{ display:'flex', alignItems:'center', padding:'24px 0', gap:10, color:'#5a5650', fontSize:13 }}>
-            <Spinner size={18} color="#c9a84c"/> Reading your workspace data…
+          <div style={{ display:'flex', alignItems:'center', padding:'24px 0', gap:10, color:'#6C776F', fontSize:13 }}>
+            <Spinner size={18} color="#CFA75A"/> Reading your workspace data…
           </div>
         )}
         {done && brief && (
@@ -1082,53 +1055,51 @@ class BusinessHealthScore extends React.Component {
   state = { scores: null, loading: false, error: '' };
   async run() {
     const { stats: s } = this.props;
-    const ctx = `You are a freelance business analyst. Score this business across 6 dimensions 0–100. Return ONLY valid JSON, no markdown: {"revenue":N,"clients":N,"productivity":N,"cashflow":N,"growth":N,"risk":N,"summary":"one specific sentence about their biggest opportunity"}`;
     const msg = `Clients: ${s?.activeClients||0} active/${s?.totalClients||0} total. Revenue: ${fmt$(s?.monthRevenue)} this month. Total earned: ${fmt$(s?.totalRevenue)}. Overdue: ${s?.overdueCount||0} invoices worth ${fmt$(s?.overdueRevenue)}. Unpaid: ${fmt$(s?.pendingRevenue)}. Tasks: ${s?.completedTasks||0} done/${s?.tasksPending||0} pending. Productivity: ${s?.productivityScore||0}%. Net profit: ${fmt$(s?.netProfit)}.`;
     this.setState({ loading: true, error: '' });
     try {
-      let text = await askClaude(ctx, msg);
-      text = text.replace(/```json|```/g, '').trim();
-      const json = JSON.parse(text);
+      const json = await askAI('health-score', msg);
+      if (!json || typeof json !== 'object') throw new Error('The analysis came back incomplete. Try again.');
       this.setState({ scores: json, loading: false });
-    } catch { this.setState({ loading: false, error: 'Analysis failed — please try again.' }); }
+    } catch (e) { this.setState({ loading: false, error: errorMessage(e, 'Analysis failed — try again.') }); }
   }
   render() {
     const { scores, loading, error } = this.state;
     const { isPremium, navigate } = this.props;
     const dims = scores ? [
-      { label:'Revenue',      v: scores.revenue,      c:'#c9a84c' },
-      { label:'Clients',      v: scores.clients,      c:'#4a90d9' },
-      { label:'Productivity', v: scores.productivity, c:'#4caf82' },
-      { label:'Cash Flow',    v: scores.cashflow,     c:'#38bdf8' },
-      { label:'Growth',       v: scores.growth,       c:'#9b72e8' },
-      { label:'Risk Score',   v: 100-(scores.risk||0),c:'#e05c5c' },
+      { label:'Revenue',      v: scores.revenue,      c:'#CFA75A' },
+      { label:'Clients',      v: scores.clients,      c:'#7FA6CF' },
+      { label:'Productivity', v: scores.productivity, c:'#7DC39A' },
+      { label:'Cash Flow',    v: scores.cashflow,     c:'#79B8C9' },
+      { label:'Growth',       v: scores.growth,       c:'#A99BD6' },
+      { label:'Risk Score',   v: 100-(scores.risk||0),c:'#D9605A' },
     ] : [];
     const overall = dims.length ? Math.round(dims.reduce((s, d) => s + d.v, 0) / dims.length) : null;
     return (
       <div className="db-card biz-health">
         <div className="section-hdr">
-          <h4 className="db-card-title"><FiAward style={{ color:'#c9a84c', marginRight:8 }}/>Business Health Score</h4>
-          <span className="db-badge gold">✦ Premium</span>
+          <h4 className="db-card-title"><FiAward style={{ color:'#CFA75A', marginRight:8 }}/>Business Health Score</h4>
+          {!isPremium && <PremiumLock inline feature="Business health score" />}
         </div>
         {!isPremium && <PremiumGate feature="Business Health Score" onUpgrade={navigate}
           description="AI analyses 6 dimensions of your freelance business — revenue, clients, cash flow, growth, productivity, and risk — producing an overall score with your single biggest opportunity."/>}
         {isPremium && !scores && !loading && (
           <>
-            <p style={{ fontSize:13, color:'#5a5650', lineHeight:1.6, marginBottom:14 }}>
+            <p style={{ fontSize:13, color:'#6C776F', lineHeight:1.6, marginBottom:14 }}>
               AI scores your business across 6 key dimensions and identifies your single biggest opportunity right now.
             </p>
             <DbBtn onClick={() => this.run()}><FiBarChart2 size={12} style={{ marginRight:6 }}/>Run Analysis</DbBtn>
           </>
         )}
         {loading && (
-          <div style={{ display:'flex', alignItems:'center', padding:'24px 0', gap:10, color:'#5a5650', fontSize:13 }}>
-            <Spinner size={18} color="#c9a84c"/> Analysing your business across 6 dimensions…
+          <div style={{ display:'flex', alignItems:'center', padding:'24px 0', gap:10, color:'#6C776F', fontSize:13 }}>
+            <Spinner size={18} color="#CFA75A"/> Analysing your business across 6 dimensions…
           </div>
         )}
         {scores && (
           <div className="health-body">
             <div className="health-overall">
-              <span className="ho-score" style={{ color: overall >= 75 ? '#4caf82' : overall >= 50 ? '#c9a84c' : '#e05c5c' }}>{overall}</span>
+              <span className="ho-score" style={{ color: overall >= 75 ? '#7DC39A' : overall >= 50 ? '#CFA75A' : '#D9605A' }}>{overall}</span>
               <span className="ho-label">Overall Score</span>
               {scores.summary && <p className="ho-summary">"{scores.summary}"</p>}
             </div>
@@ -1160,20 +1131,19 @@ class AIRateAdvisor extends React.Component {
   async analyse() {
     const { stats: s } = this.props;
     const { role } = this.state;
-    const ctx = `You are a freelance pricing expert. Give a specific hourly rate recommendation. Format: one sentence summary, then "Recommended rate: $X–$Y/hr", then 2–3 bullet points explaining why. Be specific, cite their numbers. Under 90 words.`;
     const msg = `Role: "${role || 'freelancer'}". Active clients: ${s?.activeClients||0}. Monthly revenue: ${fmt$(s?.monthRevenue)}. Total earned: ${fmt$(s?.totalRevenue)}. Tasks done: ${s?.completedTasks||0}. Productivity: ${s?.productivityScore||0}%.`;
     this.setState({ loading: true, result: '', error: '' });
     try {
-      const text = await askClaude(ctx, msg);
+      const text = await askAI('rate-advisor', msg);
       this.setState({ result: text, loading: false });
-    } catch { this.setState({ loading: false, error: 'Could not reach AI. Try again.' }); }
+    } catch (e) { this.setState({ loading: false, error: errorMessage(e, 'Could not reach the AI. Try again.') }); }
   }
   render() {
     const { role, result, loading, error } = this.state;
     return (
       <div className="db-card ai-rate-advisor">
         <div className="section-hdr">
-          <h4 className="db-card-title"><FiDollarSign style={{ color:'#4caf82', marginRight:8 }}/>Rate Advisor</h4>
+          <h4 className="db-card-title"><FiDollarSign style={{ color:'#7DC39A', marginRight:8 }}/>Rate Advisor</h4>
           <span className="db-badge green">✦ AI · Free</span>
         </div>
         <p className="ai-sub">Enter your role to get a rate recommendation based on your real earnings data:</p>
@@ -1183,7 +1153,7 @@ class AIRateAdvisor extends React.Component {
             value={role} onChange={e => this.setState({ role: e.target.value })}
             onKeyDown={e => e.key === 'Enter' && this.analyse()} disabled={loading}/>
           <DbBtn onClick={() => this.analyse()} disabled={loading} style={{ marginLeft: 8, flexShrink: 0, minWidth: 90 }}>
-            {loading ? <><Spinner size={13} color="#0a0a0c"/> Analysing…</> : 'Analyse'}
+            {loading ? <><Spinner size={13} color="#0C1612"/> Analysing…</> : 'Analyse'}
           </DbBtn>
         </div>
         {result && (
@@ -1254,7 +1224,7 @@ class DashboardCore extends React.Component {
           <div className="dashboard-header-left">
             <span className="db-page-title">Dashboard</span>
             <span className="dashboard-header-sub">
-              {greeting}, <strong style={{ color:'#e8c97a' }}>{name}</strong>
+              {greeting}, <strong style={{ color:'#E6C98D' }}>{name}</strong>
               {loading ? ' — loading your workspace…' : " — here's your command centre"}
             </span>
           </div>

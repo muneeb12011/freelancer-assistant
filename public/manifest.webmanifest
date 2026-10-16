@@ -1,0 +1,18 @@
+{
+  "name": "Aurelance",
+  "short_name": "Aurelance",
+  "description": "The back office for independent work: clients, invoices, tasks and hours.",
+  "id": "/",
+  "start_url": "/home",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0C1612",
+  "theme_color": "#0C1612",
+  "categories": ["business", "productivity", "finance"],
+  "icons": [
+    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "logo192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "logo512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

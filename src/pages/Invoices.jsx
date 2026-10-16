@@ -29,16 +29,9 @@ import {
 import { useAuth } from '../context/AuthContext';
 import '../styles/Invoices.css';
 
+import api, { errorMessage } from '../services/api';
 /* ── API ───────────────────────────────────────────────────── */
-const BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-const tok  = () => localStorage.getItem('authToken');
-const hdrs = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${tok()}` });
-const api  = {
-  get:    url      => fetch(`${BASE}${url}`,  { headers: hdrs() }).then(r => r.json()),
-  post:   (url, b) => fetch(`${BASE}${url}`,  { method: 'POST',  headers: hdrs(), body: JSON.stringify(b) }).then(r => r.json()),
-  patch:  (url, b) => fetch(`${BASE}${url}`,  { method: 'PATCH', headers: hdrs(), body: JSON.stringify(b) }).then(r => r.json()),
-  delete: url      => fetch(`${BASE}${url}`,  { method: 'DELETE', headers: hdrs() }).then(r => r.json()),
-};
+
 
 /* ── Helpers ───────────────────────────────────────────────── */
 const arr    = v => Array.isArray(v) ? v : [];
@@ -56,11 +49,11 @@ const nextNum = list => {
 
 /* ── Model-aligned status values ───────────────────────────── */
 const STATUS = {
-  draft:     { label:'Draft',     color:'#8e8a82', bg:'rgba(142,138,130,0.12)', icon:<FiFileText size={11}/> },
-  sent:      { label:'Sent',      color:'#4a90d9', bg:'rgba(74,144,217,0.12)',  icon:<FiSend size={11}/> },
-  paid:      { label:'Paid',      color:'#4caf82', bg:'rgba(76,175,130,0.12)',  icon:<FiCheckCircle size={11}/> },
-  overdue:   { label:'Overdue',   color:'#e05c5c', bg:'rgba(224,92,92,0.12)',   icon:<FiAlertCircle size={11}/> },
-  cancelled: { label:'Cancelled', color:'#5a5650', bg:'rgba(90,86,80,0.12)',    icon:<FiX size={11}/> },
+  draft:     { label:'Draft',     color:'#A9B1A3', bg:'rgba(169,177,163,0.12)', icon:<FiFileText size={11}/> },
+  sent:      { label:'Sent',      color:'#7FA6CF', bg:'rgba(127,166,207,0.12)',  icon:<FiSend size={11}/> },
+  paid:      { label:'Paid',      color:'#7DC39A', bg:'rgba(125,195,154,0.12)',  icon:<FiCheckCircle size={11}/> },
+  overdue:   { label:'Overdue',   color:'#D9605A', bg:'rgba(217,96,90,0.12)',   icon:<FiAlertCircle size={11}/> },
+  cancelled: { label:'Cancelled', color:'#6C776F', bg:'rgba(108,119,111,0.12)',    icon:<FiX size={11}/> },
 };
 
 /* Derive display status — overdue beats sent/draft if past due */
@@ -74,9 +67,9 @@ const getDisplayStatus = inv => {
 const agingLabel = inv => {
   if (getDisplayStatus(inv) !== 'overdue') return null;
   const days = Math.abs(dLeft(inv.dueDate) || 0);
-  if (days <= 7)   return { txt: `${days}d`, c: '#e8a030' };
-  if (days <= 30)  return { txt: `${days}d`, c: '#e05c5c' };
-  return { txt: `${days}d`, c: '#9b1313' };
+  if (days <= 7)   return { txt: `${days}d`, c: '#E3A64B' };
+  if (days <= 30)  return { txt: `${days}d`, c: '#D9605A' };
+  return { txt: `${days}d`, c: '#9E3A35' };
 };
 
 /* ── Line item helpers ─────────────────────────────────────── */
@@ -135,11 +128,11 @@ function Toast({ msg, type }) {
 
 /* ── Payment methods config ────────────────────────────────── */
 const PAY_METHODS = [
-  { id:'stripe',   label:'Stripe',        sub:'Credit / Debit card via Stripe',    icon:'💳', color:'#635bff' },
-  { id:'visa',     label:'Visa / Master',  sub:'Direct card payment',               icon:'🏦', color:'#1a1f71' },
-  { id:'paypal',   label:'PayPal',         sub:'PayPal account or guest checkout',  icon:'🅿',  color:'#009cde' },
-  { id:'bank',     label:'Bank Transfer',  sub:'ACH / SWIFT / local bank wire',     icon:'🏛',  color:'#4caf82' },
-  { id:'manual',   label:'Manual / Cash',  sub:'Cash, cheque, or other method',     icon:'📋', color:'#8e8a82' },
+  { id:'bank',     label:'Bank transfer',  sub:'Local transfer, IBFT, SWIFT or wire', icon:'🏛',  color:'#7DC39A' },
+  { id:'wallet',   label:'Mobile wallet',  sub:'JazzCash, Easypaisa, SadaPay…',      icon:'📱', color:'#7FA6CF' },
+  { id:'card',     label:'Card',           sub:'Client paid by debit or credit card', icon:'💳', color:'#A99BD6' },
+  { id:'paypal',   label:'PayPal / Payoneer', sub:'Online transfer',                icon:'🅿',  color:'#79B8C9' },
+  { id:'manual',   label:'Cash / other',   sub:'Cash, cheque or anything else',      icon:'📋', color:'#9FA89B' },
 ];
 
 /* ─────────────────────────────────────────────────────────── */
@@ -163,7 +156,7 @@ export default function Invoices() {
   const [sendDlg,   setSendDlg]   = useState(null);
   const [payDlg,    setPayDlg]    = useState(null);    // invoice being paid (single or 'bulk')
   const [payStep,   setPayStep]   = useState(1);       // 1=choose method, 2=enter details, 3=confirm password
-  const [payMethod, setPayMethod] = useState('');      // 'stripe'|'bank'|'paypal'|'manual'
+  const [payMethod, setPayMethod] = useState('');      // 'bank'|'wallet'|'card'|'paypal'|'manual'
   const [payFields, setPayFields] = useState({});      // card/bank fields
   const [payPwd,    setPayPwd]    = useState('');      // confirmation password
   const [payPwdErr, setPayPwdErr] = useState('');
@@ -316,15 +309,9 @@ export default function Invoices() {
     if (!payPwd.trim()) { setPayPwdErr('Please enter your account password to confirm.'); return; }
     setPayPwdBusy(true); setPayPwdErr('');
     try {
-      // Verify password against auth endpoint
-      const verifyRes = await fetch(`${BASE}/auth/me`, {
-        method: 'PATCH',
-        headers: hdrs(),
-        body: JSON.stringify({ _verifyOnly: true }),
-      });
-      // We just check that the token is still valid; real password check
-      // can be added via a /auth/verify-password endpoint if needed.
-      // For now we accept any non-empty input (change to real verify below).
+      // Re-confirm identity before money-state changes.
+      try { await api.post('/auth/verify-password', { password: payPwd }); }
+      catch (e) { setPayPwdErr(errorMessage(e, 'Password is incorrect.')); setPayPwdBusy(false); return; }
 
       if (payDlg === 'bulk') {
         const ids     = [...selected];
@@ -332,7 +319,7 @@ export default function Invoices() {
         const updated = await Promise.all(toMark.map(inv =>
           api.patch(`/invoices/${inv._id}`, {
             status: 'paid', paidAt: new Date().toISOString(),
-            paymentMethod: payMethod, paymentRef: payFields.ref || payFields.cardLast4 || '',
+            paymentMethod: payMethod, paymentRef: payFields.ref || payFields.txnId || '',
           }).then(r => r.invoice || { ...inv, status:'paid' })
         ));
         setInvoices(prev => prev.map(i => { const u = updated.find(u => u._id === i._id); return u || i; }));
@@ -342,7 +329,7 @@ export default function Invoices() {
         const inv = payDlg;
         const r   = await api.patch(`/invoices/${inv._id}`, {
           status: 'paid', paidAt: new Date().toISOString(),
-          paymentMethod: payMethod, paymentRef: payFields.ref || payFields.cardLast4 || '',
+          paymentMethod: payMethod, paymentRef: payFields.ref || payFields.txnId || '',
         });
         const updated = r.invoice || { ...inv, status:'paid', paidAt:new Date().toISOString() };
         setInvoices(prev => prev.map(i => i._id === inv._id ? updated : i));
@@ -385,156 +372,113 @@ export default function Invoices() {
   };
 
   /* ── PDF export ────────────────────────────────────────── */
+  // A printable, light invoice from YOU to your client (Aurelance only appears in the small footer).
   const exportPDF = inv => {
-    const doc = new jsPDF();
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     const { subtotal, taxAmt, discAmt, total } = calcTotals({
       items: arr(inv.items), taxRate: inv.taxRate||0, discount: inv.discount||0,
     });
     const cur = inv.currency || 'USD';
-    const f   = n => fmt$(n, cur);
+    // Built-in PDF fonts can't draw ₨ or د.إ, so those currencies print as their code.
+    const pdfSym = { USD:'$', EUR:'€', GBP:'£' }[cur] || `${cur} `;
+    const f   = n => pdfSym + (+(n || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const st  = getDisplayStatus(inv);
-    const stC = { paid:[76,175,130], sent:[74,144,217], draft:[142,138,130], overdue:[224,92,92], cancelled:[90,86,80] }[st] || [160,160,160];
+    const INK = [16, 32, 26], GILT = [168, 131, 58], MUTED = [110, 122, 114], TEXT = [27, 42, 34], RULE = [214, 208, 190];
+    const stC = { paid:[46,122,80], sent:[60,98,140], draft:[120,128,122], overdue:[178,59,51], cancelled:[120,128,122] }[st] || MUTED;
+    const from = {
+      name: user?.name || 'Your name',
+      title: user?.title || '',
+      email: user?.email || '',
+      phone: user?.phone || '',
+      location: user?.location || '',
+      website: user?.website || '',
+    };
 
-    // Dark header bar
-    doc.setFillColor(10, 10, 12);
-    doc.rect(0, 0, 210, 34, 'F');
-    doc.setTextColor(201, 168, 76);
-    doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
-    doc.text('AURELANCE', 14, 18);
-    doc.setTextColor(180, 180, 180);
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Freelance Management Platform', 14, 25);
-    doc.text('aurelance454@gmail.com', 14, 30);
+    // Ledger band
+    doc.setFillColor(...INK); doc.rect(0, 0, 210, 30, 'F');
+    doc.setDrawColor(...GILT); doc.setLineWidth(0.4); doc.line(0, 30.6, 210, 30.6); doc.line(0, 31.6, 210, 31.6);
+    doc.setTextColor(236, 231, 217); doc.setFont('times', 'normal'); doc.setFontSize(22);
+    doc.text(from.name, 14, 17);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(200, 205, 196);
+    doc.text([from.title, from.email, from.phone].filter(Boolean).join('   '), 14, 24);
+    doc.setTextColor(230, 201, 141); doc.setFont('times', 'normal'); doc.setFontSize(20);
+    doc.text('Invoice', 196, 15, { align:'right' });
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(200, 205, 196);
+    doc.text(inv.invoiceNumber || '', 196, 22, { align:'right' });
 
-    // Invoice number (right)
-    doc.setTextColor(245, 245, 245);
-    doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
-    doc.text('INVOICE', 196, 16, { align:'right' });
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(180, 180, 180);
-    doc.text(inv.invoiceNumber || 'INV-0001', 196, 22, { align:'right' });
-
-    // Status badge
-    doc.setFillColor(...stC);
-    doc.roundedRect(154, 25, 42, 7, 2, 2, 'F');
-    doc.setTextColor(10, 10, 12);
-    doc.setFontSize(7.5);
-    doc.setFont('helvetica', 'bold');
-    doc.text(st.toUpperCase(), 175, 29.8, { align:'center' });
-
-    // Separator
-    doc.setDrawColor(40, 40, 50);
-    doc.setLineWidth(0.3);
-    doc.line(14, 40, 196, 40);
-
-    // Billing + Details
-    let y = 50;
-    doc.setTextColor(140, 140, 140);
-    doc.setFontSize(7.5);
-    doc.setFont('helvetica', 'bold');
-    doc.text('BILL TO', 14, y);
-    doc.text('INVOICE DETAILS', 130, y);
-
+    // Bill to + details
+    let y = 46;
+    doc.setTextColor(...MUTED); doc.setFontSize(8); doc.setFont('helvetica', 'bold');
+    doc.text('Bill to', 14, y); doc.text('Details', 130, y);
     y += 6;
-    doc.setTextColor(235, 235, 235);
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...TEXT); doc.setFontSize(12); doc.setFont('helvetica', 'bold');
     doc.text(inv.clientName || '—', 14, y);
     y += 5;
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(170, 170, 170);
+    doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(...MUTED);
     if (inv.clientEmail) { doc.text(inv.clientEmail, 14, y); y += 5; }
     if (inv.clientPhone) { doc.text(inv.clientPhone, 14, y); y += 5; }
-    if (inv.billingAddress) {
-      const lines = doc.splitTextToSize(inv.billingAddress, 100);
-      doc.text(lines, 14, y); y += lines.length * 5;
-    }
+    if (inv.billingAddress) { const lines = doc.splitTextToSize(inv.billingAddress, 100); doc.text(lines, 14, y); y += lines.length * 5; }
 
-    // Right: meta rows
-    const detY = 56;
-    const meta = [
-      ['Issue Date', fmtDate(inv.issueDate || inv.createdAt || new Date())],
-      ['Due Date',   fmtDate(inv.dueDate)],
-      ['Currency',   cur],
-    ];
-    if (inv.paidAt) meta.push(['Paid On', fmtDate(inv.paidAt)]);
+    const meta = [['Issued', fmtDate(inv.issueDate || inv.createdAt || new Date())], ['Due', fmtDate(inv.dueDate)], ['Currency', cur]];
+    if (inv.paidAt) meta.push(['Paid', fmtDate(inv.paidAt)]);
     meta.forEach(([label, val], i) => {
-      const dy = detY + i * 8;
-      doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(140, 140, 140);
-      doc.text(label, 130, dy);
-      doc.setFont('helvetica', 'bold'); doc.setTextColor(230, 230, 230);
-      doc.text(val, 196, dy, { align:'right' });
+      const dy = 52 + i * 6.5;
+      doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(...MUTED); doc.text(label, 130, dy);
+      doc.setFont('helvetica', 'bold'); doc.setTextColor(...TEXT); doc.text(val, 196, dy, { align:'right' });
     });
+    // Status
+    const sy = 52 + meta.length * 6.5 + 2;
+    doc.setDrawColor(...stC); doc.setLineWidth(0.5); doc.roundedRect(166, sy - 4, 30, 6.5, 1.2, 1.2, 'S');
+    doc.setTextColor(...stC); doc.setFontSize(8); doc.setFont('helvetica', 'bold');
+    doc.text(st.charAt(0).toUpperCase() + st.slice(1), 181, sy + 0.6, { align:'center' });
 
-    // Items table
-    y = Math.max(y + 12, 92);
-    doc.setFillColor(18, 18, 24);
-    doc.rect(14, y - 5, 182, 8, 'F');
-    doc.setTextColor(140, 140, 140);
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
-    doc.text('DESCRIPTION', 17, y);
-    doc.text('QTY',    130, y, { align:'right' });
-    doc.text('RATE',   158, y, { align:'right' });
-    doc.text('AMOUNT', 196, y, { align:'right' });
-    y += 6;
+    // Items
+    y = Math.max(y + 12, sy + 16);
+    doc.setDrawColor(...TEXT); doc.setLineWidth(0.3); doc.line(14, y - 5, 196, y - 5);
+    doc.setTextColor(...MUTED); doc.setFontSize(8); doc.setFont('helvetica', 'bold');
+    doc.text('Description', 14, y); doc.text('Qty', 130, y, { align:'right' }); doc.text('Rate', 158, y, { align:'right' }); doc.text('Amount', 196, y, { align:'right' });
+    y += 3; doc.setDrawColor(...RULE); doc.line(14, y, 196, y); y += 6;
 
-    arr(inv.items).forEach((item, idx) => {
-      const lineAmt = (+(item.quantity || item.qty || 1)) * (+(item.rate || 0));
-      doc.setFillColor(idx % 2 === 0 ? 14 : 17, idx % 2 === 0 ? 14 : 17, idx % 2 === 0 ? 19 : 22);
-      doc.rect(14, y - 4.5, 182, 7.5, 'F');
-      doc.setTextColor(215, 215, 215); doc.setFontSize(9); doc.setFont('helvetica', 'normal');
-      doc.text(item.description || '—', 17, y, { maxWidth: 106 });
-      doc.text(String(item.quantity || item.qty || 1), 130, y, { align:'right' });
+    arr(inv.items).forEach(item => {
+      const qty = +(item.quantity || item.qty || 1);
+      const lineAmt = qty * (+(item.rate || 0));
+      const desc = doc.splitTextToSize(item.description || '—', 108);
+      if (y + desc.length * 5 > 250) { doc.addPage(); y = 24; }
+      doc.setTextColor(...TEXT); doc.setFontSize(9.5); doc.setFont('helvetica', 'normal');
+      doc.text(desc, 14, y);
+      doc.text(String(qty), 130, y, { align:'right' });
       doc.text(f(item.rate || 0), 158, y, { align:'right' });
       doc.text(f(lineAmt), 196, y, { align:'right' });
-      y += 8;
+      y += desc.length * 5 + 2;
+      doc.setDrawColor(...RULE); doc.line(14, y - 2.5, 196, y - 2.5);
+      y += 3;
     });
-
-    y += 5;
-    doc.setDrawColor(50, 50, 60);
-    doc.line(120, y - 2, 196, y - 2);
 
     const totRows = [['Subtotal', f(subtotal), false]];
     if (taxAmt > 0)  totRows.push([`Tax (${inv.taxRate || 0}%)`, f(taxAmt), false]);
-    if (discAmt > 0) totRows.push(['Discount', `−${f(discAmt)}`, false]);
-    totRows.push(['TOTAL DUE', f(total), true]);
-
-    totRows.forEach(([lbl, val, bold]) => {
-      y += 7;
-      doc.setFontSize(bold ? 12 : 9.5);
-      doc.setFont('helvetica', bold ? 'bold' : 'normal');
-      doc.setTextColor(bold ? 201 : 155, bold ? 168 : 155, bold ? 76 : 155);
-      doc.text(lbl, 138, y);
-      doc.setTextColor(bold ? 232 : 215, bold ? 201 : 215, bold ? 122 : 215);
-      doc.text(val, 196, y, { align:'right' });
+    if (discAmt > 0) totRows.push(['Discount', `-${f(discAmt)}`, false]);
+    totRows.forEach(([lbl, val]) => {
+      y += 6; doc.setFontSize(9.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(...MUTED);
+      doc.text(lbl, 130, y); doc.setTextColor(...TEXT); doc.text(val, 196, y, { align:'right' });
     });
+    y += 4; doc.setDrawColor(...GILT); doc.setLineWidth(0.4); doc.line(126, y, 196, y); doc.line(126, y + 1, 196, y + 1);
+    y += 8; doc.setFont('times', 'normal'); doc.setFontSize(13); doc.setTextColor(...TEXT); doc.text('Total due', 130, y);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.text(f(total), 196, y, { align:'right' });
 
-    // Notes
     if (inv.notes) {
-      y += 14;
-      doc.setDrawColor(50, 50, 60);
-      doc.line(14, y - 4, 196, y - 4);
-      doc.setTextColor(140, 140, 140); doc.setFontSize(7.5); doc.setFont('helvetica', 'bold');
-      doc.text('NOTES', 14, y);
-      y += 6;
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(185, 185, 185);
-      const noteLines = doc.splitTextToSize(inv.notes, 180);
-      doc.text(noteLines, 14, y);
+      y += 16; if (y > 255) { doc.addPage(); y = 24; }
+      doc.setTextColor(...MUTED); doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.text('Notes', 14, y);
+      y += 5; doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...TEXT);
+      doc.text(doc.splitTextToSize(inv.notes, 182), 14, y);
     }
 
-    // Footer
-    doc.setFillColor(10, 10, 12);
-    doc.rect(0, 279, 210, 18, 'F');
-    doc.setTextColor(80, 80, 80); doc.setFontSize(7.5); doc.setFont('helvetica', 'normal');
-    doc.text('Generated by Aurelance · aurelance454@gmail.com', 105, 287, { align:'center' });
-    if (inv.notes?.toLowerCase().includes('bank') || !inv.notes) {
-      doc.text('Thank you for your business!', 105, 292, { align:'center' });
+    const pages = doc.getNumberOfPages();
+    for (let i = 1; i <= pages; i += 1) {
+      doc.setPage(i);
+      doc.setDrawColor(...RULE); doc.setLineWidth(0.3); doc.line(14, 284, 196, 284);
+      doc.setTextColor(...MUTED); doc.setFontSize(7.5); doc.setFont('helvetica', 'normal');
+      doc.text([from.name, from.website, from.location].filter(Boolean).join('   '), 14, 289);
+      doc.text(`Made with Aurelance${pages > 1 ? `   ${i}/${pages}` : ''}`, 196, 289, { align:'right' });
     }
 
     doc.save(`${inv.invoiceNumber || 'Invoice'}.pdf`);
@@ -623,8 +567,8 @@ export default function Invoices() {
 
   /* ── Sort icon ─────────────────────────────────────────── */
   const SortIcon = ({ field }) => sortBy === field
-    ? sortDir === 'asc' ? <FiChevronUp size={10} style={{ color:'#c9a84c' }}/>
-                        : <FiChevronDown size={10} style={{ color:'#c9a84c' }}/>
+    ? sortDir === 'asc' ? <FiChevronUp size={10} style={{ color:'#CFA75A' }}/>
+                        : <FiChevronDown size={10} style={{ color:'#CFA75A' }}/>
     : <FiChevronDown size={10} style={{ opacity:.2 }}/>;
 
   /* ── Render ────────────────────────────────────────────── */
@@ -653,11 +597,11 @@ export default function Invoices() {
 
       {/* KPI STRIP */}
       <div className="iv-kpi-strip">
-        <KPICard icon={<FiFileText size={16}/>} label="Total" val={totalCount} sub={`${fmt$(revPaid+revPending)} total value`} color="#c9a84c" loading={loading}/>
-        <KPICard icon={<FiCheckCircle size={16}/>} label="Paid" val={paidCount} sub={`${fmt$(revPaid)} collected`} color="#4caf82" loading={loading}/>
-        <KPICard icon={<FiSend size={16}/>} label="Awaiting" val={sentCount+draftCount} sub={`${fmt$(revPending)} pending`} color="#4a90d9" loading={loading}/>
-        <KPICard icon={<FiAlertCircle size={16}/>} label="Overdue" val={overdueCount} sub="Past due date" color="#e05c5c" loading={loading}/>
-        <KPICard icon={<FiPercent size={16}/>} label="Collection Rate" val={collRate} suffix="%" sub={`${paidCount} of ${totalCount} invoices paid`} color={collRate >= 80 ? '#4caf82' : '#e8a030'} loading={loading} progress={collRate}/>
+        <KPICard icon={<FiFileText size={16}/>} label="Total" val={totalCount} sub={`${fmt$(revPaid+revPending)} total value`} color="#CFA75A" loading={loading}/>
+        <KPICard icon={<FiCheckCircle size={16}/>} label="Paid" val={paidCount} sub={`${fmt$(revPaid)} collected`} color="#7DC39A" loading={loading}/>
+        <KPICard icon={<FiSend size={16}/>} label="Awaiting" val={sentCount+draftCount} sub={`${fmt$(revPending)} pending`} color="#7FA6CF" loading={loading}/>
+        <KPICard icon={<FiAlertCircle size={16}/>} label="Overdue" val={overdueCount} sub="Past due date" color="#D9605A" loading={loading}/>
+        <KPICard icon={<FiPercent size={16}/>} label="Collection Rate" val={collRate} suffix="%" sub={`${paidCount} of ${totalCount} invoices paid`} color={collRate >= 80 ? '#7DC39A' : '#E3A64B'} loading={loading} progress={collRate}/>
       </div>
 
       {/* BULK ACTION BAR */}
@@ -696,7 +640,7 @@ export default function Invoices() {
           <div className="iv-loading"><div className="iv-spinner"/><span>Loading invoices…</span></div>
         ) : !visible.length ? (
           <div className="iv-empty">
-            <FiFileText size={32} style={{ color:'#3a3835', marginBottom:12 }}/>
+            <FiFileText size={32} style={{ color:'#3E4B44', marginBottom:12 }}/>
             <strong>{search ? 'No results found' : tab !== 'all' ? `No ${tab} invoices` : 'No invoices yet'}</strong>
             <p>{search ? 'Try a different search.' : 'Create your first invoice to get started.'}</p>
             {!search && <button className="iv-new-btn" style={{ marginTop:12 }} onClick={openNew}><FiPlus size={13}/> New Invoice</button>}
@@ -707,8 +651,8 @@ export default function Invoices() {
               <tr>
                 <th className="iv-th-check">
                   <button className="iv-checkbox" onClick={allSelected ? clearSelection : selectAll} title={allSelected ? 'Deselect all' : 'Select all'}>
-                    {allSelected   ? <FiCheckCircle size={14} style={{ color:'#c9a84c' }}/> :
-                     someSelected  ? <FiMinusSquare size={14} style={{ color:'#c9a84c' }}/> :
+                    {allSelected   ? <FiCheckCircle size={14} style={{ color:'#CFA75A' }}/> :
+                     someSelected  ? <FiMinusSquare size={14} style={{ color:'#CFA75A' }}/> :
                                      <FiSquare size={14}/>}
                   </button>
                 </th>
@@ -732,7 +676,7 @@ export default function Invoices() {
                     onClick={() => setDetail(detail?._id===inv._id ? null : inv)}>
                     <td className="iv-td-check" onClick={e => e.stopPropagation()}>
                       <button className="iv-checkbox" onClick={() => toggleSelect(inv._id)}>
-                        {isSel ? <FiCheckCircle size={14} style={{ color:'#c9a84c' }}/> : <FiSquare size={14}/>}
+                        {isSel ? <FiCheckCircle size={14} style={{ color:'#CFA75A' }}/> : <FiSquare size={14}/>}
                       </button>
                     </td>
                     <td><span className="iv-mono">{inv.invoiceNumber || '—'}</span></td>
@@ -752,11 +696,11 @@ export default function Invoices() {
                     </td>
                     <td>
                       <div className="iv-due-cell">
-                        <span style={{ color: st==='overdue'?'#e05c5c': l!==null&&l<=3?'#e8a030':'#8e8a82', fontSize:12, fontWeight:600 }}>
+                        <span style={{ color: st==='overdue'?'#D9605A': l!==null&&l<=3?'#E3A64B':'#A9B1A3', fontSize:12, fontWeight:600 }}>
                           {fmtDate(inv.dueDate)}
                         </span>
                         {st !== 'paid' && l !== null && (
-                          <span className="iv-due-sub" style={{ color: st==='overdue'?'#e05c5c':'#5a5650' }}>
+                          <span className="iv-due-sub" style={{ color: st==='overdue'?'#D9605A':'#6C776F' }}>
                             {l < 0 ? `${Math.abs(l)}d overdue` : l === 0 ? 'Due today' : `${l}d left`}
                           </span>
                         )}
@@ -815,7 +759,7 @@ export default function Invoices() {
                 <p><strong>{detail.clientName || '—'}</strong></p>
                 {detail.clientEmail && <p>{detail.clientEmail}</p>}
                 {detail.clientPhone && <p>{detail.clientPhone}</p>}
-                {detail.billingAddress && <p style={{ color:'#5a5650' }}>{detail.billingAddress}</p>}
+                {detail.billingAddress && <p style={{ color:'#6C776F' }}>{detail.billingAddress}</p>}
               </div>
               <div className="iv-detail-section">
                 <h4>Details</h4>
@@ -869,7 +813,7 @@ export default function Invoices() {
               {detail.notes && (
                 <div className="iv-detail-section">
                   <h4>Notes</h4>
-                  <p style={{ fontSize:13, color:'#8e8a82', lineHeight:1.65 }}>{detail.notes}</p>
+                  <p style={{ fontSize:13, color:'#A9B1A3', lineHeight:1.65 }}>{detail.notes}</p>
                 </div>
               )}
             </div>
@@ -951,7 +895,7 @@ export default function Invoices() {
                 <div className="iv-field" style={{ justifyContent:'flex-end' }}>
                   <label style={{ cursor:'pointer', display:'flex', alignItems:'center', gap:8, userSelect:'none' }}>
                     <input type="checkbox" checked={form.recurring} onChange={e => setF('recurring', e.target.checked)}
-                      style={{ width:14, height:14, accentColor:'#c9a84c' }}/>
+                      style={{ width:14, height:14, accentColor:'#CFA75A' }}/>
                     Recurring Invoice
                   </label>
                 </div>
@@ -1041,14 +985,14 @@ export default function Invoices() {
             <p className="iv-modal-sub">Send this invoice to <strong>{sendDlg.clientName}</strong>.</p>
             <div className="iv-send-options">
               <button className="iv-send-opt" onClick={() => handleSend(sendDlg, 'email')}>
-                <span className="iv-so-icon" style={{ color:'#4a90d9', background:'rgba(74,144,217,0.12)' }}><FiMail size={18}/></span>
+                <span className="iv-so-icon" style={{ color:'#7FA6CF', background:'rgba(127,166,207,0.12)' }}><FiMail size={18}/></span>
                 <div><strong>Email</strong><span>Opens your email client with a pre-filled message</span></div>
-                <FiExternalLink size={12} style={{ color:'#5a5650', marginLeft:'auto' }}/>
+                <FiExternalLink size={12} style={{ color:'#6C776F', marginLeft:'auto' }}/>
               </button>
               <button className="iv-send-opt" onClick={() => handleSend(sendDlg, 'whatsapp')}>
-                <span className="iv-so-icon" style={{ color:'#4caf82', background:'rgba(76,175,130,0.12)' }}><FiMessageSquare size={18}/></span>
+                <span className="iv-so-icon" style={{ color:'#7DC39A', background:'rgba(125,195,154,0.12)' }}><FiMessageSquare size={18}/></span>
                 <div><strong>WhatsApp</strong><span>Opens WhatsApp with invoice details pre-filled</span></div>
-                <FiExternalLink size={12} style={{ color:'#5a5650', marginLeft:'auto' }}/>
+                <FiExternalLink size={12} style={{ color:'#6C776F', marginLeft:'auto' }}/>
               </button>
             </div>
             <div className="iv-modal-footer">
@@ -1068,7 +1012,7 @@ export default function Invoices() {
             {/* Header */}
             <div className="iv-modal-hdr">
               <div className="iv-pay-modal-title">
-                <FiShield size={16} style={{ color:'#c9a84c' }}/>
+                <FiShield size={16} style={{ color:'#CFA75A' }}/>
                 <h3>
                   {payStep===1 && 'Select Payment Method'}
                   {payStep===2 && 'Payment Details'}
@@ -1140,39 +1084,19 @@ export default function Invoices() {
                   <strong>{PAY_METHODS.find(m=>m.id===payMethod)?.label}</strong>
                 </div>
 
-                {(payMethod==='stripe'||payMethod==='visa') && (
+                {payMethod==='card' && (
                   <div className="iv-pay-fields">
                     <div className="iv-field">
-                      <label>Cardholder Name</label>
-                      <input placeholder="Name on card"
-                        value={payFields.cardName||''}
-                        onChange={e=>setPayFields(p=>({...p,cardName:e.target.value}))}/>
+                      <label>Payment reference (optional)</label>
+                      <input placeholder="Receipt or transaction ID"
+                        value={payFields.txnId||''}
+                        onChange={e=>setPayFields(p=>({...p,txnId:e.target.value}))}/>
                     </div>
-                    <div className="iv-field">
-                      <label>Card Number (last 4 digits)</label>
-                      <input placeholder="•••• •••• •••• 1234" maxLength={4}
-                        value={payFields.cardLast4||''}
-                        onChange={e=>setPayFields(p=>({...p,cardLast4:e.target.value.replace(/\D/,'')}))}/>
-                    </div>
-                    <div className="iv-form-row">
-                      <div className="iv-field">
-                        <label>Expiry</label>
-                        <input placeholder="MM/YY" maxLength={5}
-                          value={payFields.expiry||''}
-                          onChange={e=>setPayFields(p=>({...p,expiry:e.target.value}))}/>
-                      </div>
-                      <div className="iv-field">
-                        <label>Transaction ID (optional)</label>
-                        <input placeholder="txn_..."
-                          value={payFields.txnId||''}
-                          onChange={e=>setPayFields(p=>({...p,txnId:e.target.value}))}/>
-                      </div>
-                    </div>
-                    <p className="iv-pay-secure-note"><FiLock size={10}/> Card details are for record-keeping only and are not stored or transmitted to any processor.</p>
+                    <p className="iv-pay-secure-note"><FiLock size={10}/> This only records how your client paid. Never type card numbers here.</p>
                   </div>
                 )}
 
-                {payMethod==='paypal' && (
+                {(payMethod==='paypal'||payMethod==='wallet') && (
                   <div className="iv-pay-fields">
                     <div className="iv-field">
                       <label>PayPal Transaction ID</label>
@@ -1244,24 +1168,24 @@ export default function Invoices() {
                   {payDlg !== 'bulk' && (
                     <div className="iv-pay-confirm-row">
                       <span>Amount</span>
-                      <strong style={{ color:'#c9a84c' }}>{fmt$(payDlg.total||payDlg.amount||0, payDlg.currency)}</strong>
+                      <strong style={{ color:'#CFA75A' }}>{fmt$(payDlg.total||payDlg.amount||0, payDlg.currency)}</strong>
                     </div>
                   )}
                   <div className="iv-pay-confirm-row">
                     <span>Method</span>
                     <strong>{PAY_METHODS.find(m=>m.id===payMethod)?.label}</strong>
                   </div>
-                  {(payFields.ref||payFields.txnId||payFields.cardLast4) && (
+                  {(payFields.ref||payFields.txnId) && (
                     <div className="iv-pay-confirm-row">
                       <span>Reference</span>
-                      <strong>{payFields.ref||payFields.txnId||(payFields.cardLast4?`****${payFields.cardLast4}`:'')}</strong>
+                      <strong>{payFields.ref||payFields.txnId}</strong>
                     </div>
                   )}
                 </div>
 
                 <div className="iv-pay-password-section">
                   <div className="iv-pay-password-label">
-                    <FiLock size={13} style={{ color:'#c9a84c' }}/>
+                    <FiLock size={13} style={{ color:'#CFA75A' }}/>
                     <span>Enter your account password to confirm this payment</span>
                   </div>
                   <input

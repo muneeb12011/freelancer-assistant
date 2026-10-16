@@ -1,3 +1,13 @@
-# https://www.robotstxt.org/robotstxt.html
 User-agent: *
-Disallow:
+Allow: /$
+Allow: /about
+Allow: /contact
+Allow: /billing
+Allow: /privacy
+Allow: /terms
+Allow: /refunds
+Allow: /login
+Allow: /register
+Disallow: /
+
+Sitemap: https://freelancers-assistant.vercel.app/sitemap.xml

@@ -1,80 +1,69 @@
-// src/components/Footer.jsx
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { FaFacebookF, FaTwitter, FaInstagram, FaLinkedinIn, FaGithub } from "react-icons/fa";
-import "../styles/Footer.css";
+// src/components/Footer.jsx — public footer with a working newsletter sign-up.
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { FaGithub, FaLinkedinIn } from 'react-icons/fa';
+import api, { errorMessage } from '../services/api';
+import Logo from './Logo';
+import '../styles/Footer.css';
 
-const Footer = () => {
-  const [email,     setEmail]     = useState("");
-  const [subscribed, setSubscribed] = useState(false);
+export default function Footer() {
+  const [email, setEmail] = useState('');
+  const [state, setState] = useState({ busy: false, msg: '', err: false });
 
-  const handleBackToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  // ✅ FIXED: no alert() — inline success state instead
-  const handleNewsletterSubmit = (e) => {
+  const subscribe = async (e) => {
     e.preventDefault();
     if (!email.trim()) return;
-    // TODO: POST /api/newsletter with { email }
-    setSubscribed(true);
-    setEmail("");
-    setTimeout(() => setSubscribed(false), 4000);
+    setState({ busy: true, msg: '', err: false });
+    try {
+      const r = await api.post('/newsletter', { email: email.trim() });
+      setState({ busy: false, msg: r.message || 'You’re on the list.', err: false });
+      setEmail('');
+    } catch (err) {
+      setState({ busy: false, msg: errorMessage(err), err: true });
+    }
   };
 
   return (
-    <footer className="footer">
-      <div className="footer-top">
-
-        {/* ── Newsletter ── */}
-        <div className="newsletter">
-          <h3>Stay in the loop</h3>
-          {subscribed ? (
-            <p className="newsletter-success">✓ You're subscribed — thank you!</p>
-          ) : (
-            <form className="newsletter-form" onSubmit={handleNewsletterSubmit}>
-              <input
-                type="email"
-                placeholder="Enter your email"
-                aria-label="Email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-              <button type="submit" aria-label="Subscribe">Subscribe</button>
-            </form>
-          )}
+    <footer className="foot">
+      <div className="foot-grid">
+        <div className="foot-brand">
+          <Logo size={26} />
+          <p>The back office for independent work. Made in Lahore.</p>
         </div>
-
-        {/* ── Social links ── */}
-        <div className="social-media">
-          <a href="https://facebook.com"  target="_blank" rel="noopener noreferrer" aria-label="Facebook"  className="social-link"><FaFacebookF /></a>
-          <a href="https://twitter.com"   target="_blank" rel="noopener noreferrer" aria-label="Twitter"   className="social-link"><FaTwitter /></a>
-          <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="social-link"><FaInstagram /></a>
-          <a href="https://linkedin.com"  target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"  className="social-link"><FaLinkedinIn /></a>
-          <a href="https://github.com/muneeb12011" target="_blank" rel="noopener noreferrer" aria-label="GitHub" className="social-link"><FaGithub /></a>
-        </div>
-
+        <nav className="foot-col" aria-label="Product">
+          <strong>Product</strong>
+          <Link to="/billing">Pricing</Link>
+          <Link to="/register">Create account</Link>
+          <Link to="/login">Sign in</Link>
+        </nav>
+        <nav className="foot-col" aria-label="Company">
+          <strong>Company</strong>
+          <Link to="/about">About</Link>
+          <Link to="/contact">Contact</Link>
+          <a href="mailto:aurelance454@gmail.com">aurelance454@gmail.com</a>
+        </nav>
+        <nav className="foot-col" aria-label="Legal">
+          <strong>Legal</strong>
+          <Link to="/terms">Terms</Link>
+          <Link to="/privacy">Privacy</Link>
+          <Link to="/refunds">Refunds</Link>
+        </nav>
+        <form className="foot-news" onSubmit={subscribe}>
+          <label htmlFor="foot-email"><strong>Product updates</strong><span>One email when something ships. No spam.</span></label>
+          <div className="foot-news-row">
+            <input id="foot-email" className="input" type="email" placeholder="you@studio.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <button type="submit" className="btn" disabled={state.busy}>{state.busy ? <span className="spinner" /> : 'Subscribe'}</button>
+          </div>
+          {state.msg && <p className={state.err ? 'foot-err' : 'foot-ok'} role="status">{state.msg}</p>}
+        </form>
       </div>
-
-      <div className="footer-content">
-        {/* ✅ FIXED: dynamic year + correct brand name */}
-        <span className="footer-text">
-          © {new Date().getFullYear()} Aurelance. All Rights Reserved.
+      <div className="foot-base">
+        <span>© {new Date().getFullYear()} Aurelance</span>
+        <span className="foot-social">
+          <a href="https://github.com/muneeb12011" target="_blank" rel="noopener noreferrer" aria-label="GitHub"><FaGithub /></a>
+          <a href="https://www.linkedin.com" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"><FaLinkedinIn /></a>
         </span>
-        <div className="footer-links">
-          <Link to="/privacy" className="footer-link">Privacy Policy</Link>
-          <Link to="/terms"   className="footer-link">Terms of Service</Link>
-          <Link to="/about"   className="footer-link">About</Link>
-          <Link to="/support" className="footer-link">Support</Link>
-        </div>
       </div>
-
-      <button className="back-to-top" onClick={handleBackToTop} aria-label="Back to top">
-        ↑ Back to Top
-      </button>
     </footer>
   );
-};
-
-export default Footer;
+}

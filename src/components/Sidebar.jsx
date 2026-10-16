@@ -1,167 +1,82 @@
-// src/components/Sidebar.jsx
-import React from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+// src/components/Sidebar.jsx — primary navigation. The plan line links to /billing;
+// there is deliberately no upgrade card here (Billing is the single place for plans).
+import React from 'react';
+import { NavLink, Link, useNavigate } from 'react-router-dom';
 import {
-  FaHome,
-  FaTasks,
-  FaUser,
-  FaFileInvoice,
-  FaCogs,
-  FaUserFriends,
-  FaChartBar,
-  FaSignOutAlt,
-  FaCrown,
-  FaPalette,
-} from "react-icons/fa";
-import { useAuth } from "../context/AuthContext";
-import "../styles/Sidebar.css";
+  FiHome, FiGrid, FiUsers, FiCheckSquare, FiFileText, FiShare2, FiFeather,
+  FiUser, FiCreditCard, FiSettings, FiLifeBuoy, FiLogOut, FiMessageSquare, FiBriefcase, FiShield,
+} from 'react-icons/fi';
+import { useAuth } from '../context/AuthContext';
+import { Avatar } from './Navbar';
+import Badges from './Badges';
+import { useUnread } from '../context/UnreadContext';
+import '../styles/Sidebar.css';
 
-// ── Nav sections ──────────────────────────────
-const MAIN_LINKS = [
-  { to: "/dashboard",   icon: <FaHome />,        label: "Dashboard"   },
-  { to: "/clients",     icon: <FaUserFriends />,  label: "Clients"     },
-  { to: "/tasks",       icon: <FaTasks />,        label: "Tasks"       },
-  { to: "/invoices",    icon: <FaFileInvoice />,  label: "Invoices"    },
-  { to: "/connections", icon: <FaChartBar />,     label: "Connections" },
+const WORK = [
+  { to: '/home',        icon: FiHome,        label: 'Home' },
+  { to: '/dashboard',   icon: FiGrid,        label: 'Dashboard' },
+  { to: '/clients',     icon: FiUsers,       label: 'Clients' },
+  { to: '/tasks',       icon: FiCheckSquare, label: 'Tasks' },
+  { to: '/invoices',    icon: FiFileText,    label: 'Invoices' },
+  { to: '/messages',    icon: FiMessageSquare, label: 'Messages', count: 'unread' },
+  { to: '/jobs',        icon: FiBriefcase,   label: 'Jobs' },
+  { to: '/connections', icon: FiShare2,      label: 'Connections' },
+  { to: '/atelier',     icon: FiFeather,     label: 'Atelier' },
 ];
 
-const SECONDARY_LINKS = [
-  { to: "/profile",  icon: <FaUser />,  label: "Profile"  },
-  { to: "/settings", icon: <FaCogs />,  label: "Settings" },
+const ACCOUNT = [
+  { to: '/profile',  icon: FiUser,       label: 'Profile' },
+  { to: '/billing',  icon: FiCreditCard, label: 'Plan & billing' },
+  { to: '/settings', icon: FiSettings,   label: 'Settings' },
+  { to: '/support',  icon: FiLifeBuoy,   label: 'Support' },
 ];
 
-// ── Helper: initials avatar ───────────────────
-const getInitials = (name) => {
-  if (!name) return "U";
-  return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
-};
+const Item = ({ to, icon: Icon, label, onClose, badge }) => (
+  <li>
+    <NavLink to={to} end={to === '/profile'} className={({ isActive }) => `side-item${isActive ? ' is-active' : ''}`} onClick={onClose}>
+      <Icon aria-hidden="true" />
+      <span>{label}</span>
+      {badge > 0 && <span className="count-pill" aria-label={`${badge} unread`}>{badge > 99 ? '99+' : badge}</span>}
+    </NavLink>
+  </li>
+);
 
 const Sidebar = ({ isOpen, onClose }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, isPremium } = useAuth();
+  const { unread } = useUnread();
   const navigate = useNavigate();
-  const isPremium = user?.plan === "premium";
-
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-    onClose();
-  };
+  const until = isPremium && user?.planExpiresAt ? new Date(user.planExpiresAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : null;
 
   return (
-    <>
-      {/* Backdrop — clicking closes sidebar on mobile */}
-      <div
-        className={`sidebar-backdrop ${isOpen ? "active" : ""}`}
-        onClick={onClose}
-      />
+    <aside className={`side${isOpen ? ' is-open' : ''}`} aria-label="Primary">
+      <Link to="/profile" className="side-user" onClick={onClose}>
+        <Avatar user={user} size={36} />
+        <span className="side-user-text">
+          <strong>{user?.name || 'Freelancer'}<Badges badges={user?.badges} size={12} /></strong>
+          <span>{user?.title || user?.email}</span>
+        </span>
+      </Link>
 
-      <aside className={`sidebar ${isOpen ? "open" : ""}`}>
+      <nav className="side-nav">
+        <p className="side-group">Work</p>
+        <ul>{WORK.map((l) => <Item key={l.to} {...l} badge={l.count === 'unread' ? unread : 0} onClose={onClose} />)}</ul>
+        <p className="side-group">Account</p>
+        <ul>
+          {ACCOUNT.map((l) => <Item key={l.to} {...l} onClose={onClose} />)}
+          {user?.isAdmin && <Item to="/admin" icon={FiShield} label="Admin" onClose={onClose} />}
+        </ul>
+      </nav>
 
-        {/* ── User info at top ── */}
-        <div className="sidebar-user">
-          <div className="sidebar-user-avatar">
-            {/* ✅ FIXED: use user.avatar (matches backend User model) */}
-            {user?.avatar ? (
-              <img src={user.avatar} alt={user?.name} />
-            ) : (
-              <span>{getInitials(user?.name)}</span>
-            )}
-          </div>
-          <div className="sidebar-user-info">
-            <p className="sidebar-user-name">{user?.name || "Freelancer"}</p>
-            <p className="sidebar-user-plan">
-              {isPremium ? (
-                <span className="sidebar-premium-badge">
-                  <FaCrown style={{ fontSize: "9px" }} /> Premium
-                </span>
-              ) : (
-                <span className="sidebar-free-badge">Free Plan</span>
-              )}
-            </p>
-          </div>
-        </div>
-
-        {/* ── Main navigation ── */}
-        <nav className="sidebar-nav">
-
-          <p className="sidebar-section-label">Main</p>
-          <ul className="sidebar-menu">
-            {MAIN_LINKS.map(({ to, icon, label }) => (
-              <li key={to}>
-                <NavLink
-                  to={to}
-                  className={({ isActive }) =>
-                    "sidebar-item" + (isActive ? " active" : "")
-                  }
-                  onClick={onClose}
-                  title={label}
-                >
-                  <span className="sidebar-icon">{icon}</span>
-                  <span className="sidebar-text">{label}</span>
-                </NavLink>
-              </li>
-            ))}
-          </ul>
-
-          <p className="sidebar-section-label" style={{ marginTop: "20px" }}>Account</p>
-          <ul className="sidebar-menu">
-            {SECONDARY_LINKS.map(({ to, icon, label }) => (
-              <li key={to}>
-                <NavLink
-                  to={to}
-                  className={({ isActive }) =>
-                    "sidebar-item" + (isActive ? " active" : "")
-                  }
-                  onClick={onClose}
-                  title={label}
-                >
-                  <span className="sidebar-icon">{icon}</span>
-                  <span className="sidebar-text">{label}</span>
-                </NavLink>
-              </li>
-            ))}
-          </ul>
-
-        </nav>
-
-        {/* ── Atelier CTA ── ✅ FIXED: link to /atelier, not /create-task */}
-        <NavLink
-          to="/atelier"
-          className={({ isActive }) =>
-            "sidebar-action-button" + (isActive ? " active" : "")
-          }
-          onClick={onClose}
-          aria-label="Atelier"
-        >
-          <FaPalette className="sidebar-icon" />
-          <span className="sidebar-text">Atelier Studio</span>
-        </NavLink>
-
-        {/* ── Upgrade banner (free users only) ── */}
-        {!isPremium && (
-          <div className="sidebar-upgrade">
-            <FaCrown className="sidebar-upgrade-icon" />
-            <div>
-              <p className="sidebar-upgrade-title">Go Premium</p>
-              <p className="sidebar-upgrade-sub">Unlock AI features & more</p>
-            </div>
-            <NavLink to="/atelier" className="sidebar-upgrade-btn" onClick={onClose}>
-              Upgrade
-            </NavLink>
-          </div>
-        )}
-
-        {/* ── Footer: logout + copyright ── */}
-        <div className="sidebar-footer">
-          <button className="sidebar-logout-btn" onClick={handleLogout}>
-            <FaSignOutAlt />
-            <span>Sign Out</span>
-          </button>
-          <span className="sidebar-copyright">© {new Date().getFullYear()} Aurelance</span>
-        </div>
-
-      </aside>
-    </>
+      <div className="side-foot">
+        <Link to="/billing" className="side-plan" onClick={onClose}>
+          <span className={`side-plan-dot${isPremium ? ' is-premium' : ''}`} aria-hidden="true" />
+          {isPremium ? (until ? `Premium until ${until}` : 'Premium') : 'Free plan'}
+        </Link>
+        <button type="button" className="side-item side-signout" onClick={async () => { onClose(); await logout(); navigate('/login'); }}>
+          <FiLogOut aria-hidden="true" /><span>Sign out</span>
+        </button>
+      </div>
+    </aside>
   );
 };
 

@@ -1,0 +1,244 @@
+/* ============================================================
+   AURELANCE — design tokens + base
+   Direction: a cloth-bound account book. Bottle-green ink boards,
+   gilt tooling, bone paper text. Quiet everywhere; the gilt double
+   rule is the one ornament and it marks page titles only.
+   Every page stylesheet maps its local variables onto these.
+   ============================================================ */
+
+:root {
+  color-scheme: dark;
+
+  /* ── Ink (surfaces, darkest → lightest) ── */
+  --ink-0: #0C1612;          /* page */
+  --ink-1: #111D18;          /* panels */
+  --ink-2: #172520;          /* raised / inputs */
+  --ink-3: #1E2E27;          /* hover */
+  --ink-4: #2A3B33;          /* strong lines */
+  --veil:  rgba(8, 15, 12, 0.78);
+
+  /* ── Bone (text) ── */
+  --bone:   #ECE7D9;         /* primary text */
+  --bone-2: #A9B1A3;         /* secondary */
+  --bone-3: #6F7B72;         /* muted / captions */
+
+  /* ── Gilt (the brand accent) ── */
+  --gilt:       #CFA75A;
+  --gilt-hi:    #E6C98D;
+  --gilt-lo:    #A8833A;
+  --gilt-wash:  rgba(207, 167, 90, 0.12);
+  --gilt-line:  rgba(207, 167, 90, 0.34);
+  --on-gilt:    #13201A;     /* text on gilt buttons */
+
+  /* ── Signals (muted so they sit on green) ── */
+  --sage:   #7DC39A;  --sage-wash:  rgba(125, 195, 154, 0.13);   /* paid, done, positive */
+  --wax:    #D9605A;  --wax-wash:   rgba(217, 96, 90, 0.13);     /* overdue, destructive */
+  --ochre:  #E3A64B;  --ochre-wash: rgba(227, 166, 75, 0.13);    /* due soon, warning */
+  --slate:  #7FA6CF;  --slate-wash: rgba(127, 166, 207, 0.13);   /* sent, info */
+  --heather:#A99BD6;  --heather-wash: rgba(169, 155, 214, 0.13); /* leads, misc */
+
+  /* ── Lines ── */
+  --line:      rgba(222, 232, 216, 0.08);
+  --line-2:    rgba(222, 232, 216, 0.14);
+
+  /* ── Type ── */
+  --serif: 'Newsreader Variable', 'Newsreader', 'Iowan Old Style', Georgia, serif;
+  --sans:  'Schibsted Grotesk Variable', 'Schibsted Grotesk', 'Segoe UI', system-ui, sans-serif;
+  --mono:  'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace;
+
+  /* Type scale (1.2 minor third, 16px base) */
+  --fs-xs: 0.75rem;   /* 12 */
+  --fs-sm: 0.8125rem; /* 13 */
+  --fs-md: 0.9375rem; /* 15 */
+  --fs-lg: 1.125rem;  /* 18 */
+  --fs-xl: 1.375rem;  /* 22 */
+  --fs-2xl: 1.75rem;  /* 28 */
+  --fs-3xl: 2.25rem;  /* 36 */
+
+  /* ── Shape: radius follows hierarchy (controls < panels < sheets) ── */
+  --r-control: 6px;
+  --r-panel:   10px;
+  --r-sheet:   14px;
+  --r-pill:    999px;
+
+  --shadow-pop: 0 18px 50px rgba(3, 8, 6, 0.55), 0 0 0 1px var(--line);
+  --ease: cubic-bezier(.2, .7, .2, 1);
+
+  /* ── Layout ── */
+  --navbar-height: 60px;
+  --sidebar-width: 248px;
+
+  /* ── Legacy aliases (older stylesheets read these) ── */
+  --bg-base: var(--ink-0);  --bg-color: var(--ink-1);  --bg-surface: var(--ink-1);  --bg-raised: var(--ink-2);
+  --bg-overlay: var(--veil);
+  --text-primary: var(--bone);  --text-color: var(--bone);  --text-secondary: var(--bone-2);  --text-muted: var(--bone-3);
+  --gold: var(--gilt);  --gold-light: var(--gilt-hi);  --gold-dim: var(--gilt-wash);  --gold-hover: var(--gilt-wash);
+  --gold-border: var(--gilt-line);  --border-gold: var(--gilt-line);  --gold-glow: rgba(207, 167, 90, 0.22);
+  --accent: var(--gilt);  --accent-light: var(--gilt-hi);  --accent-color: var(--gilt);  --accent-dim: var(--gilt-wash);
+  --accent-hover: var(--gilt-wash);  --accent-border: var(--gilt-line);
+  --green: var(--sage);  --green-dim: var(--sage-wash);
+  --red: var(--wax);  --red-dim: var(--wax-wash);
+  --orange: var(--ochre);  --orange-dim: var(--ochre-wash);  --amber: var(--ochre);
+  --blue: var(--slate);  --blue-dim: var(--slate-wash);
+  --purple: var(--heather);
+  --border: var(--line);  --border-soft: var(--line);  --border-color: var(--line);
+  --font-display: var(--serif);  --display-font: var(--serif);
+  --font-body: var(--sans);  --font-family: var(--sans);  --navbar-font: var(--sans);
+  --radius-sm: var(--r-control);  --radius-md: 8px;  --radius-lg: var(--r-panel);  --radius-xl: var(--r-sheet);
+  --shadow-sm: 0 1px 2px rgba(3, 8, 6, 0.4);  --shadow-md: 0 8px 24px rgba(3, 8, 6, 0.45);  --shadow-lg: var(--shadow-pop);
+  --transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+  --transition-s: background-color .25s ease, border-color .25s ease, color .25s ease;
+}
+
+/* ── Base ─────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--ink-0);
+  color: var(--bone);
+  font-family: var(--sans);
+  font-size: var(--fs-md);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--serif);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  color: var(--bone);
+  margin: 0;
+}
+
+p { margin: 0; }
+
+a { color: var(--gilt-hi); text-decoration: none; }
+a:hover { color: var(--gilt); }
+
+img, svg { max-width: 100%; }
+
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+
+::selection { background: var(--gilt-wash); color: var(--bone); }
+
+:focus-visible { outline: 2px solid var(--gilt); outline-offset: 2px; border-radius: 4px; }
+:focus:not(:focus-visible) { outline: none; }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--ink-3); border-radius: 8px; border: 2px solid var(--ink-0); }
+::-webkit-scrollbar-thumb:hover { background: var(--ink-4); }
+
+input::placeholder, textarea::placeholder { color: var(--bone-3); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}
+
+/* ── Shared primitives (used by new pages: Billing, Settings, Auth, Legal) ── */
+
+/* Page title with the gilt double rule — the one ornament in the system. */
+.ledger-title { padding-bottom: 14px; margin-bottom: 28px; border-bottom: 3px double var(--gilt-line); }
+.ledger-title h1 { font-size: var(--fs-3xl); }
+.ledger-title p { margin-top: 6px; color: var(--bone-2); max-width: 62ch; }
+
+.panel { background: var(--ink-1); border: 1px solid var(--line); border-radius: var(--r-panel); }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 40px; padding: 0 16px; border-radius: var(--r-control);
+  border: 1px solid var(--line-2); background: var(--ink-2); color: var(--bone);
+  font-size: var(--fs-sm); font-weight: 600; letter-spacing: .01em; white-space: nowrap;
+  transition: var(--transition);
+}
+.btn:hover:not(:disabled) { background: var(--ink-3); border-color: var(--ink-4); color: var(--bone); }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+.btn-gilt { background: var(--gilt); border-color: var(--gilt); color: var(--on-gilt); }
+.btn-gilt:hover:not(:disabled) { background: var(--gilt-hi); border-color: var(--gilt-hi); color: var(--on-gilt); }
+.btn-ghost { background: transparent; border-color: transparent; color: var(--bone-2); }
+.btn-ghost:hover:not(:disabled) { background: var(--ink-2); border-color: transparent; }
+.btn-danger { background: transparent; border-color: rgba(217, 96, 90, .45); color: #EE8E87; }
+.btn-danger:hover:not(:disabled) { background: var(--wax-wash); border-color: var(--wax); color: #F4A9A3; }
+.btn-block { width: 100%; }
+.btn-sm { min-height: 32px; padding: 0 12px; }
+
+.field { display: grid; gap: 6px; }
+.field > span { font-size: var(--fs-sm); color: var(--bone-2); font-weight: 500; }
+.field small { color: var(--bone-3); font-size: var(--fs-xs); }
+.input {
+  width: 100%; min-height: 42px; padding: 0 12px; border-radius: var(--r-control);
+  background: var(--ink-2); border: 1px solid var(--line-2); color: var(--bone);
+  transition: border-color .15s ease, background-color .15s ease;
+}
+textarea.input { padding: 10px 12px; min-height: 96px; resize: vertical; line-height: 1.5; }
+.input:hover { border-color: var(--ink-4); }
+.input:focus { outline: none; border-color: var(--gilt); background: var(--ink-1); }
+.input[aria-invalid='true'] { border-color: var(--wax); }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 9px;
+  border-radius: var(--r-pill); font-size: var(--fs-xs); font-weight: 600;
+  background: var(--ink-2); color: var(--bone-2); border: 1px solid var(--line);
+}
+.chip-gilt { background: var(--gilt-wash); color: var(--gilt-hi); border-color: var(--gilt-line); }
+.chip-sage { background: var(--sage-wash); color: var(--sage); border-color: transparent; }
+.chip-wax  { background: var(--wax-wash);  color: #EE8E87; border-color: transparent; }
+.chip-ochre{ background: var(--ochre-wash); color: var(--ochre); border-color: transparent; }
+
+.notice { padding: 12px 14px; border-radius: var(--r-control); font-size: var(--fs-sm); border: 1px solid var(--line-2); background: var(--ink-2); color: var(--bone-2); }
+.notice-ok  { border-color: rgba(125,195,154,.35); background: var(--sage-wash); color: #B6E0C6; }
+.notice-err { border-color: rgba(217,96,90,.4);   background: var(--wax-wash);  color: #F2B0AA; }
+.notice-warn{ border-color: rgba(227,166,75,.4);  background: var(--ochre-wash); color: #F1C987; }
+
+.toggle { position: relative; width: 38px; height: 22px; border-radius: var(--r-pill); border: 1px solid var(--line-2); background: var(--ink-3); flex: none; transition: background-color .18s ease, border-color .18s ease; }
+.toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--bone-2); transition: transform .18s var(--ease), background-color .18s ease; }
+.toggle[aria-checked='true'] { background: var(--gilt); border-color: var(--gilt); }
+.toggle[aria-checked='true']::after { transform: translateX(16px); background: var(--on-gilt); }
+.toggle:disabled { opacity: .5; }
+
+.spinner { width: 16px; height: 16px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; animation: spin .7s linear infinite; display: inline-block; flex: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.money { font-variant-numeric: lining-nums; letter-spacing: -.005em; }
+
+.visually-hidden { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Toasts (components/Toast.jsx) */
+.toast-stack { position: fixed; z-index: 3000; bottom: 20px; left: 50%; transform: translateX(-50%); display: grid; gap: 8px; width: min(440px, calc(100vw - 32px)); pointer-events: none; }
+.toast { pointer-events: auto; display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: var(--r-panel); background: var(--ink-2); border: 1px solid var(--line-2); box-shadow: var(--shadow-pop); font-size: var(--fs-sm); animation: toast-in .22s var(--ease); }
+.toast-err { border-color: rgba(217,96,90,.5); }
+.toast-ok  { border-color: rgba(125,195,154,.45); }
+.toast button { margin-left: auto; background: none; border: 0; color: var(--bone-3); padding: 0 2px; }
+@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* Full-screen loader */
+.boot-screen { min-height: 100vh; display: grid; place-items: center; background: var(--ink-0); color: var(--gilt); }
+
+/* Premium lock chip (components/PremiumLock.jsx) — the only upsell element outside /billing */
+.premium-lock { display: grid; justify-items: start; gap: 10px; padding: 18px; border: 1px dashed var(--gilt-line); border-radius: var(--r-panel); background: linear-gradient(0deg, transparent, var(--gilt-wash)); }
+.premium-lock strong { font-family: var(--serif); font-weight: 500; font-size: var(--fs-lg); }
+.premium-lock p { color: var(--bone-2); font-size: var(--fs-sm); max-width: 48ch; }
+.premium-lock-inline { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: var(--r-pill); border: 1px solid var(--gilt-line); color: var(--gilt-hi); background: var(--gilt-wash); font-size: var(--fs-xs); font-weight: 600; }
+.premium-lock-inline:hover { color: var(--on-gilt); background: var(--gilt); border-color: var(--gilt); }
+
+/* Trust badges */
+.badges { display: inline-flex; align-items: center; gap: 4px; vertical-align: -2px; margin-left: 5px; }
+.badges-label { font-size: var(--fs-xs); color: var(--gilt-hi); font-weight: 600; }
+.badge-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.badge-list li { display: flex; gap: 10px; align-items: flex-start; color: var(--bone-3); }
+.badge-list li strong { display: block; color: var(--bone-2); font-weight: 600; font-size: var(--fs-sm); }
+.badge-list li small { font-size: var(--fs-xs); }
+.badge-dot { width: 18px; height: 18px; flex: none; border-radius: 50%; border: 1px dashed var(--line-2); display: grid; place-items: center; font-size: 11px; color: var(--on-gilt); margin-top: 1px; }
+.badge-list li.is-on .badge-dot { background: var(--gilt); border: 0; }
+.badge-list li.is-on strong { color: var(--bone); }
+
+/* Count pill (sidebar unread) */
+.count-pill { margin-left: auto; min-width: 20px; height: 20px; padding: 0 6px; border-radius: var(--r-pill); background: var(--gilt); color: var(--on-gilt); font-size: 11px; font-weight: 700; display: inline-grid; place-items: center; }
