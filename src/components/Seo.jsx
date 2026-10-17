@@ -6,10 +6,10 @@ const SITE = 'Aurelance';
 const ORIGIN = process.env.REACT_APP_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : '');
 
 const ROUTES = {
-  '/':            ['Aurelance — the back office for independent work', 'Clients, invoices, tasks and your network in one ledger. Built for freelancers who bill every month.'],
-  '/about':       ['About', 'Why Aurelance exists and what it does for freelancers.'],
+  '/':            ['Aurelance — the freelance marketplace that keeps the record', 'See how a client treats freelancers before you apply: response rate, how fast they pay, whether they stick to scope. Signed milestone contracts, verified payouts, no bidding credits.'],
+  '/about':       ['About', 'Why Aurelance exists and the freelancing problems it is built to stop.'],
   '/contact':     ['Contact', 'Write to the Aurelance team. We reply within one business day.'],
-  '/pricing':     ['Pricing', 'Free for the essentials. Premium for analytics, contracts, proposals and AI.'],
+  '/pricing':     ['Pricing', 'Free to apply and hire. Premium for unlimited applications, more job posts and faster reviews.'],
   '/privacy':     ['Privacy policy', 'How Aurelance collects, uses and protects your data.'],
   '/terms':       ['Terms of service', 'The terms for using Aurelance.'],
   '/refunds':     ['Refund policy', 'How refunds work for Aurelance Premium.'],
@@ -18,18 +18,16 @@ const ROUTES = {
   '/forgot-password': ['Reset password', 'Get a link to reset your Aurelance password.'],
   '/reset-password':  ['Choose a new password', ''],
   '/home':        ['Home', ''],
-  '/dashboard':   ['Dashboard', ''],
-  '/clients':     ['Clients', ''],
-  '/tasks':       ['Tasks', ''],
-  '/invoices':    ['Invoices', ''],
-  '/connections': ['Connections', ''],
-  '/atelier':     ['Atelier', ''],
+  '/contracts':   ['Contracts', ''],
+  '/talent':      ['Find talent', ''],
+  '/squads':      ['Squad', ''],
+  '/network':     ['Network', ''],
   '/profile':     ['Profile', ''],
   '/settings':    ['Settings', ''],
-  '/billing':     ['Plan & billing', ''],
+  '/billing':     ['Plans', 'Free to apply and hire. Premium for unlimited applications, more job posts and faster reviews.'],
   '/support':     ['Support', 'Answers, tickets and help with Aurelance.'],
   '/messages':    ['Messages', ''],
-  '/jobs':        ['Jobs', ''],
+  '/jobs':        ['Find work', ''],
   '/admin':       ['Admin', ''],
 };
 

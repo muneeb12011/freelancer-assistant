@@ -58,22 +58,22 @@ const TABS = [
 ];
 
 const SUGGESTIONS = [
-  'How do I create an invoice?',
-  'What is Atelier?',
-  'How do I add a client?',
+  'How does the scope lock work?',
+  'How do I verify my payout method?',
+  'A client hasn’t answered my application',
+  'How do I record that I paid a milestone?',
   'I cannot log in to my account',
-  'How do Smart Contracts work?',
   'What does Premium include?',
 ];
 
 /* ── Quick nav links (shown in Help tab) ─────────────────── */
 const QUICK_LINKS = [
-  { label:'Create Invoice',    path:'/invoices',    color:'#CFA75A', desc:'New invoice in 60 seconds'         },
-  { label:'Add a Client',      path:'/clients',     color:'#7FA6CF', desc:'Open your client CRM'              },
-  { label:'Atelier',           path:'/atelier',     color:'#A99BD6', desc:'Rate calculator, estimator, notes and more' },
-  { label:'Account Settings',  path:'/settings',    color:'#7DC39A', desc:'Password, security, notifications' },
-  { label:'Task Board',        path:'/tasks',       color:'#E3A64B', desc:'Kanban board and deadlines'         },
-  { label:'Plan & billing',    path:'/billing',     color:'#CFA75A', desc:'Your plan, receipts and renewal'   },
+  { label:'Post a job',        path:'/jobs/new',    color:'#CFA75A', desc:'Or a small paid trial task'          },
+  { label:'Contracts',         path:'/contracts',   color:'#7FA6CF', desc:'Milestones, deliveries and payments' },
+  { label:'Payout methods',    path:'/settings?tab=payouts', color:'#7DC39A', desc:'Bank, Payoneer, Wise, card' },
+  { label:'ID verification',   path:'/settings?tab=verification', color:'#A99BD6', desc:'Get the verified badge' },
+  { label:'Squads',            path:'/talent?tab=mine', color:'#E3A64B', desc:'Team up for bigger jobs'         },
+  { label:'Plans',             path:'/billing',     color:'#CFA75A', desc:'Your plan, receipts and renewal'   },
 ];
 
 /* ════════════════════════════════════════════════════════════
@@ -211,7 +211,7 @@ export default function Support() {
     if (tab === 'chat' && chatMsgs.length === 0) {
       setChatMsgs([{
         role: 'assistant',
-        content: `Hi${user?.name ? ` ${user.name.split(' ')[0]}` : ''}! I'm the Aurelance Support AI — I can help with invoicing, clients, tasks, billing, and any technical questions. What can I help you with?`,
+        content: `Hi${user?.name ? ` ${user.name.split(' ')[0]}` : ''}! I'm the Aurelance Support AI — I can help with jobs, contracts, payouts, verification, billing and technical questions. What can I help you with?`,
         ts: new Date(),
       }]);
     }
@@ -260,8 +260,8 @@ export default function Support() {
         overall: 'operational',
         services: [
           { name:'API',          status:'operational' },
-          { name:'Dashboard',    status:'operational' },
-          { name:'Invoicing',    status:'operational' },
+          { name:'Jobs & contracts', status:'operational' },
+          { name:'Messages',     status:'operational' },
           { name:'AI Features',  status:'operational' },
           { name:'Auth',         status:'operational' },
           { name:'File Storage', status:'operational' },
@@ -451,9 +451,10 @@ export default function Support() {
                       onChange={e => setContactForm(f => ({...f, category:e.target.value}))}>
                       <option value="general">General Question</option>
                       <option value="billing">Billing &amp; Payments</option>
-                      <option value="invoices">Invoices</option>
-                      <option value="clients">Clients</option>
-                      <option value="tasks">Tasks &amp; Deadlines</option>
+                      <option value="jobs">Jobs &amp; applications</option>
+                      <option value="contracts">Contracts &amp; payments</option>
+                      <option value="safety">Scam or safety concern</option>
+                      <option value="verification">Verification &amp; payouts</option>
                       <option value="ai">AI Features</option>
                       <option value="account">Account &amp; Security</option>
                       <option value="technical">Technical Issue</option>
@@ -839,7 +840,7 @@ export default function Support() {
                       <option value="general">General Experience</option>
                       <option value="ai">AI Features</option>
                       <option value="billing">Billing</option>
-                      <option value="invoices">Invoicing</option>
+                      <option value="contracts">Contracts</option>
                       <option value="ui">Interface &amp; Design</option>
                       <option value="performance">Performance</option>
                       <option value="feature">Feature Request</option>

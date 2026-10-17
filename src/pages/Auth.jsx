@@ -138,14 +138,14 @@ export default function Auth({ mode: initialMode = 'login' }) {
         <div className="au-cover-frame">
           <Logo size={34} />
           <div className="au-cover-text">
-            <p className="au-cover-line">Accounts kept by</p>
+            <p className="au-cover-line">The working record of</p>
             <p className="au-cover-name">{form.name.trim() || 'an independent'}</p>
           </div>
           <dl className="au-cover-index">
-            <div><dt>Clients</dt><dd>i</dd></div>
-            <div><dt>Invoices</dt><dd>ii</dd></div>
-            <div><dt>Tasks &amp; hours</dt><dd>iii</dd></div>
-            <div><dt>Network</dt><dd>iv</dd></div>
+            <div><dt>Jobs answered</dt><dd>i</dd></div>
+            <div><dt>Contracts signed</dt><dd>ii</dd></div>
+            <div><dt>Payments confirmed</dt><dd>iii</dd></div>
+            <div><dt>Reviews revealed</dt><dd>iv</dd></div>
           </dl>
         </div>
       </aside>

@@ -1,0 +1,47 @@
+/* Talent — cards here are deliberate: each person is a record you compare side by side. */
+.tl-filters { display: grid; gap: 12px; margin-bottom: 22px; }
+.tl-filter-row { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+.tl-pay-filter { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tl-pay-filter .pay-tag { background: none; cursor: pointer; }
+.tl-rate-filter { display: inline-flex; align-items: center; gap: 8px; }
+.tl-rate-filter .input { width: 90px; min-height: 34px; }
+.tl-sort { width: auto; min-height: 34px; margin-left: auto; }
+
+.tl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+.tl-card { padding: 16px; border: 1px solid var(--line); border-radius: var(--r-panel); background: var(--ink-1); display: grid; gap: 10px; align-content: start; }
+.tl-card .jb-skills { margin-top: 0; }
+.tl-rate { display: flex; align-items: baseline; gap: 6px; font-size: var(--fs-sm); color: var(--bone-3); }
+.tl-rate .money { font-family: var(--serif); font-size: var(--fs-xl); color: var(--bone); }
+.tl-avail { margin-left: auto; font-size: var(--fs-xs); font-weight: 600; color: var(--sage); }
+.tl-avail.is-busy { color: var(--ochre); }
+.tl-bio { font-size: var(--fs-sm); color: var(--bone-2); line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.tl-card-foot { display: flex; gap: 6px; padding-top: 10px; border-top: 1px solid var(--line); margin-top: auto; }
+
+.tl-squad { border-color: rgba(169,155,214,.3); }
+.tl-squad-head { display: flex; gap: 12px; align-items: center; color: var(--bone); }
+.tl-squad-head > span:last-child { display: grid; min-width: 0; }
+.tl-squad-head strong { font-family: var(--serif); font-weight: 500; font-size: var(--fs-xl); }
+.tl-squad-head small { color: var(--bone-3); font-size: var(--fs-xs); }
+.tl-stack { display: flex; }
+.tl-stack .avatar + .avatar { margin-left: -10px; box-shadow: 0 0 0 2px var(--ink-1), inset 0 0 0 1px var(--gilt-line); }
+.tl-roles { font-size: var(--fs-sm); color: var(--bone-2); }
+
+.tl-invites { padding: 16px; border: 1px solid var(--gilt-line); border-radius: var(--r-panel); background: var(--gilt-wash); display: grid; gap: 10px; }
+.tl-invites h2 { font-size: var(--fs-lg); }
+.tl-invite { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; font-size: var(--fs-sm); }
+
+.tl-about { color: var(--bone-2); white-space: pre-wrap; line-height: 1.7; max-width: 68ch; margin-bottom: 14px; }
+.tl-members { margin: 28px 0; }
+.tl-members h2, .tl-lead h2 { font-size: var(--fs-xl); margin-bottom: 10px; }
+.tl-members ul { list-style: none; margin: 0; padding: 0; border-top: 3px double var(--gilt-line); }
+.tl-members li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.tl-members li .rc-line { grid-column: 1; }
+.tl-lead { display: grid; gap: 14px; padding: 18px; border: 1px solid var(--line); border-radius: var(--r-panel); margin-bottom: 18px; }
+.tl-invite-form { display: grid; grid-template-columns: minmax(0, 1fr) 180px auto; gap: 10px; align-items: end; }
+
+@media (max-width: 760px) {
+  .tl-grid { grid-template-columns: 1fr; }
+  .tl-sort { margin-left: 0; width: 100%; }
+  .tl-invite-form { grid-template-columns: 1fr; }
+}
+.tl-pay-filter .pay-tag.is-verified { background: var(--sage-wash); }

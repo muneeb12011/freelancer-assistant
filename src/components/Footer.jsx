@@ -28,7 +28,7 @@ export default function Footer() {
       <div className="foot-grid">
         <div className="foot-brand">
           <Logo size={26} />
-          <p>The back office for independent work. Made in Lahore.</p>
+          <p>The freelance marketplace that keeps the record. Made in Lahore.</p>
         </div>
         <nav className="foot-col" aria-label="Product">
           <strong>Product</strong>

@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
-import Sidebar from './Sidebar';
+import Sidebar, { TabBar } from './Sidebar';
 import ErrorBoundary from './ErrorBoundary';
 import '../styles/Layout.css';
 
@@ -28,6 +28,7 @@ const Layout = () => {
           <Outlet />
         </ErrorBoundary>
       </main>
+      <TabBar />
     </div>
   );
 };

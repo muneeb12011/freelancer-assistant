@@ -1,0 +1,144 @@
+/* Shared marketplace pieces: report cards, modals, tabs, status chips, safety notes, mobile tab bar. */
+
+/* ── Layout helpers ── */
+.stack { display: grid; gap: 14px; }
+.stack-sm { display: grid; gap: 8px; }
+.row-wrap { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.muted { color: var(--bone-2); }
+.muted-sm { color: var(--bone-3); font-size: var(--fs-xs); line-height: 1.5; }
+.page { max-width: 1120px; }
+.page-narrow { max-width: 820px; }
+.page-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+.page-head > div { min-width: 0; }
+
+/* Tabs used by every list page (one style everywhere) */
+.tabs { display: flex; gap: 2px; margin: -8px 0 20px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--line); }
+.tabs::-webkit-scrollbar { display: none; }
+.tabs button, .tabs a { flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 10px 14px; border: 0; background: none; color: var(--bone-2); font-size: var(--fs-sm); font-weight: 600; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tabs button:hover, .tabs a:hover { color: var(--bone); }
+.tabs .is-on { color: var(--bone); border-bottom-color: var(--gilt); }
+.tabs .count-pill { margin-left: 2px; min-width: 18px; height: 18px; font-size: 10px; }
+
+.radio-list { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; }
+.radio-list label { display: flex; gap: 10px; align-items: center; font-size: var(--fs-sm); color: var(--bone-2); cursor: pointer; }
+.radio-list input, .check input { accent-color: var(--gilt); }
+.check { display: flex; gap: 8px; align-items: center; font-size: var(--fs-sm); color: var(--bone-2); cursor: pointer; }
+
+/* Status chips (application + contract states) */
+.chip-slate { background: var(--slate-wash); color: var(--slate); border-color: transparent; }
+.chip-heather { background: var(--heather-wash); color: var(--heather); border-color: transparent; }
+
+/* ── Report card ── */
+.rc-line { display: inline-flex; flex-wrap: wrap; gap: 2px 12px; font-size: var(--fs-xs); color: var(--bone-3); }
+.rc-line > span { display: inline-flex; align-items: center; gap: 4px; }
+.rc-line .is-good { color: var(--sage); }
+.rc-line .is-bad { color: #EE8E87; }
+.rc-new { font-style: italic; }
+.rc-stars { display: inline-flex; align-items: center; gap: 3px; color: var(--gilt-hi); font-weight: 600; }
+.rc-stars svg { width: 12px; height: 12px; }
+
+.rc { border: 1px solid var(--line); border-radius: var(--r-panel); background: var(--ink-1); }
+.rc h3 { font-size: var(--fs-lg); padding: 14px 16px 10px; border-bottom: 3px double var(--gilt-line); }
+.rc dl { margin: 0; }
+.rc dl > div { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: baseline; padding: 11px 16px; border-bottom: 1px solid var(--line); }
+.rc dl > div:last-child { border-bottom: 0; }
+.rc dt { font-size: var(--fs-sm); color: var(--bone); display: grid; gap: 2px; }
+.rc dt small { color: var(--bone-3); font-size: var(--fs-xs); }
+.rc dd { margin: 0; font-family: var(--serif); font-size: var(--fs-xl); color: var(--bone); white-space: nowrap; }
+.rc .is-good dd { color: var(--sage); }
+.rc .is-bad dd { color: #EE8E87; }
+.rc-empty { padding: 14px 16px 16px; color: var(--bone-3); font-size: var(--fs-sm); }
+
+/* ── Safety (scam shield) ── */
+.safety { border: 1px solid rgba(227,166,75,.4); background: var(--ochre-wash); border-radius: var(--r-panel); padding: 14px 16px; display: grid; gap: 8px; }
+.safety strong { color: #F1C987; font-weight: 600; display: flex; gap: 8px; align-items: center; }
+.safety ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; color: #EAD3A8; font-size: var(--fs-sm); }
+.safety li small { display: block; color: var(--bone-2); }
+
+/* ── Modal (bottom sheet on phones) ── */
+.modal-scrim { position: fixed; inset: 0; z-index: 2500; background: var(--veil); display: grid; place-items: center; padding: 16px; animation: toast-in .16s var(--ease); }
+.modal { width: min(520px, 100%); max-height: calc(100vh - 32px); overflow: auto; background: var(--ink-1); border: 1px solid var(--line-2); border-radius: var(--r-sheet); box-shadow: var(--shadow-pop); }
+.modal-wide { width: min(760px, 100%); }
+.modal-head { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px; background: var(--ink-1); border-bottom: 1px solid var(--line); }
+.modal-head h2 { font-size: var(--fs-xl); }
+.modal-x { width: 34px; height: 34px; border-radius: var(--r-control); border: 0; background: none; color: var(--bone-2); display: grid; place-items: center; font-size: 18px; }
+.modal-x:hover { background: var(--ink-2); color: var(--bone); }
+.modal-body { padding: 18px; }
+
+/* ── Person row (used in lists) ── */
+.person { display: flex; align-items: center; gap: 12px; min-width: 0; color: var(--bone); }
+.person:hover { color: var(--bone); }
+.person > span { display: grid; min-width: 0; gap: 1px; }
+.person strong { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.person small { color: var(--bone-3); font-size: var(--fs-xs); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.empty { padding: 36px 0; display: grid; gap: 10px; justify-items: start; max-width: 54ch; }
+.empty h3 { font-size: var(--fs-xl); font-weight: 400; }
+.empty p { color: var(--bone-2); }
+
+/* Payout type tags (public; no numbers) */
+.pay-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.pay-tag { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: var(--r-pill); border: 1px solid var(--line-2); font-size: var(--fs-xs); color: var(--bone-2); font-weight: 600; }
+.pay-tag.is-verified { border-color: rgba(125,195,154,.4); color: var(--sage); background: var(--sage-wash); }
+
+/* ── Mobile tab bar (replaces the drawer on phones) ── */
+.tabbar { display: none; }
+@media (max-width: 760px) {
+  .tabbar {
+    display: grid; grid-template-columns: repeat(5, 1fr); position: fixed; z-index: 1000; left: 0; right: 0; bottom: 0;
+    height: calc(60px + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom);
+    background: rgba(12, 22, 18, 0.96); backdrop-filter: blur(10px); border-top: 1px solid var(--line);
+  }
+  .tabbar a { position: relative; display: grid; justify-items: center; align-content: center; gap: 3px; color: var(--bone-3); font-size: 11px; font-weight: 600; }
+  .tabbar a svg { font-size: 19px; }
+  .tabbar a.active { color: var(--bone); }
+  .tabbar a.active svg { color: var(--gilt); }
+  .tabbar .count-pill { position: absolute; top: 6px; left: calc(50% + 4px); margin: 0; min-width: 16px; height: 16px; font-size: 9px; padding: 0 4px; }
+  .modal-scrim { place-items: end center; padding: 0; }
+  .modal, .modal-wide { width: 100%; max-height: 88vh; border-radius: var(--r-sheet) var(--r-sheet) 0 0; padding-bottom: env(safe-area-inset-bottom); }
+}
+
+.ct-n { margin-left: 4px; font-size: var(--fs-xs); color: var(--bone-3); font-weight: 600; }
+
+/* Payouts (Settings) */
+.py-types { border: 0; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.py-types label { position: relative; display: grid; gap: 2px; padding: 10px 12px; border: 1px solid var(--line-2); border-radius: var(--r-control); cursor: pointer; }
+.py-types label.is-on { border-color: var(--gilt); background: var(--gilt-wash); }
+.py-types label:focus-within { outline: 2px solid var(--gilt); outline-offset: 2px; }
+.py-types input { position: absolute; opacity: 0; pointer-events: none; }
+.py-types strong { font-size: var(--fs-sm); font-weight: 600; }
+.py-types span { font-size: var(--fs-xs); color: var(--bone-3); }
+.py-mono { font-family: var(--mono); letter-spacing: .02em; }
+.py-list { list-style: none; margin: 14px 0 0; padding: 0; border-top: 1px solid var(--line); }
+.py-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.py-row-main { display: grid; gap: 4px; min-width: 0; }
+.py-row-main strong { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-weight: 600; }
+.py-row-main small { color: var(--bone-3); font-size: var(--fs-xs); }
+.py-row-actions { display: flex; gap: 4px; align-items: start; flex-wrap: wrap; justify-content: flex-end; }
+.py-inline { grid-column: 1 / -1; display: grid; gap: 10px; padding: 12px; border: 1px solid var(--line-2); border-radius: var(--r-panel); background: var(--ink-1); }
+.py-inline form.row-wrap .input, .py-pass { width: auto; flex: 1; min-width: 160px; }
+@media (max-width: 640px) {
+  .py-types { grid-template-columns: 1fr; }
+  .py-row { grid-template-columns: 1fr; }
+  .py-row-actions { justify-content: flex-start; }
+}
+
+/* Two-column form row used in modals across pages */
+.pf-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 640px) { .pf-two { grid-template-columns: 1fr; } }
+
+/* Shared by Jobs, Talent, Network, Profile, Contracts */
+.jb-back { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 14px; font-size: var(--fs-sm); color: var(--bone-2); }
+.jb-search { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 10px; border-radius: var(--r-control); background: var(--ink-2); border: 1px solid var(--line-2); color: var(--bone-3); }
+.jb-search:focus-within { border-color: var(--gilt); }
+.jb-search input { flex: 1; min-width: 0; border: 0; background: none; outline: none; font-size: var(--fs-sm); }
+.jb-search button { border: 0; background: none; color: var(--bone-3); display: grid; }
+.jb-skills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.jb-skills span { padding: 2px 9px; border-radius: var(--r-pill); border: 1px solid var(--line-2); font-size: var(--fs-xs); color: var(--bone-2); }
+.jb-gap { margin: 0 0 18px; }
+.jb-dim { color: var(--bone-3); font-size: var(--fs-xs); display: inline-flex; align-items: center; gap: 4px; }
+.jb-note { margin-bottom: 8px; }
+.jb-pills { display: flex; gap: 4px; flex-wrap: wrap; }
+.jb-pills button { padding: 5px 10px; border-radius: var(--r-pill); border: 1px solid var(--line-2); background: none; color: var(--bone-2); font-size: var(--fs-xs); font-weight: 600; }
+.jb-pills button.is-on { background: var(--ink-2); color: var(--bone); border-color: var(--ink-4); }
+.chip { font-family: var(--sans); font-style: normal; letter-spacing: 0; }

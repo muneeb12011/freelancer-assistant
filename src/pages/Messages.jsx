@@ -263,7 +263,7 @@ function Thread({ id, onActivity }) {
         {!messages.length && <p className="ms-first">This is the start of your conversation with {other.name.split(' ')[0]}. Say what you need and when — clear first messages get faster replies.</p>}
         {grouped.map((m) => {
           if (m.day) return <div key={m.key} className="ms-day"><span>{m.day}</span></div>;
-          if (m.kind === 'system') return <p key={m._id} className="ms-system">{m.text}</p>;
+          if (m.kind === 'system') return <p key={m._id} className="ms-system">{m.text}{/contract|milestone|signed|trial|change/i.test(m.text) && <> <Link to="/contracts" className="ms-system-link">Open contracts</Link></>}</p>;
           return (
             <div key={m._id} className={`ms-msg${m.mine ? ' is-mine' : ''}`}>
               <div className="ms-bubble">
@@ -280,6 +280,13 @@ function Thread({ id, onActivity }) {
                   </>
                 )}
               </div>
+              {!m.mine && !m.deleted && m.flags?.length > 0 && (
+                <div className="ms-caution" role="note">
+                  <strong>Careful — this message {m.flags.map((f) => f.label.charAt(0).toLowerCase() + f.label.slice(1)).join(' and ')}.</strong>
+                  <span>{m.flags[0].tip}</span>
+                </div>
+              )}
+              {m.mine && !m.deleted && m.flags?.length > 0 && <p className="ms-caution-mine">The other person sees a safety note on this message.</p>}
               <div className="ms-meta">
                 <time dateTime={m.createdAt}>{timeOf(m.createdAt)}</time>
                 {m.mine && lastMine?._id === m._id && <span>{m.readAt ? 'Seen' : 'Sent'}</span>}

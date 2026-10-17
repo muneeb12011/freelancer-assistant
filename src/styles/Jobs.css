@@ -1,22 +1,17 @@
 /* Jobs — a notice board ruled like a ledger: one entry per row, budget in the amount column. */
 .jb { max-width: 1180px; }
 .jb-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; flex-wrap: wrap; }
-.jb-back { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 14px; font-size: var(--fs-sm); color: var(--bone-2); }
-.jb-dim { color: var(--bone-3); font-size: var(--fs-xs); display: inline-flex; align-items: center; gap: 4px; }
-.jb-note { margin-bottom: 8px; }
 
 .jb-tabs { display: flex; align-items: center; gap: 4px; margin: -8px 0 20px; flex-wrap: wrap; }
 .jb-tabs button { padding: 8px 14px; border: 0; border-radius: var(--r-control); background: none; color: var(--bone-2); font-size: var(--fs-sm); font-weight: 600; }
 .jb-tabs button:hover { background: var(--ink-1); color: var(--bone); }
 .jb-tabs button.is-on { background: var(--ink-2); color: var(--bone); box-shadow: inset 0 -2px 0 var(--gilt); }
-.jb-limits { margin-left: auto; font-size: var(--fs-xs); color: var(--bone-3); }
+.jb-limits { margin: -10px 0 18px; font-size: var(--fs-xs); color: var(--bone-3); }
 
 .jb-browse { display: grid; grid-template-columns: 240px 1fr; gap: 28px; align-items: start; }
 .jb-filters { position: sticky; top: calc(var(--navbar-height) + 20px); display: grid; gap: 18px; }
-.jb-search { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 10px; border-radius: var(--r-control); background: var(--ink-2); border: 1px solid var(--line-2); color: var(--bone-3); }
-.jb-search:focus-within { border-color: var(--gilt); }
-.jb-search input { flex: 1; min-width: 0; border: 0; background: none; outline: none; font-size: var(--fs-sm); }
-.jb-search button { border: 0; background: none; color: var(--bone-3); display: grid; }
+.jb-filter-body { display: grid; gap: 18px; }
+.jb-filter-toggle { display: none; }
 .jb-radio { border: 0; padding: 0; margin: 0; display: grid; gap: 6px; }
 .jb-radio legend { font-size: var(--fs-sm); color: var(--bone-2); font-weight: 500; margin-bottom: 4px; }
 .jb-radio label { display: flex; align-items: center; gap: 8px; font-size: var(--fs-sm); color: var(--bone-2); cursor: pointer; }
@@ -36,8 +31,6 @@
 .jb-row-desc { margin-top: 10px; color: var(--bone-2); font-size: var(--fs-sm); line-height: 1.6; max-width: 72ch; }
 .jb-row-by { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; margin-top: 12px; font-size: var(--fs-sm); color: var(--bone-2); }
 .jb-row-by .avatar { margin-right: -4px; }
-.jb-skills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-.jb-skills span { padding: 2px 9px; border-radius: var(--r-pill); border: 1px solid var(--line-2); font-size: var(--fs-xs); color: var(--bone-2); }
 .jb-row-side { display: grid; align-content: start; justify-items: end; gap: 6px; text-align: right; }
 .jb-budget { font-family: var(--serif); font-size: var(--fs-xl); color: var(--bone); line-height: 1.1; }
 .jb-save { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; padding: 5px 10px; border-radius: var(--r-control); border: 1px solid var(--line-2); background: none; color: var(--bone-2); font-size: var(--fs-xs); font-weight: 600; }
@@ -82,9 +75,6 @@
 .jb-applicants { margin-top: 40px; padding-top: 18px; border-top: 3px double var(--gilt-line); }
 .jb-applicants-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
 .jb-applicants h2 { font-size: var(--fs-2xl); }
-.jb-pills { display: flex; gap: 4px; flex-wrap: wrap; }
-.jb-pills button { padding: 5px 10px; border-radius: var(--r-pill); border: 1px solid var(--line-2); background: none; color: var(--bone-2); font-size: var(--fs-xs); font-weight: 600; }
-.jb-pills button.is-on { background: var(--ink-2); color: var(--bone); border-color: var(--ink-4); }
 .jb-app { padding: 18px 0; border-bottom: 1px solid var(--line); display: grid; gap: 10px; }
 .jb-app header { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
 .jb-app-bid { font-family: var(--serif); font-size: var(--fs-xl); text-align: right; display: grid; }
@@ -98,8 +88,6 @@
 @media (max-width: 980px) {
   .jb-browse, .jb-detail-grid { grid-template-columns: 1fr; }
   .jb-filters, .jb-side { position: static; }
-  .jb-filters { grid-template-columns: 1fr 1fr; }
-  .jb-filters .jb-search { grid-column: 1 / -1; }
 }
 @media (max-width: 640px) {
   .jb-row { grid-template-columns: 1fr; gap: 10px; }
@@ -108,4 +96,49 @@
   .jb-facts { grid-template-columns: 1fr; }
   .jb-facts div + div { border-left: 0; border-top: 1px solid var(--line); }
   .jb-limits { margin-left: 0; width: 100%; }
+}
+
+/* Marketplace additions */
+.jb-row-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.jb-row-tags:empty { display: none; }
+.jb-poster-name { display: inline-flex; align-items: center; gap: 6px; color: var(--bone-2); }
+.jb-row-by { display: grid; gap: 4px; }
+.jb-kind { border: 0; padding: 0; margin: 0 0 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.jb-kind label { display: grid; gap: 4px; padding: 14px 16px; border: 1px solid var(--line-2); border-radius: var(--r-panel); cursor: pointer; background: var(--ink-1); }
+.jb-kind label.is-on { border-color: var(--gilt); background: var(--gilt-wash); }
+.jb-kind input { position: absolute; opacity: 0; pointer-events: none; }
+.jb-kind label:focus-within { outline: 2px solid var(--gilt); outline-offset: 2px; }
+.jb-kind strong { font-family: var(--serif); font-weight: 500; font-size: var(--fs-lg); }
+.jb-kind span { color: var(--bone-2); font-size: var(--fs-sm); }
+.jb-ai { display: grid; gap: 8px; justify-items: start; margin-bottom: 22px; padding: 14px 16px; border: 1px dashed var(--line-2); border-radius: var(--r-panel); }
+.jb-ai .field { width: 100%; }
+.jb-squad { padding: 10px 12px; border-left: 2px solid var(--heather); background: var(--heather-wash); border-radius: 0 var(--r-control) var(--r-control) 0; font-size: var(--fs-sm); }
+.jb-squad strong { font-weight: 600; color: var(--bone); }
+.jb-squad ul { margin: 4px 0 0; padding-left: 18px; color: var(--bone-2); }
+.jb-track { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.jb-track li { position: relative; padding: 0 0 12px 22px; font-size: var(--fs-sm); color: var(--bone-3); }
+.jb-track li::before { content: ''; position: absolute; left: 4px; top: 6px; width: 8px; height: 8px; border-radius: 50%; border: 1px solid var(--bone-3); }
+.jb-track li::after { content: ''; position: absolute; left: 8px; top: 16px; bottom: 0; width: 1px; background: var(--line-2); }
+.jb-track li:last-child::after { display: none; }
+.jb-track li.is-done { color: var(--bone); }
+.jb-track li.is-done::before { background: var(--gilt); border-color: var(--gilt); }
+.jb-card-toggle { justify-self: start; padding-left: 0; }
+.jb-poster { gap: 10px !important; }
+
+@media (max-width: 980px) {
+  .jb-filters { grid-template-columns: 1fr auto; align-items: center; }
+  .jb-filters .jb-search { grid-column: auto; }
+  .jb-filter-toggle { display: inline-flex; }
+  .jb-filter-body { display: none; grid-column: 1 / -1; grid-template-columns: 1fr 1fr; padding: 14px; border: 1px solid var(--line); border-radius: var(--r-panel); background: var(--ink-1); }
+  .jb-filters.is-open .jb-filter-body { display: grid; }
+}
+@media (max-width: 640px) {
+  .jb-kind { grid-template-columns: 1fr; }
+  .jb-filter-body { grid-template-columns: 1fr; }
+  .jb-row-side { grid-auto-flow: row; justify-items: start; gap: 4px; }
+  .jb-app header { flex-direction: column; }
+  .jb-app-bid { text-align: left; }
+  .jb-app-actions { margin-left: 0; width: 100%; }
+  .jb-app-actions .btn { flex: 1 1 auto; }
+  .jb-row h3 { font-size: var(--fs-lg); }
 }

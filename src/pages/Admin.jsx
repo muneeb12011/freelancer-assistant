@@ -1,10 +1,98 @@
 // src/pages/Admin.jsx — operator console (ADMIN_EMAILS only): ID review queue, tickets, totals.
 import React, { useCallback, useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import '../styles/Admin.css';
+
+/* Payout method review: proof + decrypted details + the verified ID name, side by side. */
+function PayoutQueue() {
+  const toast = useToast();
+  const [rows, setRows] = useState([]);
+  const [open, setOpen] = useState(null);
+  const [reason, setReason] = useState('');
+  const load = useCallback(() => api.get('/admin/payouts').then((r) => setRows(r.payouts)).catch((e) => toast.err(e)), []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, [load]);
+  const view = async (id) => { setOpen({ loading: true }); setReason(''); try { setOpen((await api.get(`/admin/payouts/${id}`)).payout); } catch (e) { toast.err(e); setOpen(null); } };
+  const decide = async (approve) => {
+    try { await api.post(`/admin/payouts/${open._id}/${approve ? 'approve' : 'reject'}`, { reason }); toast.ok(approve ? 'Verified — proof deleted' : 'Rejected — proof deleted'); setOpen(null); load(); } catch (e) { toast.err(e); }
+  };
+  return (
+    <div className="ad-grid">
+      <ul className="ad-list">
+        {rows.map((m) => (
+          <li key={m._id}><button type="button" className={open?._id === m._id ? 'is-on' : ''} onClick={() => view(m._id)}>
+            <strong>{m.user?.name}</strong><span>{m.label}: {m.display}</span><span>Holder “{m.holderName}” · ID name “{m.identity?.fullName || 'none'}”</span>
+          </button></li>
+        ))}
+        {!rows.length && <li className="jb-dim">No payout methods waiting.</li>}
+      </ul>
+      <section className="ad-review">
+        {!open && <p className="jb-dim">Pick one. Check the proof shows the same holder name as the verified ID, and the account digits match.</p>}
+        {open?.loading && <span className="spinner" />}
+        {open && !open.loading && (
+          <>
+            <h2>{open.display}</h2>
+            <p className="jb-dim">{open.user?.name} ({open.user?.email})</p>
+            <dl className="ct-details">
+              <div><dt>Holder on the account</dt><dd>{open.holderName}</dd></div>
+              <div><dt>Verified ID name</dt><dd>{open.identity?.fullName || '—'} ({open.identity?.country || '—'})</dd></div>
+              {open.details && Object.entries(open.details).filter(([, v]) => v).map(([k, v]) => <div key={k}><dt>{k}</dt><dd><code>{v}</code></dd></div>)}
+            </dl>
+            {open.proof && (/^data:application\/pdf/.test(open.proof)
+              ? <a className="btn btn-sm" href={open.proof} download="proof.pdf">Download PDF proof</a>
+              : <div className="ad-photos"><figure><img src={open.proof} alt="Proof" /><figcaption>Proof ({open.proofKind})</figcaption></figure></div>)}
+            <label className="field"><span>Reason (required to reject, sent to the user)</span><input className="input" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. The account title on the statement doesn’t match" /></label>
+            <div className="ad-actions">
+              <button type="button" className="btn btn-gilt" onClick={() => decide(true)}>Verify</button>
+              <button type="button" className="btn btn-danger" disabled={!reason.trim()} onClick={() => decide(false)}>Reject</button>
+            </div>
+          </>
+        )}
+      </section>
+    </div>
+  );
+}
+
+/* Scam shield: posts held for review + reports. */
+function SafetyQueue() {
+  const toast = useToast();
+  const [d, setD] = useState({ jobs: [], reports: [] });
+  const load = useCallback(() => api.get('/admin/safety').then(setD).catch((e) => toast.err(e)), []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, [load]);
+  const job = async (id, decision) => { try { await api.post(`/admin/jobs/${id}/${decision}`); toast.ok(decision === 'publish' ? 'Published' : 'Removed'); load(); } catch (e) { toast.err(e); } };
+  const report = async (id, status) => { try { await api.post(`/admin/reports/${id}`, { status }); load(); } catch (e) { toast.err(e); } };
+  return (
+    <div className="stack">
+      <h2 className="ad-h">Held job posts ({d.jobs.length})</h2>
+      <ul className="ad-tickets">
+        {d.jobs.map((j) => (
+          <li key={j._id} className="panel">
+            <header><strong>{j.title}</strong><span className="chip chip-ochre">Score {j.safety?.score}</span></header>
+            <p className="jb-dim">{j.postedBy?.name} &lt;{j.postedBy?.email}&gt; · ID {j.postedBy?.identity?.status || 'none'}</p>
+            <ul className="ad-flags">{(j.safety?.flags || []).map((f) => <li key={f.code}>{f.label}</li>)}</ul>
+            <p className="ad-msg">{j.description}</p>
+            <footer><button type="button" className="btn btn-sm" onClick={() => job(j._id, 'publish')}>Looks fine — publish</button><button type="button" className="btn btn-sm btn-danger" onClick={() => job(j._id, 'remove')}>Remove</button></footer>
+          </li>
+        ))}
+        {!d.jobs.length && <li className="jb-dim">No held posts.</li>}
+      </ul>
+      <h2 className="ad-h">Open reports ({d.reports.length})</h2>
+      <ul className="ad-tickets">
+        {d.reports.map((r) => (
+          <li key={r._id} className="panel">
+            <header><strong>{r.target}: {r.reason.replace('_', ' ')}</strong>{r.job && <Link to={`/jobs/${r.targetId}`}>{r.job.title}</Link>}</header>
+            <p className="jb-dim">By {r.by?.name} about {r.subject ? <Link to={`/profile/${r.subject._id}`}>{r.subject.name}</Link> : 'unknown'} · {new Date(r.createdAt).toLocaleString()}</p>
+            {r.details && <p className="ad-msg">{r.details}</p>}
+            <footer><button type="button" className="btn btn-sm" onClick={() => report(r._id, 'actioned')}>Actioned</button><button type="button" className="btn btn-sm btn-ghost" onClick={() => report(r._id, 'dismissed')}>Dismiss</button></footer>
+          </li>
+        ))}
+        {!d.reports.length && <li className="jb-dim">No open reports.</li>}
+      </ul>
+    </div>
+  );
+}
 
 const DOC = { cnic: 'CNIC', national_id: 'National ID', passport: 'Passport', driving_license: 'Driving licence' };
 
@@ -51,13 +139,15 @@ export default function Admin() {
     <div className="ad">
       <header className="ledger-title">
         <h1>Admin</h1>
-        {overview && <p>{overview.users} accounts, {overview.premium} on Premium, {overview.openTickets} open tickets, {queue.length} {status} ID checks.</p>}
+        {overview && <p>{overview.users} accounts, {overview.premium} on Premium. Premium members are reviewed first.</p>}
       </header>
-      <nav className="jb-tabs" role="tablist">
-        {[['verifications', 'ID checks'], ['tickets', 'Tickets']].map(([id, l]) => (
-          <button key={id} type="button" role="tab" aria-selected={tab === id} className={tab === id ? 'is-on' : ''} onClick={() => setTab(id)}>{l}</button>
+      <nav className="tabs" role="tablist">
+        {[['verifications', 'ID checks', overview?.queues?.identity], ['payouts', 'Payout methods', overview?.queues?.payouts], ['safety', 'Scam shield', (overview?.queues?.jobs || 0) + (overview?.queues?.reports || 0)], ['tickets', 'Tickets', overview?.openTickets]].map(([id, l, n]) => (
+          <button key={id} type="button" role="tab" aria-selected={tab === id} className={tab === id ? 'is-on' : ''} onClick={() => setTab(id)}>{l}{n > 0 && <span className="count-pill">{n}</span>}</button>
         ))}
       </nav>
+      {tab === 'payouts' && <PayoutQueue />}
+      {tab === 'safety' && <SafetyQueue />}
 
       {tab === 'verifications' && (
         <div className="ad-grid">

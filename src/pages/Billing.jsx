@@ -85,7 +85,7 @@ export default function Billing() {
     <div className={`bill${isAuthenticated ? '' : ' bill-public'}`}>
       <header className="ledger-title">
         <h1>{isAuthenticated ? 'Plan & billing' : 'Pricing'}</h1>
-        <p>{isAuthenticated ? 'Your plan, renewals and receipts.' : 'Start free. Move to Premium when analytics, contracts and proposals start paying for themselves.'}</p>
+        <p>{isAuthenticated ? 'Your plan, renewals and receipts.' : 'Applying and hiring are free, with every safety feature included. Premium is for people who apply or hire every week.'}</p>
       </header>
 
       {returnNotice && <div className={`notice ${returnNotice[0] ? `notice-${returnNotice[0]}` : ''} bill-notice`} role="status">{returnNotice[1]}</div>}

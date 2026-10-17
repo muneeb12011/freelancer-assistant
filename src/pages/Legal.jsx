@@ -4,7 +4,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-const LAST_UPDATED = 'October 16, 2026';
+const LAST_UPDATED = 'October 17, 2026';
 const CONTACT = 'aurelance454@gmail.com';
 
 const Terms = () => (
@@ -13,9 +13,14 @@ const Terms = () => (
     <h2>Your account</h2>
     <p>You need to give a real email address and keep your password private. You’re responsible for what happens under your account. You must be at least 18, or the age of majority where you live, to use Aurelance for business.</p>
     <h2>Your content</h2>
-    <p>Everything you put into Aurelance — clients, invoices, tasks, notes, files — stays yours. You give us permission to store and process it only so we can run the service for you. You can export or delete it at any time from Settings.</p>
+    <p>Everything you put into Aurelance — your profile, job posts, applications, contract deliveries, messages and files — stays yours. You give us permission to store and process it only so we can run the service for you. You can export or delete it at any time from Settings.</p>
+    <h2>Working with other people</h2>
+    <p>Aurelance is a place to find work, hire, and keep a signed record of what was agreed. Contracts on Aurelance are agreements between the client and the freelancer; Aurelance is not a party to them, does not hold money for either side, and does not take a fee from payments. Clients pay freelancers directly (for example by bank transfer, Payoneer or Wise) and record the payment on the contract.</p>
+    <p>Report cards, response rates and reviews are calculated from activity on Aurelance and from what users write. Reviews are revealed only once both sides have written theirs or the review window has closed. We may remove reviews that are abusive, fake, or written to pressure someone.</p>
     <h2>Acceptable use</h2>
     <ul>
+      <li>Don’t ask anyone to pay a fee to apply or start work, to share ID documents, OTP codes or banking passwords, or to move off Aurelance to avoid the record.</li>
+      <li>Don’t post fake jobs, fake profiles, or reviews for work that didn’t happen.</li>
       <li>Don’t use Aurelance to send spam, harass people, or break the law.</li>
       <li>Don’t try to access other people’s accounts or data, or disrupt the service.</li>
       <li>Don’t resell the service without written permission.</li>
@@ -39,7 +44,8 @@ const Privacy = () => (
     <h2>What we collect</h2>
     <ul>
       <li><strong>Account details</strong> — name, email, password (stored as a one-way hash), and profile details you choose to add.</li>
-      <li><strong>Your workspace</strong> — the clients, invoices, tasks, notes, connections, contracts and proposals you create.</li>
+      <li><strong>Your marketplace activity</strong> — job posts, applications, contracts and their milestones, payment records you enter, reviews, squads and connections.</li>
+      <li><strong>Payout methods</strong> — bank, Payoneer or Wise details you add are encrypted with AES-256-GCM and shown only to you, and to a client on a contract you choose to share them on. For cards we store only the brand and last four digits. Proof documents for verification are deleted once reviewed.</li>
       <li><strong>Sign-in records</strong> — device type, browser and IP address for each signed-in session, so you can see and sign out devices.</li>
       <li><strong>Payments</strong> — the plan, amount, date and Safepay reference. Card and bank details are handled by Safepay; we never receive them.</li>
     </ul>

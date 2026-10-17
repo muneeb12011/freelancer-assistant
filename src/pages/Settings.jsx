@@ -8,12 +8,14 @@ import { BadgeList } from '../components/Badges';
 import api, { API_BASE, errorMessage, tokenStore } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
+import Payouts from '../components/Payouts';
 import '../styles/Settings.css';
 
 const TABS = [
   { id: 'account', label: 'Account' },
   { id: 'security', label: 'Security' },
   { id: 'verification', label: 'Verification' },
+  { id: 'payouts', label: 'Payouts' },
   { id: 'notifications', label: 'Notifications' },
   { id: 'preferences', label: 'Preferences' },
   { id: 'data', label: 'Your data' },
@@ -21,12 +23,9 @@ const TABS = [
 
 const NOTIFICATIONS = [
   ['paymentReceived', 'Payment receipts', 'A receipt when your Premium payment goes through.'],
-  ['overdueAlerts', 'Overdue invoices', 'The morning after a client invoice passes its due date.'],
-  ['taskReminders', 'Task deadlines', 'The day before tasks are due.'],
-  ['connectionReqs', 'Connection requests', 'When another freelancer wants to connect.'],
-  ['jobAlerts', 'Job activity', 'New applicants on your job posts, and updates on jobs you applied to.'],
-  ['clientMessages', 'Messages', 'When someone in your network messages you (at most every 30 minutes per chat).'],
-  ['emailDigest', 'Weekly summary', 'Monday morning: what you earned, what’s owed, what’s due.'],
+  ['jobAlerts', 'Jobs and contracts', 'Applicants, decisions on your applications, contract offers, deliveries, approvals and payments.'],
+  ['connectionReqs', 'Connection requests', 'When someone wants to connect.'],
+  ['clientMessages', 'Messages', 'When someone messages you (at most every 30 minutes per chat).'],
   ['marketingEmails', 'Product updates', 'Occasional emails when something new ships.'],
 ];
 
@@ -253,6 +252,7 @@ export default function Settings() {
           )}
 
           {tab === 'verification' && <VerificationPanel />}
+          {tab === 'payouts' && <Payouts />}
 
           {tab === 'notifications' && (
             <section className="st-section">
@@ -273,7 +273,7 @@ export default function Settings() {
             <>
               <section className="st-section">
                 <h2>Export</h2>
-                <Row title="Download everything" desc="Clients, invoices, tasks, notes, connections, contracts, proposals, earnings and receipts as one JSON file.">
+                <Row title="Download everything" desc="Your profile, contracts, reviews, job posts, applications, messages, squads and receipts as one JSON file. Payout account numbers are left out.">
                   <button type="button" className="btn btn-sm" onClick={exportData} disabled={busy === 'export'}>{busy === 'export' ? <span className="spinner" /> : <><FiDownload /> Export</>}</button>
                 </Row>
               </section>
@@ -304,7 +304,7 @@ function PreferencesForm({ prefs, discoverable, onSave }) {
     <section className="st-section">
       <h2>Preferences</h2>
       <form className="st-grid" onSubmit={(e) => { e.preventDefault(); onSave({ preferences: p, discoverable: disc }); }}>
-        <label className="field"><span>Currency for new invoices</span>
+        <label className="field"><span>Default currency</span>
           <select className="input" value={p.currency || 'USD'} onChange={set('currency')}>
             {['USD', 'PKR', 'EUR', 'GBP', 'AED', 'SAR', 'CAD', 'AUD', 'INR'].map((c) => <option key={c}>{c}</option>)}
           </select>
@@ -325,8 +325,8 @@ function PreferencesForm({ prefs, discoverable, onSave }) {
           </select>
         </label>
         <div className="st-row st-span">
-          <div className="st-row-text"><strong>Show me in network search</strong><p>Other freelancers can find you by name and skills and send connection requests.</p></div>
-          <button type="button" role="switch" aria-checked={disc} aria-label="Show me in network search" className="toggle" onClick={() => setDisc((d) => !d)} />
+          <div className="st-row-text"><strong>Show me in Find talent</strong><p>Clients and other freelancers can find you by name and skills, see your record, and send offers or connection requests.</p></div>
+          <button type="button" role="switch" aria-checked={disc} aria-label="Show me in Find talent" className="toggle" onClick={() => setDisc((d) => !d)} />
         </div>
         <div className="st-span"><button type="submit" className="btn btn-gilt">Save preferences</button></div>
       </form>

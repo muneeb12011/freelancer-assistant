@@ -17,20 +17,20 @@ import Auth from './pages/Auth';
 
 import './styles/theme.css';
 import './styles/App.css';
+import './styles/Market.css';
 
 // App pages are code-split so the public site loads fast.
 const Home        = lazy(() => import('./pages/Home'));
 const About       = lazy(() => import('./pages/About'));
 const Contact     = lazy(() => import('./pages/Contact'));
 const Support     = lazy(() => import('./pages/Support'));
-const Dashboard   = lazy(() => import('./pages/Dashboard'));
-const Tasks       = lazy(() => import('./pages/Tasks'));
-const Clients     = lazy(() => import('./pages/Clients'));
-const Invoices    = lazy(() => import('./pages/Invoices'));
-const Connections = lazy(() => import('./pages/Connections'));
+const Network     = lazy(() => import('./pages/Network'));
+const Contracts   = lazy(() => import('./pages/Contracts'));
+const ContractDetail = lazy(() => import('./pages/Contracts').then((m) => ({ default: m.ContractDetail })));
+const Talent      = lazy(() => import('./pages/Talent'));
+const SquadDetail = lazy(() => import('./pages/Talent').then((m) => ({ default: m.SquadDetail })));
 const Profile     = lazy(() => import('./pages/Profile'));
 const Settings    = lazy(() => import('./pages/Settings'));
-const Atelier     = lazy(() => import('./pages/Atelier'));
 const Billing     = lazy(() => import('./pages/Billing'));
 const Legal       = lazy(() => import('./pages/Legal'));
 const NotFound    = lazy(() => import('./pages/NotFound'));
@@ -90,12 +90,18 @@ const App = () => (
 
             <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
               <Route path="home"        element={<Home />} />
-              <Route path="dashboard"   element={<Dashboard />} />
-              <Route path="tasks"       element={<Tasks />} />
-              <Route path="clients"     element={<Clients />} />
-              <Route path="invoices"    element={<Invoices />} />
-              <Route path="connections" element={<Connections />} />
-              <Route path="atelier"     element={<Atelier />} />
+              <Route path="contracts"     element={<Contracts />} />
+              <Route path="contracts/:id" element={<ContractDetail />} />
+              <Route path="talent"      element={<Talent />} />
+              <Route path="squads/:id"  element={<SquadDetail />} />
+              <Route path="network"     element={<Network />} />
+              {/* Old back-office pages folded into contracts */}
+              <Route path="dashboard"   element={<Navigate to="/home" replace />} />
+              <Route path="tasks"       element={<Navigate to="/contracts" replace />} />
+              <Route path="clients"     element={<Navigate to="/contracts" replace />} />
+              <Route path="invoices"    element={<Navigate to="/contracts" replace />} />
+              <Route path="atelier"     element={<Navigate to="/home" replace />} />
+              <Route path="connections" element={<Navigate to="/network" replace />} />
               <Route path="profile"         element={<Profile />} />
               <Route path="profile/:userId" element={<Profile />} />
               <Route path="settings"    element={<Settings />} />
@@ -107,7 +113,6 @@ const App = () => (
               <Route path="jobs/:id"      element={<JobDetail />} />
               <Route path="jobs/:id/edit" element={<JobForm />} />
               <Route path="admin"         element={<Admin />} />
-              <Route path="create-task" element={<Navigate to="/tasks" replace />} />
             </Route>
 
             <Route path="*" element={<PublicLayout><NotFound /></PublicLayout>} />

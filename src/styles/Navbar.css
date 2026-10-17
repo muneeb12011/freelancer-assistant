@@ -34,8 +34,10 @@
 @media (max-width: 960px) {
   .topbar-burger { display: grid; }
   .topbar-left { width: auto; }
-  .topbar-links { display: none; }
 }
+@media (max-width: 760px) { .topbar-burger { display: none; } .topbar { padding: 0 12px 0 16px; } }
+.menu-item.only-phone { display: none; }
+@media (max-width: 760px) { .menu-item.only-phone { display: flex; } }
 @media (max-width: 480px) { .topbar-user-name { display: none; } .topbar-user { padding-right: 4px; } }
 .topbar-link { display: inline-flex; align-items: center; gap: 6px; }
 .topbar-link .count-pill { margin-left: 0; min-width: 18px; height: 18px; font-size: 10px; }

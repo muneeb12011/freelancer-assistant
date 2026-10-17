@@ -19,3 +19,6 @@
 .ad-msg { white-space: pre-wrap; color: var(--bone-2); font-size: var(--fs-sm); }
 .ad-tickets footer { display: flex; gap: 8px; }
 @media (max-width: 900px) { .ad-grid { grid-template-columns: 1fr; } }
+.ad-h { font-size: var(--fs-xl); }
+.ad-flags { margin: 0; padding-left: 18px; color: var(--ochre); font-size: var(--fs-sm); }
+.ad-msg { max-height: 220px; overflow: auto; }

@@ -1,1281 +1,357 @@
-// src/pages/Profile.jsx — PRODUCTION v4
-// ─────────────────────────────────────────────────────────────
-//  DUAL MODE:
-//   • OWN PROFILE  → full edit suite (sidebar + 4 tabs)
-//   • OTHER USER   → read-only view with action panel
-//                    (Connect · Chat · Collaborate · Refer · Favorite)
-//
-//  Usage:
-//   Own:   <Profile />                    (uses AuthContext user)
-//   Other: <Profile userId="abc123" />    (or via :userId route param)
-//
-//  LEFT SIDEBAR:
-//   • Avatar upload (camera, base64, 3MB)
-//   • Name · Title · Availability chip
-//   • Hourly rate · Min project
-//   • Profile completeness bar
-//   • Share / copy link
-//   • Contact info (email · phone · location)
-//   • Social links (LinkedIn · GitHub · Twitter · Website)
-//
-//  RIGHT MAIN (tabbed):
-//   Tab 1 — OVERVIEW   Bio · Skills · Languages · Services
-//   Tab 2 — PORTFOLIO  Projects · Experience · Education
-//   Tab 3 — REVIEWS    Testimonials + avg rating
-//   Tab 4 — ACCOUNT    Password · Notifs · AI Optimizer · Danger
-//
-//  OTHER-USER PANEL additions:
-//   • Connect / Connected toggle
-//   • Chat button → opens inline slide-up chat
-//   • Collaboration request modal
-//   • Referral modal
-//   • Favorite toggle
-// ─────────────────────────────────────────────────────────────
-
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+// src/pages/Profile.jsx — /profile (yours, editable) and /profile/:userId (someone else's).
+// The top half is the record other people judge you by: report cards, revealed reviews,
+// verified payout types and squads. Contact details stay private unless the person shares them.
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import {
-  FiEdit3, FiSave, FiX, FiCamera, FiMail, FiPhone, FiMapPin,
-  FiLinkedin, FiGithub, FiTwitter, FiGlobe, FiPlus, FiTrash2,
-  FiExternalLink, FiZap, FiLock, FiStar, FiCheck, FiAlertCircle,
-  FiDollarSign, FiCopy, FiEye, FiEyeOff, FiBriefcase,
-  FiAward, FiBell, FiShield, FiUser, FiMessageSquare,
-  FiUserPlus, FiUserCheck, FiShare2, FiSend, FiCode,
-  FiChevronDown, FiChevronUp,
-} from 'react-icons/fi';
+import { FiMapPin, FiEdit3, FiMessageSquare, FiUserPlus, FiCheck, FiClock, FiFileText, FiPlus, FiTrash2, FiExternalLink, FiCamera, FiGlobe, FiGithub, FiLinkedin, FiTwitter, FiMail, FiPhone, FiLock, FiZap } from 'react-icons/fi';
+import api, { askAI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../components/Toast';
+import { Avatar } from '../components/Navbar';
+import Badges from '../components/Badges';
+import Modal from '../components/Modal';
+import ReportButton from '../components/ReportButton';
+import PremiumLock from '../components/PremiumLock';
+import { ReportCard, Stars } from '../components/ReportCard';
+import { PayTags } from './Talent';
+import compressImage from '../lib/compressImage';
+import { money, day } from '../lib/format';
 import '../styles/Profile.css';
 
-import api, { askAI, errorMessage } from '../services/api';
-import PremiumLock from '../components/PremiumLock';
-import Badges from '../components/Badges';
-// ── API ───────────────────────────────────────────────────────
-
-
-// ── Anthropic AI ─────────────────────────────────────────────
-
-
-// ── Helpers ───────────────────────────────────────────────────
-const arr     = v  => Array.isArray(v) ? v : [];
-const fmtDate = (s, e) => {
-  const fmt = d => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '';
-  return e ? `${fmt(s)} – ${fmt(e)}` : `${fmt(s)} – Present`;
+const arr = (v) => (Array.isArray(v) ? v : []);
+const LIST = {
+  projects:   { label: 'Portfolio', blank: { title: '', description: '', url: '', tech: '' }, fields: [['title', 'Project name'], ['description', 'What you did and the result', 'textarea'], ['url', 'Link'], ['tech', 'Tools used (comma separated)']] },
+  services:   { label: 'Services', blank: { title: '', description: '', price: '' }, fields: [['title', 'Service'], ['description', 'What’s included', 'textarea'], ['price', 'Starting price (USD)', 'number']] },
+  experience: { label: 'Experience', blank: { role: '', company: '', start: '', end: '', description: '' }, fields: [['role', 'Role'], ['company', 'Company or client'], ['start', 'From (e.g. 2023)'], ['end', 'To (blank if current)'], ['description', 'What you did', 'textarea']] },
+  education:  { label: 'Education & certificates', blank: { institution: '', degree: '', year: '' }, fields: [['institution', 'School or issuer'], ['degree', 'Degree or certificate'], ['year', 'Year']] },
 };
+const VIS = { nobody: 'Nobody', contracts: 'People I have a signed contract with', connections: 'My connections and contract partners' };
 
-// ── Profile completeness ──────────────────────────────────────
-const completeness = p => {
-  if (!p) return 0;
-  const checks = [
-    !!p.name, !!p.bio?.trim(), !!p.hourlyRate, !!p.title,
-    arr(p.skills).length >= 3, arr(p.projects).length >= 1,
-    arr(p.services).length >= 1,
-    !!(p.socialLinks?.linkedin || p.socialLinks?.github),
-    !!p.phone, !!p.avatar,
-  ];
-  return Math.round((checks.filter(Boolean).length / checks.length) * 100);
-};
-
-// ── Availability config ───────────────────────────────────────
-const AVAIL = {
-  available:   { label: 'Available for work', color: '#7DC39A', bg: 'rgba(125,195,154,.12)' },
-  busy:        { label: 'Busy',               color: '#E3A64B', bg: 'rgba(227,166,75,.12)' },
-  unavailable: { label: 'Not available',      color: '#D9605A', bg: 'rgba(217,96,90,.12)'  },
-};
-
-// ── Stars ─────────────────────────────────────────────────────
-const Stars = ({ rating = 0, size = 14 }) => (
-  <span className="pf-stars">
-    {[1,2,3,4,5].map(i => (
-      <FiStar key={i} size={size}
-        style={{ fill: i <= Math.round(rating) ? '#CFA75A' : 'none',
-                 color: i <= Math.round(rating) ? '#CFA75A' : '#3E4B44' }} />
-    ))}
-  </span>
-);
-
-// ── Blank form shapes ──────────────────────────────────────────
-const blankProject = () => ({ title: '', description: '', url: '', tech: '' });
-const blankService = () => ({ title: '', description: '', price: '' });
-const blankExp     = () => ({ company: '', role: '', start: '', end: '', current: false, description: '' });
-const blankEdu     = () => ({ institution: '', degree: '', year: '', description: '' });
-
-// ─────────────────────────────────────────────────────────────
-//  MAIN COMPONENT
-// ─────────────────────────────────────────────────────────────
-export default function Profile({ userId: propUserId }) {
-  const { user: authUser, setUser: setAuthUser } = useAuth();
-  const navigate  = useNavigate();
-  const params    = useParams();
-  const fileRef   = useRef(null);
-
-  // Determine mode
-  const targetId    = propUserId || params?.userId;
-  const isOwnProfile = !targetId || targetId === authUser?._id;
-  const isPremium   = authUser?.plan === 'premium';
-
-  // ── Data ─────────────────────────────────────────────────
-  const [profile,    setProfile]    = useState(null);
-  const [reviews,    setReviews]    = useState([]);
-  const [loading,    setLoading]    = useState(true);
-  const [saving,     setSaving]     = useState(false);
-  const [activeTab,  setActiveTab]  = useState('overview');
-
-  // ── Toast ─────────────────────────────────────────────────
-  const [toast, setToast] = useState({ show: false, msg: '', err: false });
-  const showToast = useCallback((msg, err = false) => {
-    setToast({ show: true, msg, err });
-    setTimeout(() => setToast(t => ({ ...t, show: false })), 3000);
-  }, []);
-
-  // ── OWN: sidebar edit modes ───────────────────────────────
-  const [editIdent,    setEditIdent]    = useState(false);
-  const [editContact,  setEditContact]  = useState(false);
-  const [editSocial,   setEditSocial]   = useState(false);
-  const [draftIdent,   setDraftIdent]   = useState({});
-  const [draftContact, setDraftContact] = useState({});
-  const [draftSocial,  setDraftSocial]  = useState({});
-  const [copied,       setCopied]       = useState(false);
-
-  // ── OWN: overview edits ───────────────────────────────────
-  const [editBio,        setEditBio]        = useState(false);
-  const [draftBio,       setDraftBio]       = useState('');
-  const [newSkill,       setNewSkill]       = useState('');
-  const [showSkillInput, setShowSkillInput] = useState(false);
-  const [newLang,        setNewLang]        = useState('');
-  const [showLangInput,  setShowLangInput]  = useState(false);
-
-  // ── OWN: drawers ──────────────────────────────────────────
-  const [projDrawer,    setProjDrawer]    = useState(false);
-  const [serviceDrawer, setServiceDrawer] = useState(false);
-  const [expDrawer,     setExpDrawer]     = useState(false);
-  const [eduDrawer,     setEduDrawer]     = useState(false);
-  const [deletingItem,  setDeletingItem]  = useState(null);
-
-  const [editingProj,    setEditingProj]    = useState(null);
-  const [editingService, setEditingService] = useState(null);
-  const [editingExp,     setEditingExp]     = useState(null);
-  const [editingEdu,     setEditingEdu]     = useState(null);
-  const [projForm,       setProjForm]       = useState(blankProject());
-  const [serviceForm,    setServiceForm]    = useState(blankService());
-  const [expForm,        setExpForm]        = useState(blankExp());
-  const [eduForm,        setEduForm]        = useState(blankEdu());
-  const [drawerSaving,   setDrawerSaving]   = useState(false);
-
-  // ── OWN: password ─────────────────────────────────────────
-  const [pwForm,   setPwForm]   = useState({ current: '', next: '', confirm: '' });
-  const [pwShow,   setPwShow]   = useState({ current: false, next: false, confirm: false });
-  const [pwSaving, setPwSaving] = useState(false);
-
-  // ── OWN: notifications ────────────────────────────────────
-  const [notifPrefs, setNotifPrefs] = useState({ email: true, tasks: true, invoices: true, connections: false });
-
-  // ── OWN: AI optimizer ────────────────────────────────────
-  const [aiText, setAiText] = useState('');
-  const [aiLoad, setAiLoad] = useState(false);
-  const [aiDone, setAiDone] = useState(false);
-
-  // ── OTHER: connection/action state ────────────────────────
-  const [isConnected,   setIsConnected]   = useState(false);
-  const [connSent,      setConnSent]      = useState(false);
-  const [incomingReq,   setIncomingReq]   = useState(null); // request id when they asked to connect with me
-  const [isFav,         setIsFav]         = useState(false);
-  const [showChat,      setShowChat]      = useState(false);
-  const [chatMsgs,      setChatMsgs]      = useState([]);
-  const [chatInput,     setChatInput]     = useState('');
-  const [collabModal,   setCollabModal]   = useState(false);
-  const [collabMsg,     setCollabMsg]     = useState('');
-  const [collabProject, setCollabProject] = useState('');
-  const [referralModal, setReferralModal] = useState(false);
-  const [refMsg,        setRefMsg]        = useState('');
-  const chatEndRef = useRef(null);
-
-  // ── Load ──────────────────────────────────────────────────
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      try {
-        const endpoint = isOwnProfile ? '/profile' : `/profile/${targetId}`;
-        const [pr, rr] = await Promise.allSettled([
-          api.get(endpoint),
-          api.get(isOwnProfile ? '/profile/reviews' : `/profile/${targetId}/reviews`),
-        ]);
-        if (pr.status === 'fulfilled') {
-          const p = pr.value?.profile || pr.value || {};
-          setProfile(p);
-          if (isOwnProfile) {
-            setDraftIdent({ name: p.name||'', title: p.title||'', hourlyRate: p.hourlyRate||'', minProject: p.minProject||'', availability: p.availability||'available' });
-            setDraftContact({ phone: p.phone||'', location: p.location||'' });
-            setDraftSocial(p.socialLinks || {});
-            setDraftBio(p.bio || '');
-            if (p.notifPrefs) setNotifPrefs(p.notifPrefs);
-          } else {
-            setIsConnected(pr.value?.isConnected || false);
-            setConnSent(pr.value?.requestSent || false);
-            setIncomingReq(pr.value?.requestReceived ? pr.value.requestId : null);
-            setIsFav(pr.value?.isFavorite || false);
-          }
-        }
-        if (rr.status === 'fulfilled') setReviews(arr(rr.value?.reviews || rr.value));
-      } catch (e) {
-        showToast('Failed to load profile.', true);
-      }
-      setLoading(false);
-    })();
-  }, [targetId, isOwnProfile]); // eslint-disable-line
-
-  useEffect(() => {
-    if (chatEndRef.current) chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
-  }, [chatMsgs]);
-
-  // ── PATCH helper ─────────────────────────────────────────
-  const patch = async (data, msg) => {
-    setSaving(true);
-    try {
-      const r = await api.patch('/profile', data);
-      setProfile(prev => ({ ...prev, ...(r.profile || r) }));
-      if (r.user) setAuthUser(r.user);
-      showToast(msg || 'Saved.');
-      return true;
-    } catch { showToast('Save failed.', true); return false; }
-    finally { setSaving(false); }
-  };
-
-  // ── Avatar ────────────────────────────────────────────────
-  const onAvatarChange = async e => {
-    const file = e.target.files?.[0]; if (!file) return;
-    if (file.size > 3 * 1024 * 1024) { showToast('Max 3 MB.', true); return; }
-    const reader = new FileReader();
-    reader.onload = async () => {
-      setProfile(p => ({ ...p, avatar: reader.result }));
-      await patch({ avatar: reader.result }, 'Photo updated.');
-    };
-    reader.readAsDataURL(file);
-  };
-
-  // ── Sidebar saves ─────────────────────────────────────────
-  const saveIdent   = async () => { const ok = await patch(draftIdent, 'Profile updated.'); if (ok) setEditIdent(false); };
-  const saveContact = async () => { const ok = await patch(draftContact, 'Contact updated.'); if (ok) setEditContact(false); };
-  const saveSocial  = async () => { const ok = await patch({ socialLinks: draftSocial }, 'Links updated.'); if (ok) setEditSocial(false); };
-  const saveBio     = async () => { const ok = await patch({ bio: draftBio }, 'Bio updated.'); if (ok) setEditBio(false); };
-
-  // ── Copy link ─────────────────────────────────────────────
-  const copyLink = () => {
-    const id = isOwnProfile ? authUser?._id : targetId;
-    navigator.clipboard.writeText(`${window.location.origin}/profile/${id}`);
-    setCopied(true); setTimeout(() => setCopied(false), 2200);
-  };
-
-  // ── Skills ────────────────────────────────────────────────
-  const addSkill = async () => {
-    const s = newSkill.trim(); if (!s) return;
-    const curr = arr(profile?.skills);
-    if (curr.some(x => x.toLowerCase() === s.toLowerCase())) { showToast('Already added.', true); return; }
-    const updated = [...curr, s];
-    setProfile(p => ({ ...p, skills: updated }));
-    setNewSkill(''); setShowSkillInput(false);
-    await patch({ skills: updated }, `"${s}" added.`);
-  };
-  const removeSkill = async s => {
-    const updated = arr(profile?.skills).filter(x => x !== s);
-    setProfile(p => ({ ...p, skills: updated }));
-    await patch({ skills: updated });
-  };
-
-  // ── Languages ────────────────────────────────────────────
-  const addLang = async () => {
-    const l = newLang.trim(); if (!l) return;
-    const updated = [...arr(profile?.languages), l];
-    setProfile(p => ({ ...p, languages: updated }));
-    setNewLang(''); setShowLangInput(false);
-    await patch({ languages: updated }, `"${l}" added.`);
-  };
-  const removeLang = async l => {
-    const updated = arr(profile?.languages).filter(x => x !== l);
-    setProfile(p => ({ ...p, languages: updated }));
-    await patch({ languages: updated });
-  };
-
-  // ── Generic list CRUD ─────────────────────────────────────
-  const saveListItem = async (listKey, editingItem, form, setDrawer, setEditing, setForm, blank, successMsg) => {
-    setDrawerSaving(true);
-    const list = arr(profile?.[listKey]);
-    const updated = editingItem
-      ? list.map(x => (x._id || x.id) === (editingItem._id || editingItem.id) ? { ...x, ...form } : x)
-      : [...list, { ...form, id: Date.now() }];
-    setProfile(p => ({ ...p, [listKey]: updated }));
-    setDrawer(false); setEditing(null); setForm(blank());
-    await patch({ [listKey]: updated }, successMsg);
-    setDrawerSaving(false);
-  };
-  const deleteListItem = async (listKey, item) => {
-    const updated = arr(profile?.[listKey]).filter(x => (x._id || x.id) !== (item._id || item.id));
-    setProfile(p => ({ ...p, [listKey]: updated }));
-    setDeletingItem(null);
-    await patch({ [listKey]: updated }, 'Deleted.');
-  };
-
-  // ── Open drawers ──────────────────────────────────────────
-  const openProjDrawer = (proj = null) => {
-    setEditingProj(proj);
-    setProjForm(proj ? { title: proj.title||'', description: proj.description||'', url: proj.url||'', tech: arr(proj.tech).join(', ') } : blankProject());
-    setProjDrawer(true);
-  };
-  const openServiceDrawer = (svc = null) => {
-    setEditingService(svc);
-    setServiceForm(svc ? { title: svc.title||'', description: svc.description||'', price: svc.price||'' } : blankService());
-    setServiceDrawer(true);
-  };
-  const openExpDrawer = (exp = null) => {
-    setEditingExp(exp); setExpForm(exp ? { ...exp } : blankExp()); setExpDrawer(true);
-  };
-  const openEduDrawer = (edu = null) => {
-    setEditingEdu(edu); setEduForm(edu ? { ...edu } : blankEdu()); setEduDrawer(true);
-  };
-
-  // ── Save drawers ──────────────────────────────────────────
-  const saveProjForm = e => {
-    e.preventDefault();
-    if (!projForm.title.trim()) { showToast('Title required.', true); return; }
-    const tech = projForm.tech ? projForm.tech.split(',').map(t => t.trim()).filter(Boolean) : [];
-    saveListItem('projects', editingProj, { ...projForm, tech }, setProjDrawer, setEditingProj, setProjForm, blankProject, editingProj ? 'Project updated.' : 'Project added.');
-  };
-  const saveServiceForm = e => {
-    e.preventDefault();
-    if (!serviceForm.title.trim()) { showToast('Title required.', true); return; }
-    saveListItem('services', editingService, serviceForm, setServiceDrawer, setEditingService, setServiceForm, blankService, editingService ? 'Service updated.' : 'Service added.');
-  };
-  const saveExpForm = e => {
-    e.preventDefault();
-    if (!expForm.company.trim() || !expForm.role.trim()) { showToast('Company and role required.', true); return; }
-    saveListItem('experience', editingExp, expForm, setExpDrawer, setEditingExp, setExpForm, blankExp, 'Experience saved.');
-  };
-  const saveEduForm = e => {
-    e.preventDefault();
-    if (!eduForm.institution.trim()) { showToast('Institution required.', true); return; }
-    saveListItem('education', editingEdu, eduForm, setEduDrawer, setEditingEdu, setEduForm, blankEdu, 'Education saved.');
-  };
-
-  // ── Password ──────────────────────────────────────────────
-  const changePassword = async e => {
-    e.preventDefault();
-    if (!pwForm.current || !pwForm.next) { showToast('Fill all fields.', true); return; }
-    if (pwForm.next !== pwForm.confirm) { showToast('Passwords do not match.', true); return; }
-    if (pwForm.next.length < 8) { showToast('Min 8 characters.', true); return; }
-    setPwSaving(true);
-    try {
-      await api.post('/auth/change-password', { currentPassword: pwForm.current, newPassword: pwForm.next });
-      setPwForm({ current: '', next: '', confirm: '' });
-      showToast('Password changed successfully.');
-    } catch { showToast('Incorrect current password.', true); }
-    setPwSaving(false);
-  };
-
-  // ── Notification prefs ────────────────────────────────────
-  const toggleNotif = async key => {
-    const updated = { ...notifPrefs, [key]: !notifPrefs[key] };
-    setNotifPrefs(updated);
-    await patch({ notifPrefs: updated });
-  };
-
-  // ── AI optimizer ──────────────────────────────────────────
-  const runAI = async () => {
-    setAiLoad(true);
-    const msg = `Name: ${profile?.name}. Title: ${profile?.title||'none'}. Bio: "${profile?.bio||'none'}". Skills: ${arr(profile?.skills).join(', ')||'none'}. Services: ${arr(profile?.services).map(s=>s.title).join(', ')||'none'}. Projects: ${arr(profile?.projects).length}. Rate: ${profile?.hourlyRate?'$'+profile.hourlyRate+'/hr':'not set'}. Languages: ${arr(profile?.languages).join(', ')||'none'}. Experience: ${arr(profile?.experience).length}. Social: ${Object.entries(profile?.socialLinks||{}).filter(([,v])=>v).map(([k])=>k).join(', ')||'none'}.`;
-    try {
-      setAiText(await askAI('profile-review', msg)); setAiDone(true);
-    } catch (e) { showToast(errorMessage(e, 'AI request failed.'), true); }
-    setAiLoad(false);
-  };
-
-  // ── OTHER: connection actions ─────────────────────────────
-  const acceptIncoming = async () => {
-    try {
-      const r = await api.post(`/connections/request/${incomingReq}/accept`);
-      setIsConnected(true); setIncomingReq(null);
-      showToast(`Connected with ${profile?.name}. You can message them now.`);
-      // Contact details unlock once connected.
-      const fresh = await api.get(`/profile/${targetId}`);
-      setProfile(fresh.profile);
-      return r;
-    } catch (e) { showToast(errorMessage(e, 'Could not accept.'), true); }
-  };
-
-  const handleConnect = async () => {
-    try {
-      if (connSent) {
-        await api.delete(`/connections/request/cancel/${targetId}`);
-        setConnSent(false); showToast('Request cancelled.');
-      } else {
-        await api.post('/connections/request', { userId: targetId });
-        setConnSent(true); showToast(`Request sent to ${profile?.name}!`);
-      }
-    } catch (e) { showToast(errorMessage(e, 'Action failed.'), true); }
-  };
-
-  const handleToggleFav = async () => {
-    try {
-      if (isFav) {
-        await api.delete(`/connections/favorites/${targetId}`);
-        setIsFav(false); showToast('Removed from favorites.');
-      } else {
-        await api.post('/connections/favorites', { userId: targetId });
-        setIsFav(true); showToast('Added to favorites ★');
-      }
-    } catch { showToast('Action failed.', true); }
-  };
-
-  // Messages live in one inbox (/messages) — no separate profile chat.
-  const openChatWithUser = () => navigate(`/messages?user=${targetId}`);
-
-  // Collaboration proposals and referrals are sent as real messages.
-  const sendAsMessage = async (text) => {
-    const c = await api.post('/messages/conversations', { userId: targetId });
-    await api.post(`/messages/conversations/${c.conversation._id}/messages`, { text });
-    return c.conversation._id;
-  };
-
-  const sendChatMsg = async () => {
-    if (!chatInput.trim()) return;
-    const txt = chatInput.trim(); setChatInput('');
-    setChatMsgs(prev => [...prev, { isOwn: true, text: txt, createdAt: new Date().toISOString() }]);
-    try { await api.post(`/connections/chat/${targetId}`, { message: txt }); }
-    catch { showToast('Message failed.', true); }
-  };
-
-  const sendCollab = async () => {
-    if (!collabMsg.trim()) return;
-    try {
-      await sendAsMessage(`Collaboration proposal${collabProject ? ` — ${collabProject}` : ''}:\n\n${collabMsg.trim()}`);
-      showToast(`Sent to ${profile?.name} in Messages.`);
-      setCollabModal(false); setCollabMsg(''); setCollabProject('');
-    } catch (e) { showToast(errorMessage(e, 'Failed to send.'), true); }
-  };
-
-  const sendReferral = async () => {
-    if (!refMsg.trim()) return;
-    try {
-      await sendAsMessage(`Client referral:\n\n${refMsg.trim()}`);
-      showToast(`Referral sent to ${profile?.name} in Messages.`);
-      setReferralModal(false); setRefMsg('');
-    } catch (e) { showToast(errorMessage(e, 'Failed to send referral.'), true); }
-  };
-
-  // ── Computed ──────────────────────────────────────────────
-  const score = profile ? completeness(profile) : 0;
-  const avgRating = reviews.length
-    ? (reviews.reduce((s, r) => s + (r.rating || 0), 0) / reviews.length).toFixed(1)
-    : null;
-  const avail = AVAIL[profile?.availability || 'available'];
-
-  // ─────────────────────────────────────────────────────────
-  if (loading) return (
-    <div className="pf-root">
-      <div className="pf-loading">
-        <div className="pf-spinner"/>
-        <span>Loading profile…</span>
-      </div>
-    </div>
-  );
-  if (!profile) return (
-    <div className="pf-root">
-      <div className="pf-loading">
-        <FiAlertCircle size={26} style={{ color: '#D9605A' }}/>
-        <span>Failed to load profile.</span>
-      </div>
-    </div>
-  );
-
-  // ─────────────────────────────────────────────────────────
-  //  RENDER
-  // ─────────────────────────────────────────────────────────
+/* ── Editors ───────────────────────────────────────────────── */
+function BasicsEditor({ p, onSave, onClose }) {
+  const [f, setF] = useState({ name: p.name || '', title: p.title || '', location: p.location || '', hourlyRate: p.hourlyRate || '', availability: p.availability || 'available', bio: p.bio || '', phone: p.phone || '', contactVisibility: p.contactVisibility || 'contracts' });
   return (
-    <div className="pf-root">
-
-      {/* Toast */}
-      {toast.show && (
-        <div className={`pf-toast${toast.err ? ' pf-toast-err' : ''}`}>
-          {toast.err ? <FiAlertCircle size={13}/> : <FiCheck size={13}/>} {toast.msg}
+    <Modal title="Edit your profile" onClose={onClose}>
+      <form className="stack" onSubmit={(e) => { e.preventDefault(); onSave(f); }}>
+        <label className="field"><span>Full name</span><input className="input" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} required maxLength={80} /></label>
+        <label className="field"><span>What you do</span><input className="input" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} maxLength={120} placeholder="e.g. Shopify developer for fashion brands" /></label>
+        <div className="pf-two">
+          <label className="field"><span>City, country</span><input className="input" value={f.location} onChange={(e) => setF({ ...f, location: e.target.value })} maxLength={120} placeholder="Lahore, Pakistan" /></label>
+          <label className="field"><span>Hourly rate (USD)</span><input className="input" type="number" min="0" value={f.hourlyRate} onChange={(e) => setF({ ...f, hourlyRate: e.target.value })} /></label>
         </div>
-      )}
+        <label className="field"><span>Availability</span>
+          <select className="input" value={f.availability} onChange={(e) => setF({ ...f, availability: e.target.value })}><option value="available">Taking new work</option><option value="busy">Busy — not taking work</option></select>
+        </label>
+        <label className="field"><span>About you <small>{f.bio.length}/2000</small></span><textarea className="input" rows={6} value={f.bio} onChange={(e) => setF({ ...f, bio: e.target.value })} maxLength={2000} placeholder="Who you help, what you’re best at, and one result you’re proud of." /></label>
+        <label className="field"><span>Phone <small>private unless you share it</small></span><input className="input" value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} maxLength={40} /></label>
+        <label className="field"><span>Who can see your email and phone</span>
+          <select className="input" value={f.contactVisibility} onChange={(e) => setF({ ...f, contactVisibility: e.target.value })}>{Object.entries(VIS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
+          <small>Payout details are never shown on your profile — you share them per contract.</small>
+        </label>
+        <button type="submit" className="btn btn-gilt">Save</button>
+      </form>
+    </Modal>
+  );
+}
 
-      <div className="pf-layout">
+function TagsEditor({ p, onSave, onClose }) {
+  const [skills, setSkills] = useState(arr(p.skills).join(', '));
+  const [languages, setLanguages] = useState(arr(p.languages).join(', '));
+  const [links, setLinks] = useState({ website: p.website || '', ...(p.socialLinks || {}) });
+  const split = (s) => s.split(',').map((x) => x.trim()).filter(Boolean).slice(0, 30);
+  return (
+    <Modal title="Skills, languages and links" onClose={onClose}>
+      <form className="stack" onSubmit={(e) => { e.preventDefault(); onSave({ skills: split(skills), languages: split(languages), website: links.website, socialLinks: { linkedin: links.linkedin || '', github: links.github || '', twitter: links.twitter || '' } }); }}>
+        <label className="field"><span>Skills <small>comma separated — clients search these</small></span><input className="input" value={skills} onChange={(e) => setSkills(e.target.value)} placeholder="React, Node.js, Shopify" /></label>
+        <label className="field"><span>Languages</span><input className="input" value={languages} onChange={(e) => setLanguages(e.target.value)} placeholder="English, Urdu" /></label>
+        <label className="field"><span>Website</span><input className="input" value={links.website} onChange={(e) => setLinks({ ...links, website: e.target.value })} placeholder="https://" /></label>
+        <label className="field"><span>LinkedIn</span><input className="input" value={links.linkedin || ''} onChange={(e) => setLinks({ ...links, linkedin: e.target.value })} placeholder="https://linkedin.com/in/…" /></label>
+        <label className="field"><span>GitHub</span><input className="input" value={links.github || ''} onChange={(e) => setLinks({ ...links, github: e.target.value })} placeholder="https://github.com/…" /></label>
+        <label className="field"><span>X / Twitter</span><input className="input" value={links.twitter || ''} onChange={(e) => setLinks({ ...links, twitter: e.target.value })} /></label>
+        <button type="submit" className="btn btn-gilt">Save</button>
+      </form>
+    </Modal>
+  );
+}
 
-        {/* ╔═══════════════════════════════════
-            SIDEBAR
-        ═══════════════════════════════════╗ */}
-        <aside className="pf-sidebar">
+function ItemEditor({ kind, item, onSave, onClose }) {
+  const cfg = LIST[kind];
+  const [f, setF] = useState({ ...cfg.blank, ...(item || {}), tech: Array.isArray(item?.tech) ? item.tech.join(', ') : item?.tech || '' });
+  return (
+    <Modal title={`${item ? 'Edit' : 'Add'} — ${cfg.label}`} onClose={onClose}>
+      <form className="stack" onSubmit={(e) => { e.preventDefault(); onSave(f); }}>
+        {cfg.fields.map(([k, l, type]) => (
+          <label key={k} className="field"><span>{l}</span>
+            {type === 'textarea'
+              ? <textarea className="input" rows={4} value={f[k] || ''} onChange={(e) => setF({ ...f, [k]: e.target.value })} maxLength={1500} />
+              : <input className="input" type={type || 'text'} value={f[k] || ''} onChange={(e) => setF({ ...f, [k]: e.target.value })} maxLength={300} />}
+          </label>
+        ))}
+        <button type="submit" className="btn btn-gilt">Save</button>
+      </form>
+    </Modal>
+  );
+}
 
-          {/* ── ID card ─────────────────────── */}
-          <div className="pf-id-card">
-            <div className="pf-avatar-wrap">
-              <div className="pf-avatar">
-                {profile.avatar
-                  ? <img src={profile.avatar} alt={profile.name}/>
-                  : <span className="pf-avatar-fb">{(profile.name || 'U')[0].toUpperCase()}</span>}
-              </div>
-              {isOwnProfile && (
-                <>
-                  <button className="pf-avatar-cam" onClick={() => fileRef.current?.click()} title="Change photo">
-                    <FiCamera size={13}/>
-                  </button>
-                  <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={onAvatarChange}/>
-                </>
-              )}
-              {/* Online indicator for other-user view */}
-              {!isOwnProfile && profile.online && <span className="pf-online-dot"/>}
-            </div>
+function OfferModal({ person, onClose }) {
+  const toast = useToast();
+  const navigate = useNavigate();
+  const [f, setF] = useState({ title: '', summary: '', currency: 'USD', kind: 'standard', mTitle: '', amount: '', dueDate: '' });
+  const [busy, setBusy] = useState(false);
+  const send = async (e) => {
+    e.preventDefault(); setBusy(true);
+    try {
+      const r = await api.post('/engagements', { freelancer: person._id, title: f.title, summary: f.summary, currency: f.currency, kind: f.kind, milestones: [{ title: f.mTitle || f.title, amount: f.amount, dueDate: f.dueDate || undefined }] });
+      toast.ok('Draft sent. Add milestones and sign it.');
+      navigate(`/contracts/${r.contract._id}`);
+    } catch (err) { toast.err(err); setBusy(false); }
+  };
+  return (
+    <Modal title={`Offer ${person.name.split(' ')[0]} a contract`} onClose={onClose}>
+      <form className="stack" onSubmit={send}>
+        <fieldset className="radio-list">
+          <legend className="visually-hidden">Kind</legend>
+          <label><input type="radio" checked={f.kind === 'standard'} onChange={() => setF({ ...f, kind: 'standard' })} /> A contract for the work</label>
+          <label><input type="radio" checked={f.kind === 'trial'} onChange={() => setF({ ...f, kind: 'trial' })} /> A small paid trial first</label>
+        </fieldset>
+        <label className="field"><span>Title</span><input className="input" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} required minLength={4} maxLength={140} placeholder="e.g. Landing page for our app" /></label>
+        <label className="field"><span>What it covers</span><textarea className="input" rows={3} value={f.summary} onChange={(e) => setF({ ...f, summary: e.target.value })} /></label>
+        <div className="pf-two">
+          <label className="field"><span>First milestone</span><input className="input" value={f.mTitle} onChange={(e) => setF({ ...f, mTitle: e.target.value })} placeholder="Design" /></label>
+          <label className="field"><span>Amount</span><span className="pf-amt"><select className="input" value={f.currency} onChange={(e) => setF({ ...f, currency: e.target.value })}>{['USD', 'PKR', 'EUR', 'GBP', 'AED'].map((c) => <option key={c}>{c}</option>)}</select><input className="input" type="number" min="1" value={f.amount} onChange={(e) => setF({ ...f, amount: e.target.value })} required /></span></label>
+        </div>
+        <label className="field"><span>Due <small>optional</small></span><input className="input" type="date" value={f.dueDate} onChange={(e) => setF({ ...f, dueDate: e.target.value })} /></label>
+        <p className="muted-sm">This sends a draft. You can both add milestones; work starts when you’ve both signed.</p>
+        <button type="submit" className="btn btn-gilt" disabled={busy}>{busy ? <span className="spinner" /> : 'Send draft contract'}</button>
+      </form>
+    </Modal>
+  );
+}
 
-            {!editIdent ? (
-              <div className="pf-id-info">
-                <h1 className="pf-name">{profile.name || 'Freelancer'}<Badges badges={profile.badges} size={18} /></h1>
-                {profile.title && <p className="pf-title-line">{profile.title}</p>}
-                {profile.location && (
-                  <p className="pf-location-line">
-                    <FiMapPin size={11}/> {profile.location}
-                  </p>
-                )}
-                <span className="pf-avail" style={{ color: avail.color, background: avail.bg }}>
-                  <span className="pf-avail-dot" style={{ background: avail.color }}/>{avail.label}
-                </span>
-                {(profile.hourlyRate || profile.minProject) && (
-                  <div className="pf-rates">
-                    {profile.hourlyRate && <span><FiDollarSign size={11}/> ${profile.hourlyRate}/hr</span>}
-                    {profile.minProject && <span>Min ${profile.minProject}</span>}
-                  </div>
-                )}
-                {avgRating && (
-                  <div className="pf-rating-row">
-                    <Stars rating={avgRating}/>
-                    <span>{avgRating} ({reviews.length} review{reviews.length !== 1 ? 's' : ''})</span>
-                  </div>
-                )}
-                {isOwnProfile && (
-                  <button className="pf-id-edit-btn" onClick={() => {
-                    setDraftIdent({ name: profile.name||'', title: profile.title||'', hourlyRate: profile.hourlyRate||'', minProject: profile.minProject||'', availability: profile.availability||'available' });
-                    setEditIdent(true);
-                  }}>
-                    <FiEdit3 size={11}/> Edit Profile
-                  </button>
-                )}
-              </div>
-            ) : (
-              /* Own profile edit form */
-              <div className="pf-id-form">
-                {[
-                  ['name', 'Full Name', 'text', 'e.g. Muneeb Bhatti'],
-                  ['title', 'Professional Title', 'text', 'e.g. Full-Stack Developer'],
-                ].map(([k, l, t, ph]) => (
-                  <div className="pf-field" key={k}>
-                    <label>{l}</label>
-                    <input type={t} value={draftIdent[k]||''} onChange={e => setDraftIdent(d => ({ ...d, [k]: e.target.value }))} placeholder={ph}/>
-                  </div>
-                ))}
-                <div className="pf-field-row">
-                  <div className="pf-field">
-                    <label>Rate ($/hr)</label>
-                    <input type="number" min="0" value={draftIdent.hourlyRate||''} onChange={e => setDraftIdent(d => ({ ...d, hourlyRate: e.target.value }))} placeholder="75"/>
-                  </div>
-                  <div className="pf-field">
-                    <label>Min Project ($)</label>
-                    <input type="number" min="0" value={draftIdent.minProject||''} onChange={e => setDraftIdent(d => ({ ...d, minProject: e.target.value }))} placeholder="500"/>
-                  </div>
+/* ── Page ─────────────────────────────────────────────────── */
+export default function Profile() {
+  const { userId } = useParams();
+  const { user: me, setUser, isPremium } = useAuth();
+  const toast = useToast();
+  const fileRef = useRef(null);
+  const own = !userId || userId === me?._id;
+  const [p, setP] = useState(null);
+  const [rel, setRel] = useState({});
+  const [reviews, setReviews] = useState([]);
+  const [squads, setSquads] = useState([]);
+  const [edit, setEdit] = useState(null); // 'basics' | 'tags' | { kind, index }
+  const [offer, setOffer] = useState(false);
+  const [busy, setBusy] = useState('');
+  const [aiTips, setAiTips] = useState('');
+  const [error, setError] = useState('');
+
+  const load = useCallback(async () => {
+    setError('');
+    try {
+      if (own) {
+        const [r, rv, sq] = await Promise.all([api.get('/profile'), api.get('/profile/reviews').catch(() => ({ reviews: [] })), api.get('/squads/mine').catch(() => ({ squads: [] }))]);
+        setP(r.profile); setReviews(rv.reviews || []); setSquads((sq.squads || []).map((s) => ({ _id: s._id, name: s.name, tagline: s.tagline, members: s.stats.members })));
+      } else {
+        const [r, rv] = await Promise.all([api.get(`/profile/${userId}`), api.get(`/profile/${userId}/reviews`).catch(() => ({ reviews: [] }))]);
+        setP(r.profile); setRel(r); setReviews(rv.reviews || []); setSquads(r.profile.squads || []);
+      }
+    } catch (e) { setError(e.status === 404 ? 'This profile doesn’t exist any more.' : e.message); }
+  }, [own, userId]);
+  useEffect(() => { setP(null); load(); }, [load]);
+
+  const save = async (patch, ok = 'Saved') => {
+    try { const r = await api.patch('/profile', patch); setP((x) => ({ ...x, ...r.profile })); setUser?.(r.user); setEdit(null); toast.ok(ok); } catch (e) { toast.err(e); }
+  };
+  const saveItem = (kind, index, item) => {
+    const list = [...arr(p[kind])];
+    const clean = { ...item };
+    if (kind === 'projects') clean.tech = String(item.tech || '').split(',').map((x) => x.trim()).filter(Boolean);
+    if (index === null || index === undefined) list.push(clean); else list[index] = { ...list[index], ...clean };
+    save({ [kind]: list });
+  };
+  const removeItem = (kind, index) => { if (window.confirm('Remove this?')) save({ [kind]: arr(p[kind]).filter((_, i) => i !== index) }, 'Removed'); };
+  const photo = async (e) => {
+    const file = e.target.files?.[0]; e.target.value = '';
+    if (!file) return;
+    try { const data = await compressImage(file, { maxSide: 600, maxBytes: 300 * 1024 }); await save({ avatar: data }, 'Photo updated'); } catch (err) { toast.err(err); }
+  };
+  const connect = async () => {
+    setBusy('connect');
+    try { const r = await api.post('/connections/request', { userId }); toast.ok(r.message); load(); } catch (e) { toast.err(e); }
+    setBusy('');
+  };
+  const accept = async () => {
+    setBusy('connect');
+    try { await api.post(`/connections/request/${rel.requestId}/accept`); toast.ok(`Connected with ${p.name}. Your conversation is in Messages.`); load(); } catch (e) { toast.err(e); }
+    setBusy('');
+  };
+  const review = async () => {
+    setBusy('ai');
+    try {
+      const text = await askAI('profile-review', `Name: ${p.name}. Title: ${p.title || 'none'}. Bio: "${p.bio || 'none'}". Skills: ${arr(p.skills).join(', ') || 'none'}. Projects: ${arr(p.projects).length}. Rate: ${p.hourlyRate || 'not set'}. Verified ID: ${p.badges?.identity ? 'yes' : 'no'}. Verified payout: ${arr(p.payoutTypes).join(', ') || 'none'}.`);
+      setAiTips(String(text));
+    } catch (e) { toast.err(e); }
+    setBusy('');
+  };
+
+  if (error) return <div className="pf"><div className="empty"><h3>Profile not available</h3><p>{error}</p><Link to="/talent" className="btn">Find talent</Link></div></div>;
+  if (!p) return <div className="pf"><span className="spinner" /></div>;
+
+  const rep = p.reputation || {};
+  const social = { website: p.website, ...(p.socialLinks || {}) };
+  const linkIcons = { website: FiGlobe, linkedin: FiLinkedin, github: FiGithub, twitter: FiTwitter };
+  const theirReviewsOfFreelancer = reviews.filter((r) => r.direction === 'of_freelancer');
+  const reviewsAsClient = reviews.filter((r) => r.direction === 'of_client');
+  const contactShared = own || p.contactShared;
+
+  const section = (kind) => {
+    const items = arr(p[kind]);
+    if (!own && !items.length) return null;
+    return (
+      <section className="pf-sec" key={kind}>
+        <div className="pf-sec-head"><h2>{LIST[kind].label}</h2>{own && <button type="button" className="btn btn-sm btn-ghost" onClick={() => setEdit({ kind, index: null })}><FiPlus /> Add</button>}</div>
+        {!items.length ? <p className="muted-sm">Nothing here yet. {kind === 'projects' ? 'One real project with a link beats a long bio.' : ''}</p> : (
+          <ul className={`pf-items pf-${kind}`}>
+            {items.map((it, i) => (
+              <li key={it._id || i}>
+                <div>
+                  <strong>{it.title || it.role || it.degree || it.institution || it.name || 'Untitled'}</strong>
+                  <small>
+                    {kind === 'experience' && [it.company, [it.start, it.end || (it.start ? 'now' : '')].filter(Boolean).join(' – ')].filter(Boolean).join(' · ')}
+                    {kind === 'education' && [it.degree ? it.institution : '', it.year].filter(Boolean).join(' · ')}
+                    {kind === 'services' && it.price ? `From ${money(it.price)}` : ''}
+                    {kind === 'projects' && arr(it.tech).length ? arr(it.tech).join(' · ') : ''}
+                  </small>
+                  {(it.description || it.desc) && <p>{it.description || it.desc}</p>}
+                  {(it.url || it.link) && /^https?:\/\//.test(it.url || it.link) && <a href={it.url || it.link} target="_blank" rel="noopener noreferrer nofollow"><FiExternalLink /> {(it.url || it.link).replace(/^https?:\/\//, '').slice(0, 48)}</a>}
                 </div>
-                <div className="pf-field">
-                  <label>Availability</label>
-                  <select value={draftIdent.availability} onChange={e => setDraftIdent(d => ({ ...d, availability: e.target.value }))}>
-                    <option value="available">Available for work</option>
-                    <option value="busy">Busy</option>
-                    <option value="unavailable">Not available</option>
-                  </select>
-                </div>
-                <div className="pf-row-btns">
-                  <button className="pf-btn-cancel" onClick={() => setEditIdent(false)}>Cancel</button>
-                  <button className="pf-btn-save" onClick={saveIdent} disabled={saving}>{saving ? '…' : 'Save'}</button>
-                </div>
-              </div>
-            )}
-
-            {/* Profile completeness (own only) */}
-            {isOwnProfile && (
-              <div className="pf-completeness">
-                <div className="pf-comp-row">
-                  <span>Profile strength</span>
-                  <span style={{ color: score >= 80 ? '#7DC39A' : score >= 50 ? '#E3A64B' : '#D9605A', fontWeight: 700 }}>{score}%</span>
-                </div>
-                <div className="pf-comp-track">
-                  <div className="pf-comp-fill" style={{ width: `${score}%`, background: score >= 80 ? '#7DC39A' : score >= 50 ? '#E3A64B' : '#D9605A' }}/>
-                </div>
-              </div>
-            )}
-
-            {/* Share/copy link */}
-            <button className="pf-share-btn" onClick={copyLink}>
-              {copied ? <><FiCheck size={12}/> Copied!</> : <><FiCopy size={12}/> {isOwnProfile ? 'Copy Profile Link' : 'Share Profile'}</>}
-            </button>
-
-            {/* OTHER USER: action buttons */}
-            {!isOwnProfile && (
-              <div className="pf-other-actions">
-                <button className="pf-action-btn pf-action-connected" onClick={() => openChatWithUser()}>
-                  <FiMessageSquare size={14}/> Message
-                </button>
-                {isConnected ? (
-                  <span className="pf-action-btn pf-action-sent"><FiCheck size={14}/> Connected</span>
-                ) : incomingReq ? (
-                  <button className="pf-action-btn pf-action-connect" onClick={acceptIncoming}>
-                    <FiCheck size={14}/> Accept request
-                  </button>
-                ) : connSent ? (
-                  <button className="pf-action-btn pf-action-sent" onClick={handleConnect}>
-                    <FiCheck size={14}/> Request Sent
-                  </button>
-                ) : (
-                  <button className="pf-action-btn pf-action-connect" onClick={handleConnect}>
-                    <FiUserPlus size={14}/> Connect
-                  </button>
-                )}
-                <button className="pf-action-btn pf-action-collab" onClick={() => setCollabModal(true)}>
-                  <FiCode size={14}/> Collaborate
-                </button>
-                <button className="pf-action-btn pf-action-refer" onClick={() => setReferralModal(true)}>
-                  <FiShare2 size={14}/> Refer Client
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* ── Contact ─────────────────────── */}
-          <div className="pf-sidebar-card">
-            <div className="pf-sc-hdr">
-              <h3>Contact</h3>
-              {isOwnProfile && (!editContact
-                ? <button className="pf-sc-edit" onClick={() => { setDraftContact({ email: profile.email||'', phone: profile.phone||'', location: profile.location||'' }); setEditContact(true); }}><FiEdit3 size={11}/></button>
-                : <div style={{ display: 'flex', gap: 6 }}>
-                    <button className="pf-btn-cancel sm" onClick={() => setEditContact(false)}>✕</button>
-                    <button className="pf-btn-save sm" onClick={saveContact} disabled={saving}><FiCheck size={11}/></button>
-                  </div>)}
-            </div>
-            {!editContact ? (
-              <div className="pf-contact-rows">
-                {[
-                  [FiMail,  'email',    profile.email],
-                  [FiPhone, 'phone',    profile.phone],
-                  [FiMapPin,'location', profile.location],
-                ].map(([Icon, k, v]) => (
-                  <div className="pf-contact-row" key={k}>
-                    <Icon size={13} className="pf-ci"/>
-                    {k === 'email' && v && !isOwnProfile
-                      ? <a href={`mailto:${v}`} className="pf-contact-link">{v}</a>
-                      : <span>{v || <em>{!isOwnProfile && !isConnected && k !== 'location' ? 'Shared once you connect' : 'Not set'}</em>}</span>}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="pf-form-stack">
-                {[['phone','Phone','tel'], ['location','Location','text']].map(([k,l,t]) => (
-                  <div className="pf-field" key={k}>
-                    <label>{l}</label>
-                    <input type={t} value={draftContact[k]||''} onChange={e => setDraftContact(d => ({ ...d, [k]: e.target.value }))}/>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* ── Social ──────────────────────── */}
-          <div className="pf-sidebar-card">
-            <div className="pf-sc-hdr">
-              <h3>Social Links</h3>
-              {isOwnProfile && (!editSocial
-                ? <button className="pf-sc-edit" onClick={() => { setDraftSocial({ ...(profile.socialLinks||{}) }); setEditSocial(true); }}><FiEdit3 size={11}/></button>
-                : <div style={{ display: 'flex', gap: 6 }}>
-                    <button className="pf-btn-cancel sm" onClick={() => setEditSocial(false)}>✕</button>
-                    <button className="pf-btn-save sm" onClick={saveSocial} disabled={saving}><FiCheck size={11}/></button>
-                  </div>)}
-            </div>
-            {!editSocial ? (
-              <div className="pf-social-rows">
-                {[
-                  { k: 'linkedin', I: FiLinkedin, c: '#0a66c2', label: 'LinkedIn' },
-                  { k: 'github',   I: FiGithub,   c: '#C9CBBF', label: 'GitHub'   },
-                  { k: 'twitter',  I: FiTwitter,  c: '#1d9bf0', label: 'Twitter'  },
-                  { k: 'website',  I: FiGlobe,    c: '#A99BD6', label: 'Website'  },
-                ].map(({ k, I, c, label }) => {
-                  const v = profile.socialLinks?.[k];
-                  return (
-                    <div className="pf-social-row" key={k}>
-                      <span className="pf-social-icon" style={{ color: c, background: `${c}14` }}><I size={14}/></span>
-                      {v
-                        ? <a href={v} target="_blank" rel="noopener noreferrer" className="pf-social-link">
-                            {v.replace(/^https?:\/\/(www\.)?/, '')}<FiExternalLink size={9}/>
-                          </a>
-                        : <span className="pf-social-empty">{label}</span>}
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="pf-form-stack">
-                {[
-                  { k: 'linkedin', ph: 'linkedin.com/in/yourname' },
-                  { k: 'github',   ph: 'github.com/yourname'      },
-                  { k: 'twitter',  ph: 'twitter.com/yourname'     },
-                  { k: 'website',  ph: 'yourwebsite.com'          },
-                ].map(({ k, ph }) => (
-                  <div className="pf-field" key={k}>
-                    <input value={draftSocial[k]||''} onChange={e => setDraftSocial(d => ({ ...d, [k]: e.target.value }))} placeholder={ph}/>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </aside>
-
-        {/* ╔═══════════════════════════════════
-            MAIN CONTENT
-        ═══════════════════════════════════╗ */}
-        <main className="pf-main">
-
-          {/* Tabs */}
-          <div className="pf-tabs">
-            {[
-              { id: 'overview',  label: 'Overview',  icon: <FiUser size={14}/> },
-              { id: 'portfolio', label: 'Portfolio',  icon: <FiBriefcase size={14}/> },
-              { id: 'reviews',   label: 'Reviews',   icon: <FiStar size={14}/>, badge: reviews.length },
-              ...(isOwnProfile ? [{ id: 'account', label: 'AI review', icon: <FiShield size={14}/> }] : []),
-            ].map(t => (
-              <button key={t.id} className={`pf-tab${activeTab === t.id ? ' active' : ''}`} onClick={() => setActiveTab(t.id)}>
-                {t.icon} {t.label}
-                {t.badge > 0 && <span className="pf-tab-badge">{t.badge}</span>}
-              </button>
+                {own && <span className="pf-item-actions"><button type="button" className="btn btn-sm btn-ghost" onClick={() => setEdit({ kind, index: i })} aria-label="Edit"><FiEdit3 /></button><button type="button" className="btn btn-sm btn-ghost" onClick={() => removeItem(kind, i)} aria-label="Remove"><FiTrash2 /></button></span>}
+              </li>
             ))}
-          </div>
+          </ul>
+        )}
+      </section>
+    );
+  };
 
-          {/* ────────── OVERVIEW ────────── */}
-          {activeTab === 'overview' && (
-            <div className="pf-tab-body">
+  return (
+    <div className="pf">
+      <header className="pf-head">
+        <div className="pf-photo">
+          <Avatar user={p} size={112} />
+          {own && <><button type="button" className="pf-photo-btn" onClick={() => fileRef.current?.click()} aria-label="Change photo"><FiCamera /></button><input ref={fileRef} type="file" accept="image/*" hidden onChange={photo} /></>}
+        </div>
+        <div className="pf-id">
+          <h1>{p.name}<Badges badges={p.badges} size={20} /></h1>
+          {p.title ? <p className="pf-title">{p.title}</p> : own && <button type="button" className="ct-link" onClick={() => setEdit('basics')}>Add what you do</button>}
+          <p className="pf-meta">
+            {p.location && <span><FiMapPin aria-hidden="true" /> {p.location}</span>}
+            {p.hourlyRate > 0 && <span className="money">{money(p.hourlyRate)}/hr</span>}
+            <span className={`pf-avail is-${p.availability || 'available'}`}>{p.availability === 'busy' ? 'Busy' : 'Taking work'}</span>
+            <span><FiClock aria-hidden="true" /> Member since {day(p.createdAt, { month: 'short', year: 'numeric' })}</span>
+          </p>
+          <PayTags types={p.payoutTypes} />
+        </div>
+        <div className="pf-actions">
+          {own ? (
+            <>
+              <button type="button" className="btn" onClick={() => setEdit('basics')}><FiEdit3 /> Edit profile</button>
+              <Link to="/settings?tab=verification" className="btn btn-ghost">Verification</Link>
+            </>
+          ) : (
+            <>
+              <button type="button" className="btn btn-gilt" onClick={() => setOffer(true)}><FiFileText /> Offer a contract</button>
+              <Link to={`/messages?user=${p._id}`} className="btn"><FiMessageSquare /> Message</Link>
+              {rel.relationship === 'connected' ? <span className="chip chip-sage"><FiCheck /> Connected</span>
+                : rel.relationship === 'request-received' ? <button type="button" className="btn" onClick={accept} disabled={busy === 'connect'}><FiCheck /> Accept request</button>
+                  : rel.relationship === 'request-sent' ? <span className="chip">Request sent</span>
+                    : <button type="button" className="btn" onClick={connect} disabled={busy === 'connect'}><FiUserPlus /> Connect</button>}
+              <ReportButton target="user" targetId={p._id} />
+            </>
+          )}
+        </div>
+      </header>
 
-              {/* Bio */}
-              <div className="pf-card">
-                <div className="pf-card-hdr">
-                  <h2>About</h2>
-                  {isOwnProfile && (!editBio
-                    ? <button className="pf-edit-btn" onClick={() => { setDraftBio(profile.bio||''); setEditBio(true); }}><FiEdit3 size={12}/> Edit</button>
-                    : <div style={{ display: 'flex', gap: 8 }}>
-                        <button className="pf-btn-cancel" onClick={() => setEditBio(false)}>Cancel</button>
-                        <button className="pf-btn-save" onClick={saveBio} disabled={saving}>{saving ? '…' : 'Save'}</button>
-                      </div>)}
-                </div>
-                {!editBio
-                  ? (profile.bio
-                      ? <p className="pf-bio">{profile.bio}</p>
-                      : <p className="pf-empty-hint" onClick={isOwnProfile ? () => { setDraftBio(''); setEditBio(true); } : undefined}>
-                          {isOwnProfile ? '+ Add a bio to tell clients about your background and expertise.' : 'No bio provided.'}
-                        </p>)
-                  : <textarea className="pf-textarea" rows={6} value={draftBio} autoFocus
-                      onChange={e => setDraftBio(e.target.value)}
-                      placeholder="Tell clients about your background, expertise, and what makes you stand out…"/>}
-              </div>
+      <div className="pf-grid">
+        <div className="pf-main">
+          <section className="pf-sec">
+            <div className="pf-sec-head"><h2>About</h2>{own && <button type="button" className="btn btn-sm btn-ghost" onClick={() => setEdit('basics')}><FiEdit3 /> Edit</button>}</div>
+            {p.bio ? <p className="pf-bio">{p.bio}</p> : <p className="muted-sm">{own ? 'Write two or three sentences: who you help, what you’re best at, one result.' : 'No bio yet.'}</p>}
+          </section>
 
-              {/* Skills */}
-              <div className="pf-card">
-                <div className="pf-card-hdr">
-                  <h2>Skills</h2>
-                  {isOwnProfile && <button className="pf-edit-btn" onClick={() => setShowSkillInput(true)}><FiPlus size={12}/> Add</button>}
-                </div>
-                <div className="pf-chips">
-                  {arr(profile.skills).map((s, i) => (
-                    <span className="pf-chip" key={i}>
-                      {s}
-                      {isOwnProfile && <button onClick={() => removeSkill(s)}><FiX size={10}/></button>}
-                    </span>
-                  ))}
-                  {isOwnProfile && showSkillInput && (
-                    <div className="pf-chip-input-row">
-                      <input autoFocus className="pf-chip-input" value={newSkill}
-                        onChange={e => setNewSkill(e.target.value)} placeholder="Add skill…"
-                        onKeyDown={e => { if (e.key==='Enter') addSkill(); if (e.key==='Escape') { setShowSkillInput(false); setNewSkill(''); } }}/>
-                      <button className="pf-btn-save sm" onClick={addSkill}><FiCheck size={11}/></button>
-                      <button className="pf-btn-cancel sm" onClick={() => { setShowSkillInput(false); setNewSkill(''); }}><FiX size={11}/></button>
-                    </div>
-                  )}
-                  {!arr(profile.skills).length && !showSkillInput && (
-                    <span className="pf-empty-hint">{isOwnProfile ? 'No skills yet — add your top skills.' : 'No skills listed.'}</span>
-                  )}
-                </div>
-              </div>
+          <section className="pf-sec">
+            <div className="pf-sec-head"><h2>Reviews</h2></div>
+            {theirReviewsOfFreelancer.length + reviewsAsClient.length === 0 ? (
+              <p className="muted-sm">No reviews yet. Reviews are double-blind — they appear once both sides of a finished contract have written theirs.</p>
+            ) : (
+              <ul className="pf-reviews">
+                {[...theirReviewsOfFreelancer, ...reviewsAsClient].map((r) => (
+                  <li key={r._id}>
+                    <p>{r.comment || 'Ratings only.'}</p>
+                    <footer>
+                      <span>{r.direction === 'of_freelancer' ? 'From a client' : 'From a freelancer they hired'}{r.from ? <> — <Link to={`/profile/${r.from._id}`}>{r.from.name}</Link></> : ''}</span>
+                      <span>{r.contract?.title}{r.contract?.kind === 'trial' ? ' (paid trial)' : ''} · {day(r.at, { month: 'short', year: 'numeric' })}</span>
+                      <span className="pf-review-stars">{Object.entries(r.ratings || {}).filter(([, v]) => v).map(([k, v]) => <span key={k}><Stars value={v} /> {k}</span>)}</span>
+                    </footer>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
 
-              {/* Languages */}
-              <div className="pf-card">
-                <div className="pf-card-hdr">
-                  <h2>Languages</h2>
-                  {isOwnProfile && <button className="pf-edit-btn" onClick={() => setShowLangInput(true)}><FiPlus size={12}/> Add</button>}
-                </div>
-                <div className="pf-chips">
-                  {arr(profile.languages).map((l, i) => (
-                    <span className="pf-chip lang" key={i}>
-                      {l}
-                      {isOwnProfile && <button onClick={() => removeLang(l)}><FiX size={10}/></button>}
-                    </span>
-                  ))}
-                  {isOwnProfile && showLangInput && (
-                    <div className="pf-chip-input-row">
-                      <input autoFocus className="pf-chip-input" value={newLang}
-                        onChange={e => setNewLang(e.target.value)} placeholder="e.g. English (Fluent)"
-                        onKeyDown={e => { if (e.key==='Enter') addLang(); if (e.key==='Escape') { setShowLangInput(false); setNewLang(''); } }}/>
-                      <button className="pf-btn-save sm" onClick={addLang}><FiCheck size={11}/></button>
-                      <button className="pf-btn-cancel sm" onClick={() => { setShowLangInput(false); setNewLang(''); }}><FiX size={11}/></button>
-                    </div>
-                  )}
-                  {!arr(profile.languages).length && !showLangInput && (
-                    <span className="pf-empty-hint">{isOwnProfile ? 'No languages yet — add your working languages.' : 'No languages listed.'}</span>
-                  )}
-                </div>
-              </div>
+          {['projects', 'services', 'experience', 'education'].map(section)}
+        </div>
 
-              {/* Services */}
-              <div className="pf-card">
-                <div className="pf-card-hdr">
-                  <h2>Services Offered</h2>
-                  {isOwnProfile && <button className="pf-edit-btn" onClick={() => openServiceDrawer()}><FiPlus size={12}/> Add Service</button>}
-                </div>
-                {!arr(profile.services).length
-                  ? <p className="pf-empty-hint">{isOwnProfile ? 'No services yet — define what you offer.' : 'No services listed.'}</p>
-                  : <div className="pf-services-grid">
-                      {arr(profile.services).map((svc, i) => (
-                        <div className="pf-service-card" key={svc._id||svc.id||i}>
-                          <div className="pf-svc-top">
-                            <span className="pf-svc-title">{svc.title}</span>
-                            {svc.price && <span className="pf-svc-price">{svc.price.startsWith('$') ? '' : '$'}{svc.price}</span>}
-                          </div>
-                          {svc.description && <p className="pf-svc-desc">{svc.description}</p>}
-                          {isOwnProfile && (
-                            <div className="pf-svc-actions">
-                              <button onClick={() => openServiceDrawer(svc)}><FiEdit3 size={12}/></button>
-                              <button onClick={() => setDeletingItem({ type: 'services', item: svc })}><FiTrash2 size={12}/></button>
-                            </div>
-                          )}
-                          {/* Other user: hire button */}
-                          {!isOwnProfile && (
-                            <button className="pf-svc-hire-btn" onClick={() => setCollabModal(true)}>
-                              Hire for this →
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                    </div>}
-              </div>
-            </div>
+        <aside className="pf-side">
+          <ReportCard rep={rep} as="freelancer" />
+          <ReportCard rep={rep} as="client" />
+
+          <section className="panel pf-side-block">
+            <div className="pf-sec-head"><h2>Skills</h2>{own && <button type="button" className="btn btn-sm btn-ghost" onClick={() => setEdit('tags')}><FiEdit3 /></button>}</div>
+            {arr(p.skills).length ? <p className="jb-skills">{arr(p.skills).map((s) => <span key={s}>{s}</span>)}</p> : <p className="muted-sm">None listed.</p>}
+            {arr(p.languages).length > 0 && <p className="muted-sm">Speaks {arr(p.languages).join(', ')}</p>}
+            {Object.entries(social).some(([, v]) => v) && (
+              <ul className="pf-links">
+                {Object.entries(social).filter(([k, v]) => v && linkIcons[k] && /^https?:\/\//.test(v)).map(([k, v]) => { const I = linkIcons[k]; return <li key={k}><a href={v} target="_blank" rel="noopener noreferrer nofollow"><I aria-hidden="true" /> {v.replace(/^https?:\/\/(www\.)?/, '').slice(0, 36)}</a></li>; })}
+              </ul>
+            )}
+          </section>
+
+          {squads.length > 0 && (
+            <section className="panel pf-side-block">
+              <h2>Squads</h2>
+              <ul className="pf-links">{squads.map((s) => <li key={s._id}><Link to={`/squads/${s._id}`}>{s.name}</Link> <small className="muted-sm">· {s.members} people</small></li>)}</ul>
+            </section>
           )}
 
-          {/* ────────── PORTFOLIO ────────── */}
-          {activeTab === 'portfolio' && (
-            <div className="pf-tab-body">
+          <section className="panel pf-side-block">
+            <h2>Contact</h2>
+            {contactShared ? (
+              <ul className="pf-links">
+                {p.email && <li><FiMail aria-hidden="true" /> {own ? me.email : p.email}</li>}
+                {(own ? p.phone : p.phone) && <li><FiPhone aria-hidden="true" /> {p.phone}</li>}
+              </ul>
+            ) : <p className="muted-sm"><FiLock aria-hidden="true" /> {p.name.split(' ')[0]} keeps contact details private{p.contactVisibility === 'nobody' ? '' : ` until you ${p.contactVisibility === 'connections' ? 'connect or sign a contract' : 'sign a contract'}`}. Use Messages.</p>}
+            {own && <p className="muted-sm">Visible to: {VIS[p.contactVisibility || 'contracts']}.</p>}
+          </section>
 
-              {/* Projects */}
-              <div className="pf-card">
-                <div className="pf-card-hdr">
-                  <h2>Projects</h2>
-                  {isOwnProfile && <button className="pf-edit-btn" onClick={() => openProjDrawer()}><FiPlus size={12}/> Add Project</button>}
-                </div>
-                {!arr(profile.projects).length
-                  ? <p className="pf-empty-hint">{isOwnProfile ? 'No projects yet — showcase your best work.' : 'No projects yet.'}</p>
-                  : <div className="pf-projects-grid">
-                      {arr(profile.projects).map((proj, i) => (
-                        <div className="pf-project-card" key={proj._id||proj.id||i}>
-                          <div className="pf-proj-body">
-                            <div className="pf-proj-name">{proj.title}</div>
-                            <p className="pf-proj-desc">{proj.description}</p>
-                            {arr(proj.tech).length > 0 && (
-                              <div className="pf-proj-tags">
-                                {arr(proj.tech).map((t, j) => <span key={j}>{t}</span>)}
-                              </div>
-                            )}
-                          </div>
-                          <div className="pf-proj-foot">
-                            {proj.url && (
-                              <a href={proj.url} target="_blank" rel="noopener noreferrer" className="pf-proj-link">
-                                <FiExternalLink size={11}/> View Project
-                              </a>
-                            )}
-                            {isOwnProfile && (
-                              <div className="pf-proj-btns">
-                                <button onClick={() => openProjDrawer(proj)}><FiEdit3 size={12}/></button>
-                                <button onClick={() => setDeletingItem({ type: 'projects', item: proj })}><FiTrash2 size={12}/></button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>}
-              </div>
-
-              {/* Experience */}
-              <div className="pf-card">
-                <div className="pf-card-hdr">
-                  <h2>Work Experience</h2>
-                  {isOwnProfile && <button className="pf-edit-btn" onClick={() => openExpDrawer()}><FiPlus size={12}/> Add</button>}
-                </div>
-                {!arr(profile.experience).length
-                  ? <p className="pf-empty-hint">{isOwnProfile ? 'No experience entries yet.' : 'No experience listed.'}</p>
-                  : <div className="pf-timeline">
-                      {arr(profile.experience).map((exp, i) => (
-                        <div className="pf-timeline-item" key={exp._id||exp.id||i}>
-                          <div className="pf-tl-dot"/>
-                          <div className="pf-tl-body">
-                            <div className="pf-tl-top">
-                              <div>
-                                <span className="pf-tl-role">{exp.role}</span>
-                                <span className="pf-tl-company">{exp.company}</span>
-                                <span className="pf-tl-dates">{fmtDate(exp.start, exp.current ? null : exp.end)}</span>
-                              </div>
-                              {isOwnProfile && (
-                                <div className="pf-tl-btns">
-                                  <button onClick={() => openExpDrawer(exp)}><FiEdit3 size={11}/></button>
-                                  <button onClick={() => setDeletingItem({ type: 'experience', item: exp })}><FiTrash2 size={11}/></button>
-                                </div>
-                              )}
-                            </div>
-                            {exp.description && <p className="pf-tl-desc">{exp.description}</p>}
-                          </div>
-                        </div>
-                      ))}
-                    </div>}
-              </div>
-
-              {/* Education */}
-              <div className="pf-card">
-                <div className="pf-card-hdr">
-                  <h2>Education &amp; Certifications</h2>
-                  {isOwnProfile && <button className="pf-edit-btn" onClick={() => openEduDrawer()}><FiPlus size={12}/> Add</button>}
-                </div>
-                {!arr(profile.education).length
-                  ? <p className="pf-empty-hint">{isOwnProfile ? 'No education or certifications yet.' : 'No education listed.'}</p>
-                  : <div className="pf-edu-list">
-                      {arr(profile.education).map((edu, i) => (
-                        <div className="pf-edu-row" key={edu._id||edu.id||i}>
-                          <span className="pf-edu-icon"><FiAward size={15}/></span>
-                          <div className="pf-edu-body">
-                            <span className="pf-edu-degree">{edu.degree || edu.institution}</span>
-                            {edu.degree && <span className="pf-edu-inst">{edu.institution}</span>}
-                            {edu.year && <span className="pf-edu-year">{edu.year}</span>}
-                            {edu.description && <p className="pf-edu-desc">{edu.description}</p>}
-                          </div>
-                          {isOwnProfile && (
-                            <div className="pf-edu-btns">
-                              <button onClick={() => openEduDrawer(edu)}><FiEdit3 size={11}/></button>
-                              <button onClick={() => setDeletingItem({ type: 'education', item: edu })}><FiTrash2 size={11}/></button>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>}
-              </div>
-            </div>
+          {own && (
+            <section className="panel pf-side-block">
+              <h2>Profile review</h2>
+              <p className="muted-sm">Specific fixes that help you win work here.</p>
+              {isPremium
+                ? <button type="button" className="btn btn-sm" onClick={review} disabled={busy === 'ai'}>{busy === 'ai' ? <span className="spinner" /> : <><FiZap /> Review my profile</>}</button>
+                : <PremiumLock inline feature="AI profile review" />}
+              {aiTips && <p className="pf-tips">{aiTips}</p>}
+            </section>
           )}
-
-          {/* ────────── REVIEWS ────────── */}
-          {activeTab === 'reviews' && (
-            <div className="pf-tab-body">
-              <div className="pf-card">
-                <div className="pf-card-hdr">
-                  <h2>Client Reviews</h2>
-                  {avgRating && (
-                    <span className="pf-avg-rating">
-                      <Stars rating={avgRating} size={16}/> <strong>{avgRating}</strong> / 5
-                    </span>
-                  )}
-                </div>
-                {!reviews.length ? (
-                  <div className="pf-reviews-empty">
-                    <FiStar size={32} style={{ color: '#3E4B44', marginBottom: 10 }}/>
-                    <strong>No reviews yet</strong>
-                    <p>Reviews will appear here once clients leave feedback on completed projects.</p>
-                  </div>
-                ) : (
-                  <div className="pf-reviews-list">
-                    {reviews.map((rev, i) => (
-                      <div className="pf-review-card" key={rev._id||i}>
-                        <div className="pf-rev-top">
-                          <div className="pf-rev-avatar">{(rev.clientName||'C')[0].toUpperCase()}</div>
-                          <div className="pf-rev-meta">
-                            <span className="pf-rev-name">{rev.clientName || 'Anonymous Client'}</span>
-                            <Stars rating={rev.rating}/>
-                          </div>
-                          {rev.createdAt && (
-                            <span className="pf-rev-date">
-                              {new Date(rev.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                            </span>
-                          )}
-                        </div>
-                        {rev.comment && <p className="pf-rev-text">"{rev.comment}"</p>}
-                        {rev.project && <span className="pf-rev-proj">{rev.project}</span>}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* ────────── ACCOUNT (own only) ────────── */}
-          {activeTab === 'account' && isOwnProfile && (
-            <div className="pf-tab-body">
-
-              <p className="pf-settings-note">
-                Password, sign-in security and email notifications are in <Link to="/settings">Settings</Link>.
-              </p>
-
-              {/* AI optimizer */}
-              <div className="pf-card pf-ai-card">
-                <div className="pf-card-hdr">
-                  <h2><FiZap size={14} style={{ marginRight: 7, color: '#79B8C9' }}/> AI Profile Optimizer</h2>
-                  {!isPremium && <PremiumLock inline feature="AI profile review" />}
-                </div>
-                {!isPremium ? (
-                  <PremiumLock feature="AI profile review" description="Concrete suggestions on your bio, services, rate and portfolio to win better clients." />
-                ) : !aiDone && !aiLoad ? (
-                  <div className="pf-ai-idle">
-                    <p>AI analyses your full profile — bio, skills, services, projects, rate — and gives you concrete improvements.</p>
-                    <button className="pf-ai-run-btn" onClick={runAI}><FiZap size={13}/> Analyse Profile</button>
-                  </div>
-                ) : aiLoad ? (
-                  <div className="pf-ai-loading">
-                    <div className="pf-spinner" style={{ width: 18, height: 18 }}/>
-                    <span>Analysing…</span>
-                  </div>
-                ) : (
-                  <div className="pf-ai-result">
-                    {aiText.split('\n').filter(Boolean).map((line, i) => (
-                      <p key={i} className={/^[•\-]/.test(line.trim()) ? 'pf-ai-bullet' : 'pf-ai-line'}>{line}</p>
-                    ))}
-                    <button className="pf-ai-regen" onClick={() => { setAiDone(false); setAiText(''); }}>Re-analyse</button>
-                  </div>
-                )}
-              </div>
-
-            </div>
-          )}
-        </main>
+        </aside>
       </div>
 
-      {/* ── SLIDE-UP CHAT (other user) ──────────────────────── */}
-      {!isOwnProfile && showChat && (
-        <div className="pf-chat-panel">
-          <div className="pf-chat-head">
-            <div className="pf-chat-avatar">{(profile.name||'?')[0].toUpperCase()}</div>
-            <div className="pf-chat-head-info">
-              <div className="pf-chat-name">{profile.name}</div>
-              <div className="pf-chat-sub">{profile.title || 'Freelancer'}</div>
-            </div>
-            <button className="pf-chat-close" onClick={() => setShowChat(false)}><FiX size={15}/></button>
-          </div>
-          <div className="pf-chat-msgs">
-            {!chatMsgs.length && (
-              <div className="pf-chat-empty">
-                <FiMessageSquare size={24}/>
-                <span>No messages yet. Say hello!</span>
-              </div>
-            )}
-            {chatMsgs.map((m, i) => (
-              <div key={i} className={`pf-cmsg${m.isOwn || m.sender === 'me' ? ' own' : ''}`}>
-                <p>{m.text || m.message}</p>
-                <small>{new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small>
-              </div>
-            ))}
-            <div ref={chatEndRef}/>
-          </div>
-          <div className="pf-chat-input-row">
-            <input type="text" placeholder={`Message ${profile.name}…`}
-              value={chatInput} onChange={e => setChatInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') sendChatMsg(); }}/>
-            <button className="pf-chat-send-btn" onClick={sendChatMsg} disabled={!chatInput.trim()}>
-              <FiSend size={14}/>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ── COLLABORATION MODAL ────────────────────────────── */}
-      {collabModal && (
-        <div className="pf-modal-overlay" onClick={e => e.target === e.currentTarget && setCollabModal(false)}>
-          <div className="pf-modal">
-            <div className="pf-modal-hdr">
-              <h3>Collaborate with {profile.name}</h3>
-              <button onClick={() => setCollabModal(false)}><FiX size={14}/></button>
-            </div>
-            <div className="pf-modal-body-content">
-              <p style={{ fontSize: 13, color: 'var(--pf-text-muted)', marginBottom: 14 }}>
-                Invite {profile.name} to collaborate on a project or hire them for a service.
-              </p>
-              <div className="pf-field">
-                <label>Project / Service needed</label>
-                <input type="text" value={collabProject} onChange={e => setCollabProject(e.target.value)}
-                  placeholder="e.g. Figma design, React frontend, API integration…"/>
-              </div>
-              <div className="pf-field">
-                <label>Message</label>
-                <textarea rows={4} value={collabMsg} onChange={e => setCollabMsg(e.target.value)}
-                  placeholder="Describe the project, timeline, and what you need help with…"
-                  className="pf-textarea"/>
-              </div>
-            </div>
-            <div className="pf-modal-footer">
-              <button className="pf-btn-cancel" onClick={() => setCollabModal(false)}>Cancel</button>
-              <button className="pf-btn-save" onClick={sendCollab} disabled={!collabMsg.trim()}>
-                <FiSend size={12}/> Send Request
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── REFERRAL MODAL ───────────────────────────────────── */}
-      {referralModal && (
-        <div className="pf-modal-overlay" onClick={e => e.target === e.currentTarget && setReferralModal(false)}>
-          <div className="pf-modal">
-            <div className="pf-modal-hdr">
-              <h3>Refer a Client to {profile.name}</h3>
-              <button onClick={() => setReferralModal(false)}><FiX size={14}/></button>
-            </div>
-            <div className="pf-modal-body-content">
-              <p style={{ fontSize: 13, color: 'var(--pf-text-muted)', marginBottom: 14 }}>
-                Send {profile.name} a referral for a client or project opportunity.
-              </p>
-              <div className="pf-field">
-                <label>Referral Message</label>
-                <textarea rows={4} value={refMsg} onChange={e => setRefMsg(e.target.value)}
-                  placeholder="E.g. Client needs a React dev for 3-month project, ~$4k budget. You would be a great fit!"
-                  className="pf-textarea"/>
-              </div>
-            </div>
-            <div className="pf-modal-footer">
-              <button className="pf-btn-cancel" onClick={() => setReferralModal(false)}>Cancel</button>
-              <button className="pf-btn-save" onClick={sendReferral} disabled={!refMsg.trim()}>
-                <FiShare2 size={12}/> Send Referral
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── OWN: DRAWERS ──────────────────────────────────── */}
-
-      {/* Project drawer */}
-      {projDrawer && (
-        <div className="pf-drawer-overlay" onClick={e => e.target === e.currentTarget && setProjDrawer(false)}>
-          <div className="pf-drawer">
-            <div className="pf-drawer-hdr">
-              <h3>{editingProj ? 'Edit Project' : 'Add Project'}</h3>
-              <button onClick={() => setProjDrawer(false)}><FiX size={15}/></button>
-            </div>
-            <form className="pf-drawer-body" onSubmit={saveProjForm}>
-              <div className="pf-field"><label>Title *</label><input autoFocus value={projForm.title} onChange={e => setProjForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. E-commerce Platform" required/></div>
-              <div className="pf-field"><label>Description</label><textarea rows={4} value={projForm.description} onChange={e => setProjForm(f => ({ ...f, description: e.target.value }))} placeholder="What you built, technologies used, and impact."/></div>
-              <div className="pf-field"><label>Project URL</label><input value={projForm.url} onChange={e => setProjForm(f => ({ ...f, url: e.target.value }))} placeholder="https://yourproject.com" type="url"/></div>
-              <div className="pf-field"><label>Tech Stack (comma-separated)</label><input value={projForm.tech} onChange={e => setProjForm(f => ({ ...f, tech: e.target.value }))} placeholder="React, Node.js, MongoDB"/></div>
-              <div className="pf-drawer-footer">
-                <button type="button" className="pf-btn-cancel" onClick={() => setProjDrawer(false)}>Cancel</button>
-                <button type="submit" className="pf-btn-save" disabled={drawerSaving}>{drawerSaving ? '…' : editingProj ? 'Save Changes' : 'Add Project'}</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Service drawer */}
-      {serviceDrawer && (
-        <div className="pf-drawer-overlay" onClick={e => e.target === e.currentTarget && setServiceDrawer(false)}>
-          <div className="pf-drawer">
-            <div className="pf-drawer-hdr">
-              <h3>{editingService ? 'Edit Service' : 'Add Service'}</h3>
-              <button onClick={() => setServiceDrawer(false)}><FiX size={15}/></button>
-            </div>
-            <form className="pf-drawer-body" onSubmit={saveServiceForm}>
-              <div className="pf-field"><label>Service Title *</label><input autoFocus value={serviceForm.title} onChange={e => setServiceForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Full-Stack Web App Development" required/></div>
-              <div className="pf-field"><label>Description</label><textarea rows={3} value={serviceForm.description} onChange={e => setServiceForm(f => ({ ...f, description: e.target.value }))} placeholder="What's included…"/></div>
-              <div className="pf-field"><label>Price / Rate</label><input value={serviceForm.price} onChange={e => setServiceForm(f => ({ ...f, price: e.target.value }))} placeholder="e.g. $500 fixed, or $75/hr"/></div>
-              <div className="pf-drawer-footer">
-                <button type="button" className="pf-btn-cancel" onClick={() => setServiceDrawer(false)}>Cancel</button>
-                <button type="submit" className="pf-btn-save" disabled={drawerSaving}>{drawerSaving ? '…' : editingService ? 'Save Changes' : 'Add Service'}</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Experience drawer */}
-      {expDrawer && (
-        <div className="pf-drawer-overlay" onClick={e => e.target === e.currentTarget && setExpDrawer(false)}>
-          <div className="pf-drawer">
-            <div className="pf-drawer-hdr">
-              <h3>{editingExp ? 'Edit Experience' : 'Add Experience'}</h3>
-              <button onClick={() => setExpDrawer(false)}><FiX size={15}/></button>
-            </div>
-            <form className="pf-drawer-body" onSubmit={saveExpForm}>
-              <div className="pf-field-row">
-                <div className="pf-field"><label>Role / Title *</label><input autoFocus value={expForm.role} onChange={e => setExpForm(f => ({ ...f, role: e.target.value }))} placeholder="e.g. Senior Developer" required/></div>
-                <div className="pf-field"><label>Company *</label><input value={expForm.company} onChange={e => setExpForm(f => ({ ...f, company: e.target.value }))} placeholder="Company name" required/></div>
-              </div>
-              <div className="pf-field-row">
-                <div className="pf-field"><label>Start Date</label><input type="month" value={expForm.start} onChange={e => setExpForm(f => ({ ...f, start: e.target.value }))}/></div>
-                <div className="pf-field"><label>End Date</label><input type="month" value={expForm.end} onChange={e => setExpForm(f => ({ ...f, end: e.target.value }))} disabled={expForm.current}/></div>
-              </div>
-              <div className="pf-field pf-checkbox-field">
-                <label><input type="checkbox" checked={!!expForm.current} onChange={e => setExpForm(f => ({ ...f, current: e.target.checked, end: '' }))}/> Currently working here</label>
-              </div>
-              <div className="pf-field"><label>Description</label><textarea rows={3} value={expForm.description} onChange={e => setExpForm(f => ({ ...f, description: e.target.value }))} placeholder="Key responsibilities and achievements…"/></div>
-              <div className="pf-drawer-footer">
-                <button type="button" className="pf-btn-cancel" onClick={() => setExpDrawer(false)}>Cancel</button>
-                <button type="submit" className="pf-btn-save" disabled={drawerSaving}>{drawerSaving ? '…' : editingExp ? 'Save Changes' : 'Add Experience'}</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Education drawer */}
-      {eduDrawer && (
-        <div className="pf-drawer-overlay" onClick={e => e.target === e.currentTarget && setEduDrawer(false)}>
-          <div className="pf-drawer">
-            <div className="pf-drawer-hdr">
-              <h3>{editingEdu ? 'Edit Education' : 'Add Education / Certification'}</h3>
-              <button onClick={() => setEduDrawer(false)}><FiX size={15}/></button>
-            </div>
-            <form className="pf-drawer-body" onSubmit={saveEduForm}>
-              <div className="pf-field"><label>Institution / Issuer *</label><input autoFocus value={eduForm.institution} onChange={e => setEduForm(f => ({ ...f, institution: e.target.value }))} placeholder="e.g. MIT, Coursera, Google" required/></div>
-              <div className="pf-field"><label>Degree / Certification</label><input value={eduForm.degree} onChange={e => setEduForm(f => ({ ...f, degree: e.target.value }))} placeholder="e.g. B.Sc Computer Science, AWS Certified"/></div>
-              <div className="pf-field"><label>Year</label><input type="number" min="1990" max="2030" value={eduForm.year} onChange={e => setEduForm(f => ({ ...f, year: e.target.value }))} placeholder="2024"/></div>
-              <div className="pf-field"><label>Description</label><textarea rows={2} value={eduForm.description} onChange={e => setEduForm(f => ({ ...f, description: e.target.value }))} placeholder="Brief notes…"/></div>
-              <div className="pf-drawer-footer">
-                <button type="button" className="pf-btn-cancel" onClick={() => setEduDrawer(false)}>Cancel</button>
-                <button type="submit" className="pf-btn-save" disabled={drawerSaving}>{drawerSaving ? '…' : editingEdu ? 'Save Changes' : 'Add'}</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Delete confirm */}
-      {deletingItem && (
-        <div className="pf-modal-overlay" onClick={e => e.target === e.currentTarget && setDeletingItem(null)}>
-          <div className="pf-modal">
-            <div className="pf-modal-hdr">
-              <h3>Delete</h3>
-              <button onClick={() => setDeletingItem(null)}><FiX size={14}/></button>
-            </div>
-            <p className="pf-modal-body">
-              Delete <strong>{deletingItem.item.title||deletingItem.item.role||deletingItem.item.institution||'this item'}</strong>? This cannot be undone.
-            </p>
-            <div className="pf-modal-footer">
-              <button className="pf-btn-cancel" onClick={() => setDeletingItem(null)}>Cancel</button>
-              <button className="pf-btn-delete" onClick={() => deleteListItem(deletingItem.type, deletingItem.item)}>
-                <FiTrash2 size={12}/> Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {edit === 'basics' && <BasicsEditor p={p} onClose={() => setEdit(null)} onSave={(f) => save(f, 'Profile updated')} />}
+      {edit === 'tags' && <TagsEditor p={p} onClose={() => setEdit(null)} onSave={(f) => save(f, 'Updated')} />}
+      {edit && typeof edit === 'object' && <ItemEditor kind={edit.kind} item={edit.index !== null ? arr(p[edit.kind])[edit.index] : null} onClose={() => setEdit(null)} onSave={(item) => saveItem(edit.kind, edit.index, item)} />}
+      {offer && <OfferModal person={p} onClose={() => setOffer(false)} />}
     </div>
   );
 }

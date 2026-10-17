@@ -7,25 +7,25 @@ export default function About() {
     <article className="page-prose">
       <header className="ledger-title">
         <h1>About Aurelance</h1>
-        <p>A back office for people who work for themselves.</p>
+        <p>A freelance marketplace that writes down how people behave.</p>
       </header>
 
-      <p>Freelancing is two jobs: the work you’re hired for, and the bookkeeping around it — who you’re working with, what you quoted, what you invoiced, what’s been paid, and what’s due on Friday. Most of us run the second job across a spreadsheet, a notes app, a calendar and our memory.</p>
-      <p>Aurelance puts that second job in one place. Clients, invoices, tasks with time tracking, contracts and proposals share the same records, so marking an invoice paid updates the client’s balance and your monthly revenue without you retyping anything.</p>
+      <p>On most marketplaces you apply into silence, a client asks for “one small thing” three times, and you find out whether someone pays only after you’ve done the work. Freelancers in Pakistan also deal with fake “jobs” that ask for a registration fee, and with payout methods that are hard to set up and easy to get wrong.</p>
+      <p>Aurelance keeps the record that answers those questions before you commit: whether a client answers applicants, how long they take to pay after approving work, whether they respect the signed scope, and what freelancers said about them once the work was done.</p>
 
       <h2>What it does</h2>
       <ul>
-        <li><strong>Clients</strong> — rates, contracts, revenue and what each client still owes, calculated from their invoices.</li>
-        <li><strong>Invoices</strong> — totals, tax and discounts worked out for you; drafts, sent, paid and overdue in one list; PDF download.</li>
-        <li><strong>Tasks</strong> — a board with deadlines, subtasks, comments and a timer on every card.</li>
-        <li><strong>Jobs</strong> — post work or apply to it; the poster shortlists and hires, and the hire lands in both people’s records.</li>
-        <li><strong>Messages and connections</strong> — one inbox for every conversation, with files, read receipts and blocking; a network of freelancers to refer work to.</li>
-        <li><strong>Verification</strong> — confirmed email, linked Google or GitHub, and an optional ID check, shown as badges next to names.</li>
-        <li><strong>Atelier</strong> — rate calculator, estimator, expenses, notes, brand kit and email templates; Premium adds analytics, contracts, proposals and a tax summary.</li>
+        <li><strong>Client report cards</strong> — response rate, typical reply time, jobs closed without an answer, days to pay after approval, unpaid milestones and reviews, shown on every job post.</li>
+        <li><strong>No-ghosting rule</strong> — applications show Viewed, Shortlisted or Declined (with a reason). Jobs left unanswered for 14 days close themselves, applicants are told, and it counts on the client’s record.</li>
+        <li><strong>Signed scope</strong> — milestones both people sign. After signing, extra work is a priced change request that only becomes a milestone when accepted.</li>
+        <li><strong>Payment record</strong> — the client marks a milestone paid with a reference number; the freelancer confirms it arrived, or reports that it didn’t.</li>
+        <li><strong>Scam shield</strong> — posts asking for fees, ID copies or a move to WhatsApp are held for review; risky messages carry a caution; card numbers can’t be sent in chat; one-tap reports.</li>
+        <li><strong>Paid trials and squads</strong> — clients can pay for a small test task instead of judging by reviews, and freelancers can team up to take on bigger jobs.</li>
+        <li><strong>Verified payouts</strong> — bank (IBAN checked), Payoneer, Wise and Visa/Mastercard, matched to your verified ID and shared only on contracts you choose.</li>
       </ul>
 
       <h2>How it’s built</h2>
-      <p>Aurelance is built and run from Lahore, Pakistan. Your data is stored in MongoDB Atlas and encrypted in transit. Payments for Premium go through Safepay; we never see or store card numbers. We don’t sell data and there are no ads. You can export everything or delete your account from Settings at any time.</p>
+      <p>Aurelance is built and run from Lahore, Pakistan. Data is stored in MongoDB Atlas and encrypted in transit; payout details and ID documents are also encrypted at rest, and verification documents are deleted after review. Aurelance doesn’t hold or move money between users and takes no cut. Premium is paid through Safepay; we never see card numbers. No ads, no selling data.</p>
 
       <h2>Talk to us</h2>
       <p>Questions, bugs or feature requests: use the <Link to="/contact">contact form</Link> or write to <a href="mailto:aurelance454@gmail.com">aurelance454@gmail.com</a>. A person reads every message.</p>

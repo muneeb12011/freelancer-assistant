@@ -1,0 +1,12 @@
+/* Network — a plain ruled list of people. */
+.nw-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.nw-row { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 14px 2px; border-bottom: 1px solid var(--line); }
+.nw-row-mid { min-width: 0; }
+.nw-row-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.nw-h { font-size: var(--fs-lg); margin-bottom: 8px; }
+.nw-search { margin-bottom: 8px; }
+.nw-hint { margin-bottom: 8px; }
+@media (max-width: 760px) {
+  .nw-row { grid-template-columns: 1fr; gap: 8px; }
+  .nw-row-actions { justify-content: flex-start; }
+}
